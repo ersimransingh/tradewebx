@@ -303,38 +303,27 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                             </button>
                         ))}
                     </div>
-                    <div className="flex gap-2">
-                        <button
-                            className="p-2 rounded"
-                            onClick={() => exportTableToCsv(tableRef.current)}
-                            style={{ color: colors.text }}
-                        >
-                            <FaFileCsv size={20} />
-                        </button>
-                        {/* <button
-                            className="p-2 rounded"
-                            onClick={() => exportTableToPdf(tableRef.current)}
-                            style={{ color: colors.text }}
-                        >
-                            <FaFilePdf size={20} />
-                        </button> */}
-
-                        <button
-                            className="p-2 rounded"
-                            onClick={() => fetchData()}
-                            style={{ color: colors.text }}
-                        >
-                            <FaSync size={20} />
-                        </button>
-                        {pageData[0].filters && pageData[0].filters.length > 0 && (
+                    <div
+                        style={{ backgroundColor: colors.cardBackground }}
+                        className={`px-2 py-1 text-sm rounded-t-lg`}>
+                        <div className="flex gap-2">
                             <button
                                 className="p-2 rounded"
-                                onClick={() => setIsFilterModalOpen(true)}
+                                onClick={() => fetchData()}
                                 style={{ color: colors.text }}
                             >
-                                <FaFilter size={20} />
+                                <FaSync size={20} />
                             </button>
-                        )}
+                            {pageData[0].filters && pageData[0].filters.length > 0 && (
+                                <button
+                                    className="p-2 rounded"
+                                    onClick={() => setIsFilterModalOpen(true)}
+                                    style={{ color: colors.text }}
+                                >
+                                    <FaFilter size={20} />
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}
