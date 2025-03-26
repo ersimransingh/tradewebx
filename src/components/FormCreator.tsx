@@ -123,6 +123,7 @@ const FormCreator: React.FC<FormCreatorProps> = ({
                 {
                     headers: {
                         'Content-Type': 'application/xml',
+                        'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]}`
                     }
                 }
             );
