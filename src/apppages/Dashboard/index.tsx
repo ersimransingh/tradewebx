@@ -51,6 +51,11 @@ function Card({ cardData, onRefresh }: any) {
 
             if (pieItems.length === 0) return null;
 
+            // Find the total item (if it exists)
+            const totalItem = chart.gridItems.find((item: any) =>
+                item.label.text.toLowerCase() === 'total'
+            );
+
             const pieOptions: ApexOptions = {
                 chart: {
                     type: 'donut',
@@ -59,10 +64,7 @@ function Card({ cardData, onRefresh }: any) {
                 labels: pieItems.map((item: any) => item.label.text),
                 colors: pieItems.map((item: any) => item.label.pieColor),
                 legend: {
-                    position: 'right',
-                    labels: {
-                        colors: colors.text
-                    }
+                    show: false // Hide the built-in legend
                 },
                 plotOptions: {
                     pie: {
@@ -79,9 +81,6 @@ function Card({ cardData, onRefresh }: any) {
                     options: {
                         chart: {
                             width: 200
-                        },
-                        legend: {
-                            position: 'bottom'
                         }
                     }
                 }]
@@ -123,13 +122,48 @@ function Card({ cardData, onRefresh }: any) {
                             </Link>
                         )}
                     </div>
-                    <div className="p-4">
-                        <ReactApexChart
-                            options={pieOptions}
-                            series={series}
-                            type="donut"
-                            height={200}
-                        />
+                    <div className="p-4 flex">
+                        <div className="w-1/2">
+                            <ReactApexChart
+                                options={pieOptions}
+                                series={series}
+                                type="donut"
+                                height={200}
+                            />
+                        </div>
+                        <div className="w-1/2 flex flex-col justify-center">
+                            {/* Custom legend */}
+                            <div className="space-y-2">
+                                {pieItems.map((item: any, i: number) => (
+                                    <div key={i} className="flex items-center justify-between">
+                                        <div className="flex items-center">
+                                            <div
+                                                className="w-3 h-3 mr-2 rounded-full"
+                                                style={{ backgroundColor: item.label.pieColor }}
+                                            ></div>
+                                            <span style={{ color: item.label.color || colors.text }}>
+                                                {item.label.text}
+                                            </span>
+                                        </div>
+                                        <span style={{ color: item.value.color || colors.text }}>
+                                            {item.value.text}
+                                        </span>
+                                    </div>
+                                ))}
+
+                                {/* Show total if it exists */}
+                                {totalItem && (
+                                    <div className="flex items-center justify-between pt-2 mt-2 border-t" style={{ borderColor: colors.color3 }}>
+                                        <span style={{ color: totalItem.label.color || colors.text, fontWeight: 'bold' }}>
+                                            {totalItem.label.text}
+                                        </span>
+                                        <span style={{ color: totalItem.value.color || colors.text, fontWeight: 'bold' }}>
+                                            {totalItem.value.text}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 </div>
             );
@@ -174,7 +208,7 @@ function Card({ cardData, onRefresh }: any) {
                 {renderPieChart(cardData.pieData)}
 
                 {cardData.grids && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
                         {cardData.grids.map((grid: any, index: number) => (
                             <div
                                 key={index}
@@ -343,7 +377,7 @@ function Dashboard() {
 
     return (
         <div
-            className="container mx-auto p-4"
+            className="container mx-auto"
             style={{ backgroundColor: colors?.background2 || '#f0f0f0' }}
         >
             <div className="space-y-4">

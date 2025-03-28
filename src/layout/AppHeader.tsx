@@ -11,7 +11,7 @@ import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 
 const AppHeader: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { theme, setTheme, availableThemes, colors } = useTheme();
+  const { theme, setTheme, availableThemes, colors, fonts } = useTheme();
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
   const { companyLogo, companyName } = useAppSelector((state) => state.common);
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
@@ -58,6 +58,7 @@ const AppHeader: React.FC = () => {
       style={{
         backgroundColor: colors?.background || '#f0f0f0',
         borderColor: colors?.color3 || '#000',
+        fontFamily: fonts.sidebar
       }}
     >
       <div className="flex flex-col items-center justify-between grow lg:flex-row lg:px-6">

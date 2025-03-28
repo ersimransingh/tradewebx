@@ -64,22 +64,26 @@ const FilterModal: React.FC<FilterModalProps> = ({
         >
             <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
 
-            <div className="fixed inset-0 flex items-center justify-center p-4">
-                <Dialog.Panel className="mx-auto max-w-xl w-full rounded-lg bg-white p-6"
-                    style={{ backgroundColor: colors.filtersBackground }}>
-                    <Dialog.Title className="text-lg font-medium mb-4" style={{ color: colors.text }}>
-                        {title}
-                    </Dialog.Title>
+            <div className="fixed inset-0 flex justify-end">
+                <Dialog.Panel
+                    className="h-full w-full max-w-md overflow-y-auto p-6 transition-transform duration-300 ease-in-out"
+                    style={{
+                        backgroundColor: colors.filtersBackground,
+                        transform: isOpen ? 'translateX(0)' : 'translateX(100%)'
+                    }}
+                >
 
-                    <div className="max-h-[70vh] overflow-y-auto">
 
+                    <div className="overflow-y-auto">
                         {/* Form Creator */}
+                        <div className='h-20'></div>
+                        <div>{title}</div>
                         <FormCreator
                             formData={filters || [[]]}
                             onFilterChange={handleLocalFilterChange}
                             initialValues={localFilterValues}
                         />
-                        <div className='h-30'></div>
+                        <div className='h-50'></div>
                         {/* Download Buttons */}
                         {isDownload && (
                             <div className="flex justify-around mt-4">
@@ -102,7 +106,14 @@ const FilterModal: React.FC<FilterModalProps> = ({
 
                     {/* Action Buttons */}
                     {!isDownload && (
-                        <div className="mt-4 flex justify-end">
+                        <div className="mt-4 flex justify-between">
+                            <button
+                                className="px-4 py-2 rounded"
+                                style={{ backgroundColor: colors.buttonBackground }}
+                                onClick={onClose}
+                            >
+                                <span style={{ color: colors.buttonText }}>Cancel</span>
+                            </button>
                             <button
                                 className="px-4 py-2 rounded"
                                 style={{ backgroundColor: colors.buttonBackground }}

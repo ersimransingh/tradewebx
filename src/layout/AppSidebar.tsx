@@ -42,7 +42,8 @@ const iconMap = {
   'password': <FaUser />,
   'download': <FaFileAlt />,
   'theme-light-dark': <FaTable />, // Adjust as needed
-  'logout': <FaUser />,           // Adjust as needed
+  'logout': <FaUser />,
+  'default-icon': <FaList />,           // Adjust as needed
   // Add more mappings based on your icons
 };
 
@@ -52,12 +53,21 @@ const iconMap = {
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const pathname = usePathname();
-  const { colors } = useTheme();
+  const { colors, fonts } = useTheme();
   const dispatch = useAppDispatch();
   const menuItems = useAppSelector(selectAllMenuItems);
   const menuStatus = useAppSelector(selectMenuStatus);
   const menuError = useAppSelector(selectMenuError);
   const { companyLogo, companyName } = useAppSelector((state) => state.common);
+
+  // Font styling class for consistent typography
+  const fontStyles = {
+    title: "text-xl font-bold",
+    menuHeader: "text-xs uppercase leading-[20px]",
+    menuItem: "text-sm font-medium",
+    submenuItem: "text-xs font-normal",
+    badge: "text-xs font-semibold",
+  };
 
   useEffect(() => {
     if (!companyLogo) {
@@ -104,13 +114,13 @@ const AppSidebar: React.FC = () => {
     navItemsFromApi: NavItem[],
     menuType: "main" | "others"
   ) => (
-    <ul className="flex flex-col gap-4">
+    <ul className="flex flex-col gap-4 font-bold">
       {navItemsFromApi.map((nav, index) => (
         <li key={nav.name}>
           {nav.subItems ? (
             <button
               onClick={() => handleSubmenuToggle(index, menuType)}
-              className={`menu-item group cursor-pointer ${!isExpanded && !isHovered ? "lg:justify-center" : "lg:justify-start"
+              className={`menu-item group cursor-pointer ${fontStyles.menuItem} ${!isExpanded && !isHovered ? "lg:justify-center" : "lg:justify-start"
                 }`}
               style={{
                 backgroundColor: openSubmenu?.type === menuType && openSubmenu?.index === index
@@ -132,7 +142,7 @@ const AppSidebar: React.FC = () => {
                 {iconMap[nav.icon as keyof typeof iconMap] || iconMap['default-icon']}
               </span>
               {(isExpanded || isHovered || isMobileOpen) && (
-                <span>{nav.name}</span>
+                <span className="font-bold">{nav.name}</span>
               )}
               {(isExpanded || isHovered || isMobileOpen) && (
                 <ChevronDownIcon
@@ -152,7 +162,7 @@ const AppSidebar: React.FC = () => {
             nav.path && (
               <Link
                 href={nav.path}
-                className="menu-item group"
+                className={`menu-item group ${fontStyles.menuItem}`}
                 style={{
                   backgroundColor: isActive(nav.path) ? colors.primary : 'transparent',
                   color: isActive(nav.path) ? colors.buttonText : colors.text
@@ -167,7 +177,7 @@ const AppSidebar: React.FC = () => {
                   {iconMap[nav.icon as keyof typeof iconMap] || iconMap['default-icon']}
                 </span>
                 {(isExpanded || isHovered || isMobileOpen) && (
-                  <span>{nav.name}</span>
+                  <span className="font-bold">{nav.name}</span>
                 )}
               </Link>
             )
@@ -194,7 +204,7 @@ const AppSidebar: React.FC = () => {
                         backgroundColor: isActive(subItem.path) ? colors.primary : 'transparent',
                         color: isActive(subItem.path) ? colors.buttonText : colors.text
                       }}
-                      className="menu-dropdown-item"
+                      className={`menu-dropdown-item ${fontStyles.submenuItem}`}
                     >
                       {subItem.name}
                       <span className="flex items-center gap-1 ml-auto">
@@ -204,7 +214,7 @@ const AppSidebar: React.FC = () => {
                               backgroundColor: colors.primary,
                               color: colors.buttonText
                             }}
-                            className="menu-dropdown-badge"
+                            className={`menu-dropdown-badge ${fontStyles.badge}`}
                           >
                             new
                           </span>
@@ -215,7 +225,7 @@ const AppSidebar: React.FC = () => {
                               backgroundColor: colors.primary,
                               color: colors.buttonText
                             }}
-                            className="menu-dropdown-badge"
+                            className={`menu-dropdown-badge ${fontStyles.badge}`}
                           >
                             pro
                           </span>
@@ -310,7 +320,9 @@ const AppSidebar: React.FC = () => {
       style={{
         backgroundColor: colors.background,
         borderRight: `1px solid ${colors.color3}`,
-        color: colors.text
+        color: colors.text,
+        fontFamily: fonts.sidebar,
+        fontWeight: 'bold'
       }}
       onMouseEnter={() => !isExpanded && setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -335,7 +347,7 @@ const AppSidebar: React.FC = () => {
         <div>
           <Link href="/">
             {isExpanded || isHovered || isMobileOpen ? (
-              <h1 className="text-xl font-bold" style={{ color: colors.text }}>
+              <h1 className={fontStyles.title} style={{ color: colors.text }}>
                 {companyName}
               </h1>
             ) : (
@@ -349,7 +361,7 @@ const AppSidebar: React.FC = () => {
           <div className="flex flex-col gap-4">
             <div>
               <h2
-                className={`mb-4 text-xs uppercase flex leading-[20px] ${!isExpanded && !isHovered
+                className={`mb-4 ${fontStyles.menuHeader} flex ${!isExpanded && !isHovered
                   ? "lg:justify-center"
                   : "justify-start"
                   }`}
@@ -361,8 +373,8 @@ const AppSidebar: React.FC = () => {
                   <HorizontaLDots />
                 )}
               </h2>
-              {menuStatus === 'loading' && <div>Loading...</div>}
-              {menuStatus === 'failed' && <div>Error: {menuError}</div>}
+              {menuStatus === 'loading' && <div className={fontStyles.menuItem}>Loading...</div>}
+              {menuStatus === 'failed' && <div className={fontStyles.menuItem}>Error: {menuError}</div>}
               {menuStatus === 'succeeded' && (
                 renderMenuItems(menuItems, "main")
               )}

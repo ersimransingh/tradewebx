@@ -1,8 +1,9 @@
-export const BASE_URL = 'https://trade-plus.in'
-export const PATH_URL = '/TradeWebAPI/api/main/tradeweb'
-export const LOGIN_URL = '/TradeWebAPI/api/Main/Login_validate_Password'
-export const LOGIN_KEY = 'PKQMK2-ZDQS6F-/4UKSQ-QBB3'
-export const LOGIN_AS = 'M~2.0.0.1'
-export const PRODUCT = 'T'
-export const OTP_VERIFICATION_URL = '/TradeWebAPI/api/Main/InitializeLogin'
-export const ACTION_NAME = 'TradeWeb'
+export const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL
+export const PATH_URL = process.env.NEXT_PUBLIC_PATH_URL
+export const LOGIN_URL = process.env.NEXT_PUBLIC_LOGIN_URL
+export const LOGIN_KEY = process.env.NEXT_PUBLIC_LOGIN_KEY
+export const LOGIN_AS = process.env.NEXT_PUBLIC_LOGIN_AS
+export const PRODUCT = process.env.NEXT_PUBLIC_PRODUCT
+export const OTP_VERIFICATION_URL = process.env.NEXT_PUBLIC_OTP_VERIFICATION_URL
+export const APP_METADATA_KEY = process.env.NEXT_PUBLIC_APP_METADATA_KEY;
+export const ACTION_NAME = process.env.NEXT_PUBLIC_ACTION_NAME

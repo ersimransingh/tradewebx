@@ -12,6 +12,7 @@ interface DataTableProps {
     settings?: any;
     onRowClick?: (record: any) => void;
     tableRef?: React.RefObject<HTMLDivElement>;
+    summary?: any;
 }
 
 interface DecimalColumn {
@@ -25,6 +26,23 @@ interface ValueBasedColor {
     lessThanColor: string;
     greaterThanColor: string;
     equalToColor: string;
+}
+
+interface StyledValue {
+    type: string;
+    props: {
+        children: string | number;
+        style?: React.CSSProperties;
+        className?: string;
+    };
+}
+
+interface StyledElement extends React.ReactElement {
+    props: {
+        children: string | number;
+        style?: React.CSSProperties;
+        className?: string;
+    };
 }
 
 function getGridContent(gridEl: HTMLDivElement) {
@@ -60,34 +78,13 @@ function downloadFile(fileName: string, data: Blob) {
     URL.revokeObjectURL(url);
 }
 
-const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, tableRef }) => {
-    console.log(settings, 'settings');
-    const { colors } = useTheme();
+const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, tableRef, summary }) => {
+    console.log(JSON.stringify(summary, null, 2), 'settings');
+    const { colors, fonts } = useTheme();
     const [sortColumns, setSortColumns] = useState<any[]>([]);
     const { tableStyle } = useAppSelector((state: RootState) => state.common);
     console.log(tableStyle);
     const rowHeight = tableStyle === 'small' ? 30 : tableStyle === 'medium' ? 40 : 50;
-    // Calculate minimum column width based on content
-    const getColumnWidth = (key: string, rows: any[]) => {
-        // Start with the header length (plus some padding)
-        let maxWidth = key.length * 10 + 32;
-
-        // Check all row values
-        rows.forEach(row => {
-            const value = row[key];
-            const valueString = value?.toString() || '';
-            // Calculate based on content type
-            if (typeof value === 'number') {
-                // For numbers, use a fixed width or calculate based on digits
-                maxWidth = Math.max(maxWidth, valueString.length * 10 + 24);
-            } else {
-                // For text, calculate based on character length
-                maxWidth = Math.max(maxWidth, Math.min(valueString.length * 8 + 24, 300));
-            }
-        });
-
-        return maxWidth;
-    };
 
     // Format date function
     const formatDateValue = (value: string | number | Date, format: string = 'DD-MM-YYYY'): string => {
@@ -221,36 +218,79 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
 
         return Object.keys(formattedData[0])
             .filter(key => !columnsToHide.includes(key)) // Filter out columns that should be hidden
-            .map((key: any) => ({
-                key,
-                name: key,
-                sortable: true,
-                // width: getColumnWidth(key, formattedData),
-                minWidth: 80,
-                maxWidth: 400,
-                resizable: true,
-                formatter: (props: any) => {
-                    const value = props.row[key];
-                    // Check if the value is numeric
-                    const numValue = parseFloat(value);
-                    if (!isNaN(numValue)) {
-                        // Format number with commas and 2 decimal places
-                        const formattedValue = new Intl.NumberFormat('en-IN', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2
-                        }).format(numValue);
+            .map((key: any) => {
+                // Check if this column contains numeric values
+                const isNumericColumn = formattedData.some((row: any) => {
+                    const value = row[key];
+                    const rawValue = React.isValidElement(value) ? (value as StyledValue).props.children : value;
+                    return !isNaN(parseFloat(rawValue)) && isFinite(rawValue);
+                });
 
-                        // Determine text color based on value
-                        const textColor = numValue < 0 ? '#dc2626' :
-                            numValue > 0 ? '#16a34a' :
-                                colors.text;
+                // Check if this column should show a total in the summary row
+                const shouldShowTotal = summary?.columnsToShowTotal?.some(
+                    (col: any) => col.key === key
+                );
 
-                        return <div style={{ color: textColor }}>{formattedValue}</div>;
+                return {
+                    key,
+                    name: key,
+                    sortable: true,
+                    minWidth: 80,
+                    maxWidth: 400,
+                    resizable: true,
+                    // Add a class to identify numeric columns
+                    headerCellClass: isNumericColumn ? 'numeric-column-header' : '',
+                    cellClass: isNumericColumn ? 'numeric-column-cell' : '',
+                    renderSummaryCell: (props: any) => {
+                        // Only show values for totalCount and columns that should show totals
+                        if (key === 'totalCount' || shouldShowTotal) {
+                            return <div className="numeric-value font-bold" style={{ color: colors.text }}>{props.row[key]}</div>;
+                        }
+                        // Return empty div for columns that shouldn't show totals
+                        return <div></div>;
+                    },
+                    formatter: (props: any) => {
+                        const value = props.row[key];
+                        // Check if the value is numeric
+                        const rawValue = React.isValidElement(value) ? (value as StyledValue).props.children : value;
+                        const numValue = parseFloat(rawValue);
+
+                        if (!isNaN(numValue)) {
+                            // Format number with commas and 2 decimal places
+                            const formattedValue = new Intl.NumberFormat('en-IN', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            }).format(numValue);
+
+                            // Determine text color based on value
+                            const textColor = numValue < 0 ? '#dc2626' :
+                                numValue > 0 ? '#16a34a' :
+                                    colors.text;
+
+                            return <div className="numeric-value" style={{ color: textColor }}>{formattedValue}</div>;
+                        }
+
+                        // If it's already a React element (from value-based formatting) and contains a number
+                        if (React.isValidElement(value)) {
+                            const childValue = (value as StyledValue).props.children;
+                            const childNumValue = parseFloat(childValue.toString());
+
+                            if (!isNaN(childNumValue)) {
+                                return React.cloneElement(value as StyledElement, {
+                                    className: "numeric-value",
+                                    style: { ...(value as StyledElement).props.style }
+                                });
+                            }
+
+                            // Return the original React element if it's not numeric
+                            return value;
+                        }
+
+                        return value;
                     }
-                    return value;
-                }
-            }));
-    }, [formattedData, colors.text, settings?.hideEntireColumn]);
+                };
+            });
+    }, [formattedData, colors.text, settings?.hideEntireColumn, summary?.columnsToShowTotal]);
 
     // Sort function
     const sortRows = (initialRows: any[], sortColumns: any[]) => {
@@ -262,16 +302,23 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
                 const aValue = a[columnKey];
                 const bValue = b[columnKey];
 
+                // Handle React elements (from value-based text color formatting)
+                const aActual = React.isValidElement(aValue) ? (aValue as StyledValue).props.children : aValue;
+                const bActual = React.isValidElement(bValue) ? (bValue as StyledValue).props.children : bValue;
+
                 // Convert to numbers if possible for comparison
-                const aNum = parseFloat(aValue);
-                const bNum = parseFloat(bValue);
+                const aNum = parseFloat(aActual);
+                const bNum = parseFloat(bActual);
 
                 if (!isNaN(aNum) && !isNaN(bNum)) {
                     if (aNum !== bNum) {
                         return direction === 'ASC' ? aNum - bNum : bNum - aNum;
                     }
                 } else {
-                    const comparison = aValue.localeCompare(bValue);
+                    // Make sure we're comparing strings
+                    const aStr = String(aActual ?? '');  // Convert to string explicitly
+                    const bStr = String(bActual ?? '');  // Convert to string explicitly
+                    const comparison = aStr.localeCompare(bStr);
                     if (comparison !== 0) {
                         return direction === 'ASC' ? comparison : -comparison;
                     }
@@ -285,10 +332,40 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
         return sortRows(formattedData, sortColumns);
     }, [formattedData, sortColumns]);
 
+    const summmaryRows = useMemo(() => {
+        const totals: Record<string, any> = {
+            id: 'summary_row',
+            totalCount: rows.length
+        };
+
+        // Only calculate totals for columns specified in summary.columnsToShowTotal
+        if (summary?.columnsToShowTotal && Array.isArray(summary.columnsToShowTotal)) {
+            summary.columnsToShowTotal.forEach(column => {
+                if (column.key) {
+                    // Calculate the sum for this column
+                    const sum = rows.reduce((total, row) => {
+                        const value = row[column.key];
+                        // Handle React elements (from value-based text color formatting)
+                        const actualValue = React.isValidElement(value)
+                            ? parseFloat((value as StyledValue).props.children.toString())
+                            : parseFloat(value);
+
+                        return !isNaN(actualValue) ? total + actualValue : total;
+                    }, 0);
+
+                    // Format the sum with 2 decimal places
+                    totals[column.key] = sum.toFixed(2);
+                }
+            });
+        }
+
+        return [totals];
+    }, [rows, summary?.columnsToShowTotal]);
+
     return (
         <div
             ref={tableRef}
-            style={{ height: 'calc(100vh - 200px)', width: '100%' }}
+            style={{ height: 'calc(100vh - 170px)', width: '100%' }}
         >
             <DataGrid
                 columns={columns}
@@ -301,7 +378,9 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
                 style={{
                     backgroundColor: colors.background,
                     color: colors.text,
+                    fontFamily: fonts.content,
                 }}
+                bottomSummaryRows={summmaryRows}
                 onCellClick={(props: any) => {
                     if (onRowClick) {
                         onRowClick(rows[props.rowIdx]);
@@ -332,6 +411,16 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
                     overflow: hidden;
                     text-overflow: ellipsis;
                     color: ${colors.text};
+                }
+
+                .numeric-column-header, .numeric-column-cell {
+                    text-align: right !important;
+                }
+
+                .numeric-value {
+                    text-align: right !important;
+                    width: 100% !important;
+                    display: block !important;
                 }
 
                 .rdg-row {

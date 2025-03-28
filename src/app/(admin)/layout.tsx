@@ -28,7 +28,7 @@ export default function AdminLayout({
         {/* Header */}
         <AppHeader />
         {/* Page Content */}
-        <div className="p-4 mx-auto md:p-6"
+        <div className="p-2 mx-auto md:p-3"
           style={{ backgroundColor: colors?.background2 || '#f0f0f0' }}
         >{children}</div>
       </div>

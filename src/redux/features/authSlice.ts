@@ -1,3 +1,5 @@
+import { APP_METADATA_KEY } from '@/utils/constants';
+import { clearLocalStorage } from '@/utils/helper';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 interface AuthState {
@@ -94,8 +96,7 @@ const authSlice = createSlice({
         logout: (state) => {
             // Clear cookies
             document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-            // Clear localStorage
-            localStorage.clear();
+            clearLocalStorage();
             return defaultInitialState;
         },
     },
