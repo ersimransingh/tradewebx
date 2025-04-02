@@ -74,7 +74,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
                 >
 
 
-                    <div className="overflow-y-auto">
+                    <div className="overflow-visible">
                         {/* Form Creator */}
                         <div className='h-20'></div>
                         <div>{title}</div>
@@ -83,7 +83,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
                             onFilterChange={handleLocalFilterChange}
                             initialValues={localFilterValues}
                         />
-                        <div className='h-50'></div>
+                        {/* <div className='h-50'></div> */}
                         {/* Download Buttons */}
                         {isDownload && (
                             <div className="flex justify-around mt-4">

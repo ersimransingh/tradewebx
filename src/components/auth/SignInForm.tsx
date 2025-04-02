@@ -3,12 +3,15 @@ import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import Button from "@/components/ui/button/Button";
 import { EyeCloseIcon, EyeIcon } from "@/icons";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import axios from 'axios';
 import { useDispatch } from 'react-redux';
 import { setAuthData, setError as setAuthError, setLoading } from '@/redux/features/authSlice';
 import { BASE_URL, LOGIN_AS, PRODUCT, LOGIN_KEY, LOGIN_URL } from "@/utils/constants";
+
+// Default options to use if JSON file is not available
+const DEFAULT_LOGIN_OPTIONS = [];
 
 export default function SignInForm() {
   const router = useRouter();
@@ -18,6 +21,49 @@ export default function SignInForm() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [loginAsOptions, setLoginAsOptions] = useState(DEFAULT_LOGIN_OPTIONS);
+
+  // Initialize with first option's values
+  const [selectedName, setSelectedName] = useState("");
+  const [selectedLoginAs, setSelectedLoginAs] = useState("");
+  const [selectedLoginKey, setSelectedLoginKey] = useState("");
+
+  // Load login options from JSON file with fallback
+  useEffect(() => {
+    const loadLoginOptions = async () => {
+      try {
+        // Dynamically import the JSON file
+        const options = await import("../../../loginOptions.json")
+          .then(module => module.default)
+          .catch(() => {
+            console.log("Login options JSON file not found, using defaults");
+            return DEFAULT_LOGIN_OPTIONS;
+          });
+
+        setLoginAsOptions(options);
+
+        // Set initial selected values from the first option
+        if (options && options.length > 0) {
+          setSelectedName(options[0].name || "");
+          setSelectedLoginAs(options[0].loginAs || "");
+          setSelectedLoginKey(options[0].key || "");
+        }
+      } catch (error) {
+        console.error("Error loading login options:", error);
+        // Keep using the default options that were set initially
+      }
+    };
+
+    loadLoginOptions();
+  }, []);
+
+  const handleLoginAsChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedIndex = e.target.selectedIndex;
+    const selectedOption = loginAsOptions[selectedIndex];
+    setSelectedName(selectedOption?.name || "");
+    setSelectedLoginAs(selectedOption?.loginAs || "");
+    setSelectedLoginKey(selectedOption?.key || "");
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,11 +71,12 @@ export default function SignInForm() {
     dispatch(setLoading(true));
     dispatch(setAuthError(null));
 
+    // Use fallback values if no login options are available
     const params = {
       userId: userId,
       password: password,
-      key: LOGIN_KEY,
-      loginAs: LOGIN_AS,
+      key: loginAsOptions.length > 0 ? selectedLoginKey : LOGIN_KEY,
+      loginAs: loginAsOptions.length > 0 ? selectedLoginAs : LOGIN_AS,
       product: PRODUCT
     };
 
@@ -132,6 +179,27 @@ export default function SignInForm() {
                   </span>
                 </div>
               </div>
+
+              {/* Only show the dropdown if login options are available */}
+              {loginAsOptions.length > 0 && (
+                <div>
+                  <Label>Login As</Label>
+                  <select
+                    className="w-full px-4 py-2 border rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={selectedName}
+                    onChange={handleLoginAsChange}
+                  >
+                    {loginAsOptions.map((option: any, index: number) => (
+                      <option
+                        key={index}
+                        value={option.name}
+                      >
+                        {option.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <Button
                 type="submit"

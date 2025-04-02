@@ -79,7 +79,7 @@ function downloadFile(fileName: string, data: Blob) {
 }
 
 const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, tableRef, summary }) => {
-    console.log(JSON.stringify(summary, null, 2), 'settings');
+    // console.log(JSON.stringify(summary, null, 2), 'settings');
     const { colors, fonts } = useTheme();
     const [sortColumns, setSortColumns] = useState<any[]>([]);
     const { tableStyle } = useAppSelector((state: RootState) => state.common);
@@ -354,13 +354,32 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
                     }, 0);
 
                     // Format the sum with 2 decimal places
-                    totals[column.key] = sum.toFixed(2);
+                    const formattedSum = sum.toFixed(2);
+
+                    // Apply value-based text color if configured for this column
+                    if (settings?.valueBasedTextColor) {
+                        const colorRule = settings.valueBasedTextColor.find((rule: ValueBasedColor) => {
+                            const columns = rule.key.split(',').map((key: string) => key.trim());
+                            return columns.includes(column.key);
+                        });
+
+                        if (colorRule) {
+                            const color = getValueBasedColor(formattedSum, colorRule);
+                            if (color) {
+                                totals[column.key] = <div className="numeric-value font-bold" style={{ color }}>{formattedSum}</div>;
+                                return;
+                            }
+                        }
+                    }
+
+                    // Default formatting if no color rule applies
+                    totals[column.key] = formattedSum;
                 }
             });
         }
 
         return [totals];
-    }, [rows, summary?.columnsToShowTotal]);
+    }, [rows, summary?.columnsToShowTotal, settings?.valueBasedTextColor]);
 
     return (
         <div

@@ -63,6 +63,7 @@ export default function ChangePassword() {
             const response = await axios.post(BASE_URL + PATH_URL, xmlData, {
                 headers: {
                     'Content-Type': 'application/xml',
+                    'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]}`
                 },
                 timeout: 50000
             });

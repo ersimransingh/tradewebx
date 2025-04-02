@@ -195,7 +195,7 @@ const AppSidebar: React.FC = () => {
                     : "0px",
               }}
             >
-              <ul className="mt-2 space-y-1 ml-9">
+              <ul className="mt-2 space-y-1 ml-9 font-bold">
                 {nav.subItems.map((subItem) => (
                   <li key={subItem.name}>
                     <Link
@@ -204,33 +204,9 @@ const AppSidebar: React.FC = () => {
                         backgroundColor: isActive(subItem.path) ? colors.primary : 'transparent',
                         color: isActive(subItem.path) ? colors.buttonText : colors.text
                       }}
-                      className={`menu-dropdown-item ${fontStyles.submenuItem}`}
+                      className={`menu-dropdown-item font-bold ${fontStyles.submenuItem}`}
                     >
-                      {subItem.name}
-                      <span className="flex items-center gap-1 ml-auto">
-                        {subItem.new && (
-                          <span
-                            style={{
-                              backgroundColor: colors.primary,
-                              color: colors.buttonText
-                            }}
-                            className={`menu-dropdown-badge ${fontStyles.badge}`}
-                          >
-                            new
-                          </span>
-                        )}
-                        {subItem.pro && (
-                          <span
-                            style={{
-                              backgroundColor: colors.primary,
-                              color: colors.buttonText
-                            }}
-                            className={`menu-dropdown-badge ${fontStyles.badge}`}
-                          >
-                            pro
-                          </span>
-                        )}
-                      </span>
+                      <span className="font-bold">{subItem.name}</span>
                     </Link>
                   </li>
                 ))}

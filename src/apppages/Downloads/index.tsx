@@ -48,7 +48,7 @@ const Downloads = () => {
             const response = await axios.post(BASE_URL + PATH_URL, xmlData, {
                 headers: {
                     'Content-Type': 'application/xml',
-                    'Authorization': `Bearer ${userData.tempToken}`
+                    'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]}`
                 }
             });
 
@@ -100,6 +100,7 @@ const Downloads = () => {
             const response = await axios.post(BASE_URL + PATH_URL, xmlData, {
                 headers: {
                     'Content-Type': 'application/xml',
+                    'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]}`
                 }
             });
 
@@ -173,13 +174,14 @@ const Downloads = () => {
 
             {/* Filter Modal */}
             {isFilterModalVisible && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+                <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="rounded-lg p-6 w-full max-w-md" style={{ backgroundColor: colors.background }}>
                         <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-lg font-semibold">Filter Downloads</h3>
+                            <h3 className="text-lg font-semibold" style={{ color: colors.text }}>Filter Downloads</h3>
                             <button
                                 onClick={() => setFilterModalVisible(false)}
-                                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                                className="hover:text-gray-700 dark:hover:text-gray-200"
+                                style={{ color: colors.text }}
                             >
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -189,26 +191,29 @@ const Downloads = () => {
 
                         <div className="space-y-4">
                             <div>
-                                <label className="block mb-2 text-sm font-medium">Date Range</label>
+                                <label className="block mb-2 text-sm font-medium" style={{ color: colors.text }}>Date Range</label>
                                 <div className="flex gap-2">
                                     <input
                                         type="date"
-                                        className="block w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+                                        className="block w-full px-3 py-2 border rounded-md"
+                                        style={{ backgroundColor: colors.cardBackground, color: colors.text, borderColor: colors.border }}
                                         value={filterValues.fromDate}
                                         onChange={(e) => setFilterValues(prev => ({ ...prev, fromDate: e.target.value }))}
                                     />
                                     <input
                                         type="date"
-                                        className="block w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+                                        className="block w-full px-3 py-2 border rounded-md"
+                                        style={{ backgroundColor: colors.cardBackground, color: colors.text, borderColor: colors.border }}
                                         value={filterValues.toDate}
                                         onChange={(e) => setFilterValues(prev => ({ ...prev, toDate: e.target.value }))}
                                     />
                                 </div>
                             </div>
                             <div>
-                                <label className="block mb-2 text-sm font-medium">Segment</label>
+                                <label className="block mb-2 text-sm font-medium" style={{ color: colors.text }}>Segment</label>
                                 <select
-                                    className="block w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+                                    className="block w-full px-3 py-2 border rounded-md"
+                                    style={{ backgroundColor: colors.cardBackground, color: colors.text, borderColor: colors.border }}
                                     value={filterValues.segment}
                                     onChange={(e) => setFilterValues(prev => ({ ...prev, segment: e.target.value }))}
                                 >
@@ -219,13 +224,15 @@ const Downloads = () => {
 
                             <div className="flex justify-end gap-2 mt-6">
                                 <button
-                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                                    className="px-4 py-2 text-sm font-medium rounded-md hover:opacity-80"
+                                    style={{ backgroundColor: colors.buttonSecondary, color: colors.buttonSecondaryText }}
                                     onClick={() => setFilterModalVisible(false)}
                                 >
                                     Cancel
                                 </button>
                                 <button
-                                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+                                    className="px-4 py-2 text-sm font-medium rounded-md hover:opacity-80"
+                                    style={{ backgroundColor: colors.buttonPrimary, color: colors.buttonPrimaryText }}
                                     onClick={() => {
                                         setFilterModalVisible(false);
                                         getDownloads();

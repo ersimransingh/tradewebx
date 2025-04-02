@@ -156,16 +156,19 @@ const FormCreator: React.FC<FormCreatorProps> = ({
         }
     };
 
-    const fetchDependentOptions = async (item: FormElement, parentValue: string) => {
+    const fetchDependentOptions = async (item: FormElement, parentValue: string | Record<string, any>) => {
         try {
             if (!item.dependsOn) return [];
 
-            if (!parentValue) {
-                console.error(`Parent value for ${item.wKey} is empty or undefined`);
+            if (
+                (typeof parentValue === 'string' && !parentValue) ||
+                (typeof parentValue === 'object' && Object.values(parentValue).some(val => !val))
+            ) {
+                console.error(`Parent value for ${item.wKey} is empty or undefined`, parentValue);
                 return [];
             }
 
-            console.log(`Fetching dependent options for ${item.wKey} based on ${item.dependsOn.field} = ${parentValue}`);
+            console.log(`Fetching dependent options for ${item.wKey} based on:`, parentValue);
 
             let jUi, jApi;
 
@@ -187,10 +190,21 @@ const FormCreator: React.FC<FormCreatorProps> = ({
                 jApi = item.dependsOn.wQuery.J_Api;
             }
 
+            let xFilter = item.dependsOn.wQuery.X_Filter || '';
+
+            if (Array.isArray(item.dependsOn.field)) {
+                item.dependsOn.field.forEach(field => {
+                    const value = typeof parentValue === 'object' ? parentValue[field] : '';
+                    xFilter = xFilter.replace(`\${${field}}`, value);
+                });
+            } else {
+                xFilter = typeof parentValue === 'string' ? parentValue : '';
+            }
+
             const xmlData = `<dsXml>
                 <J_Ui>${jUi}</J_Ui>
                 <Sql>${item.dependsOn.wQuery.Sql || ''}</Sql>
-                <X_Filter>${parentValue}</X_Filter>
+                <X_Filter>${xFilter}</X_Filter>
                 <J_Api>${jApi}</J_Api>
             </dsXml>`;
 
@@ -239,10 +253,35 @@ const FormCreator: React.FC<FormCreatorProps> = ({
 
     useEffect(() => {
         formData?.flat().forEach(item => {
-            if (item.dependsOn && formValues[item.dependsOn.field]) {
-                const parentValue = formValues[item.dependsOn.field];
-                if (parentValue) {
-                    fetchDependentOptions(item, parentValue);
+            if (item.dependsOn) {
+                if (Array.isArray(item.dependsOn.field)) {
+                    const allDependenciesFilled = item.dependsOn.field.every(field =>
+                        formValues[field] !== undefined && formValues[field] !== null
+                    );
+
+                    if (allDependenciesFilled) {
+                        const dependencyValues = item.dependsOn.field.reduce((acc, field) => {
+                            const fieldElement = formData.flat().find(el => el.wKey === field);
+
+                            if (fieldElement?.type === 'WDateBox' && formValues[field]) {
+                                acc[field] = moment(formValues[field]).format('YYYYMMDD');
+                            } else {
+                                acc[field] = formValues[field];
+                            }
+                            return acc;
+                        }, {} as Record<string, any>);
+
+                        fetchDependentOptions(item, dependencyValues);
+                    }
+                } else if (formValues[item.dependsOn.field]) {
+                    const fieldElement = formData.flat().find(el => el.wKey === item.dependsOn.field);
+
+                    if (fieldElement?.type === 'WDateBox') {
+                        const formattedDate = moment(formValues[item.dependsOn.field]).format('YYYYMMDD');
+                        fetchDependentOptions(item, formattedDate);
+                    } else {
+                        fetchDependentOptions(item, formValues[item.dependsOn.field]);
+                    }
                 }
             }
         });
@@ -312,7 +351,51 @@ const FormCreator: React.FC<FormCreatorProps> = ({
                 </label>
                 <DatePicker
                     selected={formValues[item.wKey as string]}
-                    onChange={(date: Date) => handleInputChange(item.wKey as string, date)}
+                    onChange={(date: Date) => {
+                        handleInputChange(item.wKey as string, date);
+
+                        const dependentFields = formData.flat().filter(dependentItem => {
+                            if (!dependentItem.dependsOn) return false;
+
+                            return Array.isArray(dependentItem.dependsOn.field)
+                                ? dependentItem.dependsOn.field.includes(item.wKey as string)
+                                : dependentItem.dependsOn.field === item.wKey;
+                        });
+
+                        if (dependentFields.length > 0) {
+                            const newValues = { ...formValues, [item.wKey as string]: date };
+
+                            dependentFields.forEach(dependentItem => {
+                                newValues[dependentItem.wKey as string] = undefined;
+
+                                if (Array.isArray(dependentItem.dependsOn!.field)) {
+                                    const allDependenciesFilled = dependentItem.dependsOn!.field.every(field =>
+                                        newValues[field] !== undefined && newValues[field] !== null
+                                    );
+
+                                    if (allDependenciesFilled) {
+                                        const dependencyValues = dependentItem.dependsOn!.field.reduce((acc, field) => {
+                                            const fieldElement = formData.flat().find(el => el.wKey === field);
+
+                                            if (fieldElement?.type === 'WDateBox' && newValues[field]) {
+                                                acc[field] = moment(newValues[field]).format('YYYYMMDD');
+                                            } else {
+                                                acc[field] = newValues[field];
+                                            }
+                                            return acc;
+                                        }, {} as Record<string, any>);
+
+                                        fetchDependentOptions(dependentItem, dependencyValues);
+                                    }
+                                } else {
+                                    const formattedDate = moment(date).format('YYYYMMDD');
+                                    fetchDependentOptions(dependentItem, formattedDate);
+                                }
+                            });
+
+                            handleFormChange(newValues);
+                        }
+                    }}
                     dateFormat="dd/MM/yyyy"
                     className="w-full px-3 py-2 border rounded-md"
                     wrapperClassName="w-full"
@@ -349,17 +432,62 @@ const FormCreator: React.FC<FormCreatorProps> = ({
                             newValues[item.wKey as string] = selected.value;
 
                             formData.flat().forEach(dependentItem => {
-                                if (dependentItem.dependsOn?.field === item.wKey) {
-                                    newValues[dependentItem.wKey as string] = undefined;
-                                    fetchDependentOptions(dependentItem, selected.value);
+                                if (dependentItem.dependsOn) {
+                                    const dependsOnField = dependentItem.dependsOn.field;
+                                    const isDependent = Array.isArray(dependsOnField)
+                                        ? dependsOnField.includes(item.wKey as string)
+                                        : dependsOnField === item.wKey;
+
+                                    if (isDependent) {
+                                        newValues[dependentItem.wKey as string] = undefined;
+
+                                        if (Array.isArray(dependsOnField)) {
+                                            const allDependenciesFilled = dependsOnField.every(field =>
+                                                newValues[field] !== undefined && newValues[field] !== null
+                                            );
+
+                                            if (allDependenciesFilled) {
+                                                const dependencyValues = dependsOnField.reduce((acc, field) => {
+                                                    const fieldElement = formData.flat().find(el => el.wKey === field);
+
+                                                    if (fieldElement?.type === 'WDateBox' && newValues[field]) {
+                                                        acc[field] = moment(newValues[field]).format('YYYYMMDD');
+                                                    } else {
+                                                        acc[field] = newValues[field];
+                                                    }
+                                                    return acc;
+                                                }, {} as Record<string, any>);
+
+                                                fetchDependentOptions(dependentItem, dependencyValues);
+                                            }
+                                        } else {
+                                            const fieldElement = formData.flat().find(
+                                                el => el.wKey === dependentItem.dependsOn!.field
+                                            );
+
+                                            if (fieldElement?.type === 'WDateBox') {
+                                                const formattedDate = moment(selected.value).format('YYYYMMDD');
+                                                fetchDependentOptions(dependentItem, formattedDate);
+                                            } else {
+                                                fetchDependentOptions(dependentItem, selected.value);
+                                            }
+                                        }
+                                    }
                                 }
                             });
                         } else {
                             newValues[item.wKey as string] = undefined;
 
                             formData.flat().forEach(dependentItem => {
-                                if (dependentItem.dependsOn?.field === item.wKey) {
-                                    newValues[dependentItem.wKey as string] = undefined;
+                                if (dependentItem.dependsOn) {
+                                    const dependsOnField = dependentItem.dependsOn.field;
+                                    const isDependent = Array.isArray(dependsOnField)
+                                        ? dependsOnField.includes(item.wKey as string)
+                                        : dependsOnField === item.wKey;
+
+                                    if (isDependent) {
+                                        newValues[dependentItem.wKey as string] = undefined;
+                                    }
                                 }
                             });
                         }

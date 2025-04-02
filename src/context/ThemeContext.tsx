@@ -4,7 +4,9 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 import { PATH_URL } from '@/utils/constants';
 import { BASE_URL } from '@/utils/constants';
-
+import { useSelector } from 'react-redux';
+import { RootState } from '@/redux/store';
+import {isEqual} from "lodash"
 // Define theme types
 export type ThemeType = 'dark' | 'light' | 'lightDark' | 'blue';
 
@@ -157,8 +159,8 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 // Storage keys for localStorage
-const THEME_STORAGE_KEY = 'app_theme';
-const THEME_COLORS_STORAGE_KEY = 'app_theme_colors';
+export const THEME_STORAGE_KEY = 'app_theme';
+export const THEME_COLORS_STORAGE_KEY = 'app_theme_colors';
 const FONTS_STORAGE_KEY = 'app_fonts';
 
 // Default font settings
@@ -172,13 +174,15 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [themes, setThemes] = useState<Record<ThemeType, ThemeColors>>(initialThemes);
   const [fonts, setFonts] = useState<FontSettings>(defaultFonts);
   const [isLoading, setIsLoading] = useState(true);
-
+  const {userId: UserId, userType: UserType, isAuthenticated} = useSelector((state:RootState)=> state.auth) 
   // Add fetchThemes function
   const fetchThemes = async () => {
     try {
       const userData = {
-        UserId: localStorage.getItem('userId'),
-        UserType: localStorage.getItem('userType')
+        // UserId: localStorage.getItem('userId'),
+        // UserType: localStorage.getItem('userType')
+        UserId,
+        UserType
       };
 
       const xmlData = `<dsXml>
@@ -196,7 +200,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]}`
         }
       });
-
       if (response.data?.data?.rs0?.[0]?.LevelSetting) {
         const parsedThemeSettings = JSON.parse(response.data.data.rs0[0].LevelSetting);
 
@@ -221,12 +224,25 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }));
 
         // Save to localStorage
-        localStorage.setItem(THEME_COLORS_STORAGE_KEY, JSON.stringify(parsedThemeSettings));
+        const localSavedThemeColors = localStorage.getItem(THEME_COLORS_STORAGE_KEY);
+        try {
+          const parsedLocalThemeColors = JSON.parse(localSavedThemeColors);
+          if(!isEqual(parsedLocalThemeColors, parsedThemeSettings)) {
+            localStorage.setItem(THEME_COLORS_STORAGE_KEY, JSON.stringify(parsedThemeSettings));
+          }
+        }catch(err) {
+          localStorage.setItem(THEME_COLORS_STORAGE_KEY, JSON.stringify(parsedThemeSettings));
+        }
       }
     } catch (error) {
       console.error('Error fetching theme data:', error);
-      // Fallback to initial themes if API fails
-      setThemes(initialThemes);
+      // Fallback to initial themes if API fails (from Localstorage or intialThemes)
+      const savedThemeColors = localStorage.getItem(THEME_COLORS_STORAGE_KEY);
+      if (savedThemeColors) {
+        setThemes(JSON.parse(savedThemeColors));
+      }else {
+        setThemes(initialThemes);
+      }
     }
   };
 
@@ -237,6 +253,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const savedThemeColors = localStorage.getItem(THEME_COLORS_STORAGE_KEY);
         if (savedThemeColors) {
           setThemes(JSON.parse(savedThemeColors));
+        }else {
+          setThemes(initialThemes);
         }
 
         const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
@@ -249,8 +267,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           setFonts(JSON.parse(savedFonts));
         }
 
-        // Then fetch latest themes from API
-        await fetchThemes();
       } catch (error) {
         console.error('Failed to load theme:', error);
       } finally {
@@ -305,6 +321,12 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     availableThemes: Object.keys(themes) as ThemeType[],
   };
 
+  useEffect(() => {
+    // Fetch theme if user is authenticated successfully
+    if(UserId && UserType && isAuthenticated) {
+      fetchThemes();
+    }
+  }, [UserId, UserType, isAuthenticated])
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 };
 
