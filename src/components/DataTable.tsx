@@ -79,6 +79,7 @@ function downloadFile(fileName: string, data: Blob) {
 }
 
 const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, tableRef, summary }) => {
+    console.log(JSON.stringify(settings, null, 2), 'settings');
     const { colors, fonts } = useTheme();
     const [sortColumns, setSortColumns] = useState<any[]>([]);
     const { tableStyle } = useAppSelector((state: RootState) => state.common);
@@ -215,8 +216,8 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
             : [];
 
         // Get columns that should be left-aligned even if they contain numbers
-        const leftAlignedColumns = settings?.leftAlignedColumns
-            ? settings.leftAlignedColumns.split(',').map((col: string) => col.trim())
+        const leftAlignedColumns = settings?.leftAlignedColumns || settings?.leftAlignedColums
+            ? (settings?.leftAlignedColumns || settings?.leftAlignedColums).split(',').map((col: string) => col.trim())
             : [];
 
         return Object.keys(formattedData[0])
@@ -297,7 +298,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
                     }
                 };
             });
-    }, [formattedData, colors.text, settings?.hideEntireColumn, settings?.leftAlignedColumns, summary?.columnsToShowTotal]);
+    }, [formattedData, colors.text, settings?.hideEntireColumn, settings?.leftAlignedColumns, settings?.leftAlignedColums, summary?.columnsToShowTotal]);
 
     // Sort function
     const sortRows = (initialRows: any[], sortColumns: any[]) => {

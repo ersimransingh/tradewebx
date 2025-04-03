@@ -9,6 +9,7 @@ import axios from 'axios';
 import { useDispatch } from 'react-redux';
 import { setAuthData, setError as setAuthError, setLoading } from '@/redux/features/authSlice';
 import { BASE_URL, LOGIN_AS, PRODUCT, LOGIN_KEY, LOGIN_URL } from "@/utils/constants";
+import Image from "next/image";
 
 // Default options to use if JSON file is not available
 const DEFAULT_LOGIN_OPTIONS = [];
@@ -210,6 +211,14 @@ export default function SignInForm() {
               </Button>
             </div>
           </form>
+        </div>
+      </div>
+      <div className="flex justify-end items-center mr-2 mb-2">
+        <div style={{}} className="flex items-center gap-2">
+          <span className=" text-gray-500" style={{ fontSize: '10px' }}>Powered By :</span>
+          <a href="https://www.secmark.in" target="_blank" rel="noopener noreferrer">
+            <Image src="/images/secmarklogo.png" alt="Tradesoft" width={100} height={100} />
+          </a>
         </div>
       </div>
     </div>
