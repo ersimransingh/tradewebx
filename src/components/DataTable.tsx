@@ -79,11 +79,9 @@ function downloadFile(fileName: string, data: Blob) {
 }
 
 const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, tableRef, summary }) => {
-    // console.log(JSON.stringify(summary, null, 2), 'settings');
     const { colors, fonts } = useTheme();
     const [sortColumns, setSortColumns] = useState<any[]>([]);
     const { tableStyle } = useAppSelector((state: RootState) => state.common);
-    console.log(tableStyle);
     const rowHeight = tableStyle === 'small' ? 30 : tableStyle === 'medium' ? 40 : 50;
 
     // Format date function
@@ -470,22 +468,122 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
     );
 };
 
-export const exportTableToCsv = (gridEl: HTMLDivElement | null) => {
-    if (!gridEl) return;
+export const exportTableToCsv = (
+    gridEl: HTMLDivElement | null,
+    headerData: any,
+    apiData: any,
+    pageData: any
+) => {
+    if (!apiData || apiData.length === 0) return;
 
-    const { head, body, foot } = getGridContent(gridEl);
-    const content = [...head, ...body, ...foot]
-        .map((cells) => cells.map(serialiseCellValue).join(','))
-        .join('\n');
+    const levelData = pageData[0]?.levels[0] || {};
+    const settings = levelData.settings || {};
+    const columnsToShowTotal = levelData.summary?.columnsToShowTotal || [];
+    
+    // Extract report details
+    const companyName = headerData.CompanyName?.[0] || "Company Name";
+    const reportHeader = headerData.ReportHeader?.[0] || "Report Header";
 
+    // Split Report Header before "From Date"
+    let [fileTitle] = reportHeader.split("From Date");
+    fileTitle = fileTitle?.trim() || "Report"; // Fallback title
+
+    // **1. Get all available headers from API data**
+    let headers = Object.keys(apiData[0] || {});
+
+    // **2. Remove columns mentioned in hideEntireColumn**
+    const hiddenColumns = settings.hideEntireColumn?.split(",") || [];
+    const filteredHeaders = headers.filter(header => !hiddenColumns.includes(header.trim()));
+
+    // **3. Decimal Formatting Logic (Bind Dynamically)**
+
+    const decimalColumnsMap: Record<string, number> = {};
+    settings.decimalColumns?.forEach((col: { key: string; decimalPlaces: number }) => {
+        const columnKeys = col.key.split(",").map(k => k.trim());
+        columnKeys.forEach(key => {
+            if (key) decimalColumnsMap[key] = col.decimalPlaces;
+        });
+    });
+
+    // **4. Initialize totals (only for columns in columnsToShowTotal)**
+    let totals: Record<string, number> = {};
+    const totalLabels: Record<string, string> = {};
+
+    columnsToShowTotal.forEach(({ key, label }: { key: string; label: string }) => {
+        totals[key] = 0;
+        totalLabels[key] = label;
+    });
+
+    // **5. Prepare table body rows with decimal formatting & total calculation**
+
+    const bodyRows = apiData.map(row =>
+        filteredHeaders.map(header => {
+            let value = row[header] ?? "";
+
+            // Apply decimal formatting if needed
+            if (decimalColumnsMap[header] && !isNaN(parseFloat(value))) {
+                value = parseFloat(value).toFixed(decimalColumnsMap[header]);
+
+                // Add to total if the column is in columnsToShowTotal
+                if (totals.hasOwnProperty(header)) {
+                    totals[header] += parseFloat(value);
+                }
+            }
+
+            return `"${value}"`;
+        }).join(',')
+    );
+
+
+    // **6. Format total row (only for selected columns)**
+    const totalRow = filteredHeaders.map(header => {
+        if (totals[header] !== undefined) {
+            return `"${totals[header].toFixed(decimalColumnsMap[header] || 0)}"`; // Apply decimals if specified
+        }
+        return '""'; // Empty for non-numeric columns
+    }).join(',');
+
+    // **7. Center Company Name in CSV**
+    const startColumnIndex = 1;
+    const centerText = (text: string, columnWidth: number) => {
+        const padding = Math.max(0, Math.floor((columnWidth - text.length) / 2));
+        return `${' '.repeat(padding)}${text}${' '.repeat(padding)}`;
+    };
+
+    const formattedCompanyName = [
+        ...Array(startColumnIndex).fill('""'), // Empty columns for shifting to column E
+        `"${centerText(companyName, 20)}"`
+    ].join(',');
+
+    // **8. Handle multiline Report Header**
+    const reportHeaderLines = reportHeader.split("\\n").map(line =>
+        [
+            ...Array(startColumnIndex).fill('""'),
+            `"${line.trim()}"`
+        ].join(',')
+    );
+
+    // **9. Prepare CSV content**
+    const csvContent = [
+        formattedCompanyName,   // Line 1: Company Name (Centered)
+        ...reportHeaderLines,   // Line 2+: Report Header (Shifted)
+        '',                     // Empty row for spacing
+        filteredHeaders.map(header => `"${header}"`).join(','), // Table Header
+        ...bodyRows,            // Table Data
+        totalRow                // Total Row at the End
+    ].join('\n');
+
+    // **10. Construct the filename dynamically**
+    const filename = `${fileTitle.replace(/[^a-zA-Z0-9]/g, "_")}.csv`;
+
+    // **11. Download CSV file**
     downloadFile(
-        'export.csv',
-        new Blob([content], { type: 'text/csv;charset=utf-8;' })
+        filename,
+        new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
     );
 };
 
 export const exportTableToPdf = async (gridEl: HTMLDivElement | null) => {
-    console.log(gridEl, 'gridEl');
     // if (!gridEl) return;
 
     // try {
