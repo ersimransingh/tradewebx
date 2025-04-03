@@ -7,6 +7,8 @@ import moment from 'moment';
 import DataTable from '@/components/DataTable';
 import { BASE_URL, PATH_URL } from '@/utils/constants';
 import { RootState } from '@/redux/store';
+import FilterModal from '@/components/FilterModal';
+
 const Downloads = () => {
     const [downloads, setDownloads] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -17,6 +19,9 @@ const Downloads = () => {
         segment: 'Equity/Derivative'
     });
     const [headings, setHeadings] = useState([]);
+    const [isDownloading, setIsDownloading] = useState(false);
+    const [downloadProgress, setDownloadProgress] = useState(0);
+    const [downloadError, setDownloadError] = useState<string | null>(null);
 
     const { colors } = useTheme();
     const userData = useSelector((state: RootState) => state.auth);
@@ -78,6 +83,63 @@ const Downloads = () => {
         getDownloads();
     }, []);
 
+    const handleFileDownload = async (fileId: string, fileName: string) => {
+        setIsDownloading(true);
+        setDownloadError(null);
+        setDownloadProgress(0);
+
+        try {
+            // Create a CancelToken source for axios
+            const source = axios.CancelToken.source();
+
+            // Set up a timer to update progress (simulated if actual progress isn't available)
+            const progressInterval = setInterval(() => {
+                setDownloadProgress(prev => {
+                    // Cap at 95% until we actually complete
+                    return prev < 95 ? prev + 5 : 95;
+                });
+            }, 1000);
+
+            // Make the API call with extended timeout
+            const response = await axios({
+                url: `${BASE_URL}/api/downloads/${fileId}`,
+                method: 'GET',
+                responseType: 'blob', // Important for file downloads
+                headers: {
+                    'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]}`
+                },
+                timeout: 600000, // 10 minutes timeout
+                cancelToken: source.token,
+                onDownloadProgress: (progressEvent) => {
+                    if (progressEvent.total) {
+                        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                        setDownloadProgress(percentCompleted);
+                    }
+                }
+            });
+
+            // Clear the progress interval
+            clearInterval(progressInterval);
+            setDownloadProgress(100);
+
+            // Create a download link and trigger the download
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', fileName);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+
+        } catch (error) {
+            console.error('Download error:', error);
+            setDownloadError(error.message || 'Download failed. Please try again later.');
+        } finally {
+            setIsDownloading(false);
+        }
+    };
+
     const handleDownload = async (record) => {
         const fromDateStr = moment(filterValues.fromDate).format('YYYYMMDD');
         const toDateStr = moment(filterValues.toDate).format('YYYYMMDD');
@@ -101,7 +163,8 @@ const Downloads = () => {
                 headers: {
                     'Content-Type': 'application/xml',
                     'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]}`
-                }
+                },
+                timeout: 600000
             });
 
             const fileData = response.data.data.rs0[0];
@@ -121,6 +184,47 @@ const Downloads = () => {
             console.error('Error downloading document:', error);
         }
     };
+
+    const handleFilterChange = (values) => {
+        console.log('values', values);
+        handleApplyFilters();
+        setFilterValues(values);
+
+    };
+
+    const handleApplyFilters = () => {
+        getDownloads();
+    };
+
+    // Define filter fields for the FilterModal
+    const filterFields = [
+        [
+            {
+                type: 'WDateBox',
+                label: 'From Date',
+                wKey: 'fromDate',
+                value: filterValues.fromDate
+            },
+            {
+                type: 'WDateBox',
+                label: 'To Date',
+                wKey: 'toDate',
+                value: filterValues.toDate
+            }
+        ],
+        [
+            {
+                type: 'WDropDownBox',
+                label: 'Segment',
+                wKey: 'segment',
+                value: filterValues.segment,
+                options: [
+                    { label: 'Equity/Derivative', value: 'Equity/Derivative' },
+                    { label: 'Commodity', value: 'Commodity' }
+                ]
+            }
+        ]
+    ];
 
     return (
         <div className="p-4">
@@ -173,75 +277,34 @@ const Downloads = () => {
             />
 
             {/* Filter Modal */}
-            {isFilterModalVisible && (
-                <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="rounded-lg p-6 w-full max-w-md" style={{ backgroundColor: colors.background }}>
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-lg font-semibold" style={{ color: colors.text }}>Filter Downloads</h3>
-                            <button
-                                onClick={() => setFilterModalVisible(false)}
-                                className="hover:text-gray-700 dark:hover:text-gray-200"
-                                style={{ color: colors.text }}
-                            >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
+            <FilterModal
+                isOpen={isFilterModalVisible}
+                onClose={() => setFilterModalVisible(false)}
+                title="Filter Downloads"
+                filters={filterFields}
+                onFilterChange={handleFilterChange}
+                initialValues={filterValues}
+                onApply={handleApplyFilters}
+            />
 
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block mb-2 text-sm font-medium" style={{ color: colors.text }}>Date Range</label>
-                                <div className="flex gap-2">
-                                    <input
-                                        type="date"
-                                        className="block w-full px-3 py-2 border rounded-md"
-                                        style={{ backgroundColor: colors.cardBackground, color: colors.text, borderColor: colors.border }}
-                                        value={filterValues.fromDate}
-                                        onChange={(e) => setFilterValues(prev => ({ ...prev, fromDate: e.target.value }))}
-                                    />
-                                    <input
-                                        type="date"
-                                        className="block w-full px-3 py-2 border rounded-md"
-                                        style={{ backgroundColor: colors.cardBackground, color: colors.text, borderColor: colors.border }}
-                                        value={filterValues.toDate}
-                                        onChange={(e) => setFilterValues(prev => ({ ...prev, toDate: e.target.value }))}
-                                    />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block mb-2 text-sm font-medium" style={{ color: colors.text }}>Segment</label>
-                                <select
-                                    className="block w-full px-3 py-2 border rounded-md"
-                                    style={{ backgroundColor: colors.cardBackground, color: colors.text, borderColor: colors.border }}
-                                    value={filterValues.segment}
-                                    onChange={(e) => setFilterValues(prev => ({ ...prev, segment: e.target.value }))}
-                                >
-                                    <option value="Equity/Derivative">Equity/Derivative</option>
-                                    <option value="Commodity">Commodity</option>
-                                </select>
-                            </div>
-
-                            <div className="flex justify-end gap-2 mt-6">
-                                <button
-                                    className="px-4 py-2 text-sm font-medium rounded-md hover:opacity-80"
-                                    style={{ backgroundColor: colors.buttonSecondary, color: colors.buttonSecondaryText }}
-                                    onClick={() => setFilterModalVisible(false)}
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    className="px-4 py-2 text-sm font-medium rounded-md hover:opacity-80"
-                                    style={{ backgroundColor: colors.buttonPrimary, color: colors.buttonPrimaryText }}
-                                    onClick={() => {
-                                        setFilterModalVisible(false);
-                                        getDownloads();
-                                    }}
-                                >
-                                    Apply
-                                </button>
-                            </div>
+            {isDownloading && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                    <div className="bg-white p-6 rounded-lg shadow-lg text-center">
+                        <div className="mb-4">
+                            <svg className="animate-spin h-10 w-10 text-blue-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
                         </div>
+                        <h3 className="text-lg font-semibold mb-2">Downloading File</h3>
+                        <div className="w-full bg-gray-200 rounded-full h-2.5">
+                            <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${downloadProgress}%` }}></div>
+                        </div>
+                        <p className="mt-2 text-sm text-gray-600">{downloadProgress}%</p>
+                        <p className="mt-2 text-xs text-gray-500">This may take several minutes for large files</p>
+                        {downloadError && (
+                            <div className="mt-4 text-red-500 text-sm">{downloadError}</div>
+                        )}
                     </div>
                 </div>
             )}

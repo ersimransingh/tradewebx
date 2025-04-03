@@ -214,11 +214,19 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
             ? settings.hideEntireColumn.split(',').map((col: string) => col.trim())
             : [];
 
+        // Get columns that should be left-aligned even if they contain numbers
+        const leftAlignedColumns = settings?.leftAlignedColumns
+            ? settings.leftAlignedColumns.split(',').map((col: string) => col.trim())
+            : [];
+
         return Object.keys(formattedData[0])
             .filter(key => !columnsToHide.includes(key)) // Filter out columns that should be hidden
             .map((key: any) => {
-                // Check if this column contains numeric values
-                const isNumericColumn = formattedData.some((row: any) => {
+                // Check if this column should be forcibly left-aligned
+                const isLeftAligned = leftAlignedColumns.includes(key);
+
+                // Check if this column contains numeric values (only if not forced left-aligned)
+                const isNumericColumn = !isLeftAligned && formattedData.some((row: any) => {
                     const value = row[key];
                     const rawValue = React.isValidElement(value) ? (value as StyledValue).props.children : value;
                     return !isNaN(parseFloat(rawValue)) && isFinite(rawValue);
@@ -236,13 +244,13 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
                     minWidth: 80,
                     maxWidth: 400,
                     resizable: true,
-                    // Add a class to identify numeric columns
+                    // Add a class to identify numeric columns or forced left-aligned columns
                     headerCellClass: isNumericColumn ? 'numeric-column-header' : '',
                     cellClass: isNumericColumn ? 'numeric-column-cell' : '',
                     renderSummaryCell: (props: any) => {
                         // Only show values for totalCount and columns that should show totals
                         if (key === 'totalCount' || shouldShowTotal) {
-                            return <div className="numeric-value font-bold" style={{ color: colors.text }}>{props.row[key]}</div>;
+                            return <div className={isNumericColumn ? "numeric-value font-bold" : "font-bold"} style={{ color: colors.text }}>{props.row[key]}</div>;
                         }
                         // Return empty div for columns that shouldn't show totals
                         return <div></div>;
@@ -253,7 +261,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
                         const rawValue = React.isValidElement(value) ? (value as StyledValue).props.children : value;
                         const numValue = parseFloat(rawValue);
 
-                        if (!isNaN(numValue)) {
+                        if (!isNaN(numValue) && !isLeftAligned) {
                             // Format number with commas and 2 decimal places
                             const formattedValue = new Intl.NumberFormat('en-IN', {
                                 minimumFractionDigits: 2,
@@ -273,22 +281,23 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
                             const childValue = (value as StyledValue).props.children;
                             const childNumValue = parseFloat(childValue.toString());
 
-                            if (!isNaN(childNumValue)) {
+                            if (!isNaN(childNumValue) && !isLeftAligned) {
                                 return React.cloneElement(value as StyledElement, {
                                     className: "numeric-value",
                                     style: { ...(value as StyledElement).props.style }
                                 });
                             }
 
-                            // Return the original React element if it's not numeric
+                            // Return the original React element if it's not numeric or should be left-aligned
                             return value;
                         }
 
+                        // For numeric values that should be left-aligned and non-numeric values
                         return value;
                     }
                 };
             });
-    }, [formattedData, colors.text, settings?.hideEntireColumn, summary?.columnsToShowTotal]);
+    }, [formattedData, colors.text, settings?.hideEntireColumn, settings?.leftAlignedColumns, summary?.columnsToShowTotal]);
 
     // Sort function
     const sortRows = (initialRows: any[], sortColumns: any[]) => {

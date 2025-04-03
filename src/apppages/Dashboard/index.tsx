@@ -41,6 +41,19 @@ function Card({ cardData, onRefresh }: any) {
         );
     }
 
+    // Helper function to generate proper link path for navigateTo values
+    const getLinkPath = (navigateTo: string) => {
+        if (!navigateTo) return "";
+
+        // Format the component name to match the dynamic routing pattern
+        // Convert PascalCase or regular text to kebab-case
+        const formattedPath = navigateTo
+            .replace(/([a-z])([A-Z])/g, '$1-$2')
+            .toLowerCase();
+
+        return `/${formattedPath}`;
+    };
+
     const renderPieChart = (pieData: any) => {
         if (!pieData) return null;
 
@@ -97,9 +110,9 @@ function Card({ cardData, onRefresh }: any) {
                     <div className="border-b p-4 flex justify-between items-center"
                         style={{ borderColor: colors.color3 }}>
                         <h3 className="text-lg font-bold" style={{ color: chart.color }}>
-                            {chart.link ? (
+                            {chart.navigateTo ? (
                                 <Link
-                                    href={chart.link}
+                                    href={getLinkPath(chart.navigateTo)}
                                     className="hover:underline flex items-center gap-2"
                                     style={{ color: colors.text }}
                                 >
@@ -112,9 +125,9 @@ function Card({ cardData, onRefresh }: any) {
                                 chart.name
                             )}
                         </h3>
-                        {chart.actionLink && (
+                        {chart.navigateTo && (
                             <Link
-                                href={chart.actionLink}
+                                href={getLinkPath(chart.navigateTo)}
                                 style={{ color: colors.primary }}
                                 className="text-sm hover:opacity-80"
                             >
@@ -142,11 +155,29 @@ function Card({ cardData, onRefresh }: any) {
                                                 style={{ backgroundColor: item.label.pieColor }}
                                             ></div>
                                             <span style={{ color: item.label.color || colors.text }}>
-                                                {item.label.text}
+                                                {item.navigateTo ? (
+                                                    <Link
+                                                        href={getLinkPath(item.navigateTo)}
+                                                        className="hover:underline"
+                                                    >
+                                                        {item.label.text}
+                                                    </Link>
+                                                ) : (
+                                                    item.label.text
+                                                )}
                                             </span>
                                         </div>
                                         <span style={{ color: item.value.color || colors.text }}>
-                                            {item.value.text}
+                                            {item.navigateTo ? (
+                                                <Link
+                                                    href={getLinkPath(item.navigateTo)}
+                                                    className="hover:underline"
+                                                >
+                                                    {item.value.text}
+                                                </Link>
+                                            ) : (
+                                                item.value.text
+                                            )}
                                         </span>
                                     </div>
                                 ))}
@@ -184,9 +215,9 @@ function Card({ cardData, onRefresh }: any) {
                     }}
                 >
                     <h2 className="font-bold">
-                        {cardData.link ? (
+                        {cardData.navigateTo ? (
                             <Link
-                                href={cardData.link}
+                                href={getLinkPath(cardData.navigateTo)}
                                 className="hover:underline flex items-center gap-2"
                             >
                                 {cardData.name}
@@ -216,9 +247,9 @@ function Card({ cardData, onRefresh }: any) {
                                 className="p-4 rounded-lg shadow"
                             >
                                 <h3 className="font-bold mb-4" style={{ color: grid.color }}>
-                                    {grid.link ? (
+                                    {grid.navigateTo ? (
                                         <Link
-                                            href={grid.link}
+                                            href={getLinkPath(grid.navigateTo)}
                                             className="hover:underline flex items-center gap-2"
                                         >
                                             {grid.name}
@@ -231,40 +262,46 @@ function Card({ cardData, onRefresh }: any) {
                                     )}
                                 </h3>
                                 <div className="space-y-2">
-                                    {grid.gridItems.map((item: any, itemIndex: number) => (
-                                        <div key={itemIndex} className="flex justify-between items-center">
-                                            <span style={{ color: item.label.color }}>
-                                                {item.label.link ? (
-                                                    <Link
-                                                        href={item.label.link}
-                                                        className="hover:underline flex items-center gap-2"
-                                                    >
-                                                        {item.label.text}
-                                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                                        </svg>
-                                                    </Link>
-                                                ) : (
-                                                    item.label.text
-                                                )}
-                                            </span>
-                                            <span style={{ color: item.value.color }}>
-                                                {item.value.link ? (
-                                                    <Link
-                                                        href={item.value.link}
-                                                        className="hover:underline flex items-center gap-2"
-                                                    >
-                                                        {item.value.text}
-                                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                                        </svg>
-                                                    </Link>
-                                                ) : (
-                                                    item.value.text
-                                                )}
-                                            </span>
-                                        </div>
-                                    ))}
+                                    {grid.gridItems.map((item: any, itemIndex: number) => {
+                                        // Determine if this grid item should have navigation
+                                        // Either from the grid itself or from the individual item
+                                        const navigateTo = item.navigateTo || grid.navigateTo;
+
+                                        return (
+                                            <div key={itemIndex} className="flex justify-between items-center">
+                                                <span style={{ color: item.label.color }}>
+                                                    {navigateTo && item.navigateTo ? (
+                                                        <Link
+                                                            href={getLinkPath(item.navigateTo)}
+                                                            className="hover:underline flex items-center gap-2"
+                                                        >
+                                                            {item.label.text}
+                                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                            </svg>
+                                                        </Link>
+                                                    ) : (
+                                                        item.label.text
+                                                    )}
+                                                </span>
+                                                <span style={{ color: item.value.color }}>
+                                                    {navigateTo && item.navigateTo ? (
+                                                        <Link
+                                                            href={getLinkPath(item.navigateTo)}
+                                                            className="hover:underline flex items-center gap-2"
+                                                        >
+                                                            {item.value.text}
+                                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                            </svg>
+                                                        </Link>
+                                                    ) : (
+                                                        item.value.text
+                                                    )}
+                                                </span>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         ))}
@@ -304,6 +341,7 @@ function Dashboard() {
                 },
                 timeout: 300000
             });
+            console.log(response.data.data.rs0, 'response.data.data.rs0');
             setDashboardData(response.data.data.rs0 || []);
             setError(false);
         } catch (error) {
