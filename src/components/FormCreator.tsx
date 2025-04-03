@@ -237,7 +237,7 @@ const FormCreator: React.FC<FormCreatorProps> = ({
                 <J_Ui>${jUi}</J_Ui>
                 <Sql>${item.dependsOn.wQuery.Sql || ''}</Sql>
                 ${Array.isArray(item.dependsOn.field) && item.dependsOn.wQuery.X_Filter_Multiple
-                    ? `<X_Filter_Multiple>${xmlFilterContent}</X_Filter_Multiple>`
+                    ? `<X_Filter_Multiple>${xmlFilterContent}</X_Filter_Multiple><X_Filter></X_Filter>`
                     : `<X_Filter>${xmlFilterContent}</X_Filter>`
                 }
                 <J_Api>${jApi}</J_Api>
