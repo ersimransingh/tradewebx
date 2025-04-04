@@ -9,7 +9,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { ACTION_NAME, PATH_URL } from '@/utils/constants';
 import { BASE_URL } from '@/utils/constants';
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
-import { fetchLastTradingDate, initializeLogin } from '@/redux/features/common/commonSlice';
+import { fetchLastTradingDate, fetchInitializeLogin } from '@/redux/features/common/commonSlice';
 
 const ReactApexChart = nextDynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -363,7 +363,7 @@ function Dashboard() {
         }
 
         if (!companyLogo) {
-            dispatch(initializeLogin());
+            dispatch(fetchInitializeLogin());
         }
     }, [dispatch, lastTradingDate, companyLogo]);
 

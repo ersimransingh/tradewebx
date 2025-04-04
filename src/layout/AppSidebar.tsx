@@ -34,7 +34,7 @@ type NavItem = {
 import { FaHome, FaCalendar, FaUser, FaList, FaTable, FaFileAlt } from 'react-icons/fa';
 import { PATH_URL } from "@/utils/constants";
 import { BASE_URL } from "@/utils/constants";
-import { initializeLogin } from "@/redux/features/common/commonSlice";
+import { fetchInitializeLogin } from "@/redux/features/common/commonSlice";
 const iconMap = {
   'home': <FaHome />,
   'area-graph': <FaTable />,
@@ -58,7 +58,7 @@ const AppSidebar: React.FC = () => {
   const menuItems = useAppSelector(selectAllMenuItems);
   const menuStatus = useAppSelector(selectMenuStatus);
   const menuError = useAppSelector(selectMenuError);
-  const { companyLogo, companyName } = useAppSelector((state) => state.common);
+  const { companyLogo, companyName, companyInfo } = useAppSelector((state) => state.common);
 
   // Font styling class for consistent typography
   const fontStyles = {
@@ -71,7 +71,7 @@ const AppSidebar: React.FC = () => {
 
   useEffect(() => {
     if (!companyLogo) {
-      dispatch(initializeLogin());
+      dispatch(fetchInitializeLogin());
     }
   }, [dispatch, companyLogo]);
 
@@ -309,14 +309,16 @@ const AppSidebar: React.FC = () => {
           }`}
       >
         <div>
-          {companyLogo && (
+          {companyInfo?.CompanyLogo && (
             <Image
-              src={companyLogo}
-              alt={companyName || "Company Logo"}
-              width={32}
-              height={32}
-              loader={({ src }) => src}
-              unoptimized
+              src={companyInfo.CompanyLogo.startsWith('data:')
+                ? companyInfo.CompanyLogo
+                : `data:image/png;base64,${companyInfo.CompanyLogo}`}
+              alt="Company Logo"
+              width={64}
+              height={64}
+              className="h-16 w-auto object-contain"
+              priority
             />
           )}
         </div>

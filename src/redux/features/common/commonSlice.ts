@@ -9,6 +9,13 @@ interface CommonState {
     companyName: string;
     status: 'idle' | 'loading' | 'succeeded' | 'failed';
     error: string | null;
+    companyInfo: {
+        CompanyCode?: string;
+        CompanyName?: string;
+        PasswordMaxLength?: number;
+        CompanyLogo?: string;
+        DPID?: string;
+    } | null;
 }
 
 const initialState: CommonState = {
@@ -18,6 +25,7 @@ const initialState: CommonState = {
     companyName: '',
     status: 'idle',
     error: null,
+    companyInfo: null,
 };
 
 // Async thunk for fetching last trading date
@@ -45,12 +53,12 @@ export const fetchLastTradingDate = createAsyncThunk(
     }
 );
 
-// Async thunk for initializing login and getting company logo
-export const initializeLogin = createAsyncThunk(
-    'common/initializeLogin',
+// Async thunk for initializing login API
+export const fetchInitializeLogin = createAsyncThunk(
+    'common/fetchInitializeLogin',
     async () => {
         const xmlData = `<dsXml>
-            <J_Ui>"ActionName":"${ACTION_NAME}", "Option":"InitializeLogin", "Level":1, "RequestFrom":"W"</J_Ui>
+            <J_Ui>"ActionName":"TradeWeb", "Option":"InitializeLogin", "Level":1, "RequestFrom":"w"</J_Ui>
             <Sql></Sql>
             <X_Filter> </X_Filter>
             <X_Data></X_Data>
@@ -58,25 +66,17 @@ export const initializeLogin = createAsyncThunk(
             <J_Api></J_Api>
         </dsXml>`;
 
-        const response = await axios.post(BASE_URL + PATH_URL, xmlData, {
+        const response = await axios.post(BASE_URL + OTP_VERIFICATION_URL, xmlData, {
             headers: {
                 'Content-Type': 'application/xml',
-                'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]}`
             }
         });
 
-        const base64Logo = response.data.data.rs0[0].CompanyLogo || '';
-        // Ensure the base64 string has the proper data URI prefix for images
-        const formattedLogo = base64Logo.startsWith('data:image')
-            ? base64Logo
-            : `data:image/png;base64,${base64Logo}`;
+        if (response.data.success && response.data.data && response.data.data.rs0 && response.data.data.rs0.length > 0) {
+            return response.data.data.rs0[0];
+        }
 
-        const appMetadata = {
-            companyLogo: formattedLogo,
-            companyName: response.data.data.rs0[0].CompanyName || ''
-        };
-        localStorage.setItem(APP_METADATA_KEY, JSON.stringify(appMetadata));
-        return appMetadata;
+        throw new Error('Invalid response format');
     }
 );
 
@@ -110,16 +110,26 @@ export const commonSlice = createSlice({
                 state.error = action.error.message || 'Failed to fetch last trading date';
             })
 
-            // Handle initializeLogin
-            .addCase(initializeLogin.pending, (state) => {
+            // Handle fetchInitializeLogin
+            .addCase(fetchInitializeLogin.pending, (state) => {
                 state.status = 'loading';
             })
-            .addCase(initializeLogin.fulfilled, (state, action) => {
+            .addCase(fetchInitializeLogin.fulfilled, (state, action) => {
                 state.status = 'succeeded';
-                state.companyLogo = action.payload.companyLogo;
-                state.companyName = action.payload.companyName;
+                state.companyInfo = action.payload;
+
+                // Also update the companyLogo and companyName for backward compatibility
+                state.companyLogo = action.payload.CompanyLogo || '';
+                state.companyName = action.payload.CompanyName ? action.payload.CompanyName.trim() : '';
+
+                // Save to localStorage for persistence
+                const appMetadata = {
+                    companyLogo: state.companyLogo,
+                    companyName: state.companyName
+                };
+                localStorage.setItem(APP_METADATA_KEY, JSON.stringify(appMetadata));
             })
-            .addCase(initializeLogin.rejected, (state, action) => {
+            .addCase(fetchInitializeLogin.rejected, (state, action) => {
                 state.status = 'failed';
                 state.error = action.error.message || 'Failed to initialize login';
             });

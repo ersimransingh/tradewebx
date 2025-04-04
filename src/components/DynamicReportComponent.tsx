@@ -9,6 +9,10 @@ import FilterModal from './FilterModal';
 import { FaSync, FaFilter, FaDownload, FaFileCsv, FaFilePdf } from 'react-icons/fa';
 import { useTheme } from '@/context/ThemeContext';
 import DataTable, { exportTableToCsv, exportTableToPdf } from './DataTable';
+import { store } from "@/redux/store";
+import { APP_METADATA_KEY } from "@/utils/constants";
+
+// const { companyLogo, companyName } = useAppSelector((state) => state.common);
 
 interface DynamicReportComponentProps {
     componentName: string;
@@ -36,6 +40,15 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
 
     const tableRef = useRef<HTMLDivElement>(null);
     const { colors, fonts } = useTheme();
+
+    const appMetadata = (() => {
+        try {
+          return JSON.parse(localStorage.getItem(APP_METADATA_KEY))
+        }catch(err) {
+          return store.getState().common
+        }
+      })();
+
 
     const findPageData = () => {
         for (const item of menuItems) {
@@ -121,6 +134,9 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
         // Return null for empty elements with no meaningful content
         return Object.keys(obj).length > 0 ? obj : null;
     }
+
+ 
+    
 
     const fetchData = async (currentFilters = filters) => {
         if (!pageData) return;
@@ -222,6 +238,14 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
             setIsLoading(false);
         }
     };
+
+
+    console.log(fetchData,'fetchData fetchData');
+    
+
+
+ 
+      
 
     // Modify handleRecordClick
     const handleRecordClick = (record: any) => {
@@ -352,10 +376,30 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                             </button>
                         ))}
                     </div>
-                    <div
-                        style={{ backgroundColor: colors.cardBackground }}
-                        className={`px-2 py-1 text-sm rounded-t-lg`}>
-                        <div className="flex gap-2">
+                    <div className="flex gap-2">
+                        <button
+                            className="p-2 rounded"
+                            onClick={() => exportTableToCsv(tableRef.current, jsonData, apiData, pageData)}
+                            style={{ color: colors.text }}
+                        >
+                            <FaFileCsv size={20} />
+                        </button>
+                        <button
+                            className="p-2 rounded"
+                            onClick={() => exportTableToPdf(tableRef.current,jsonData,appMetadata,apiData)}
+                            style={{ color: colors.text }}
+                        >
+                            <FaFilePdf size={20} />
+                        </button>
+
+                        <button
+                            className="p-2 rounded"
+                            onClick={() => fetchData()}
+                            style={{ color: colors.text }}
+                        >
+                            <FaSync size={20} />
+                        </button>
+                        {/* {pageData[0].filters && pageData[0].filters.length > 0 && (
                             <button
                                 className="p-2 rounded"
                                 onClick={() => exportTableToCsv(tableRef.current, jsonData, apiData, pageData)}
@@ -376,7 +420,8 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                 style={{ color: colors.text }}
                             >
                                 <FaSync size={20} />
-                            </button>
+                            </button> */}
+
                             {pageData[0].filters && pageData[0].filters.length > 0 && (
                                 <button
                                     className="p-2 rounded"
@@ -386,7 +431,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                     <FaFilter size={20} />
                                 </button>
                             )}
-                        </div>
+                        {/* </div> */}
                     </div>
                 </div>
             )}
