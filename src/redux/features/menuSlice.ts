@@ -44,6 +44,7 @@ type SubMenuItem = {
     pro?: boolean;
     new?: boolean;
     componentName: string;
+    componentType?: string;
     pageData?: PageData[];
 };
 
@@ -52,6 +53,7 @@ type NavItem = {
     name: string;
     icon: string;
     componentName: string;
+    componentType?: string;
     path?: string;
     subItems?: SubMenuItem[];
     pageData?: PageData[];
@@ -86,6 +88,7 @@ const convertToNavItems = (data: any): NavItem[] => {
             icon: item.icon || 'default-icon',
             name: item.title,
             componentName: item.componentName,
+            componentType: item.componentType || null,
             path: basePath,
             pageData: item.pageData
         };
@@ -95,6 +98,7 @@ const convertToNavItems = (data: any): NavItem[] => {
                 name: subItem.title,
                 path: `${basePath}/${subItem.componentName.toLowerCase().replace(/\s+/g, '-')}`,
                 componentName: subItem.componentName,
+                componentType: subItem.componentType || null,
                 pageData: subItem.pageData,
                 pro: false,
                 new: false

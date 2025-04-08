@@ -603,184 +603,184 @@ export const exportTableToCsv = (
 
 
 
-export const exportTableToPdf = async (
-    gridEl: HTMLDivElement | null,
-    jsonData: any,
-    appMetadata: any,
-    allData: any[],
-) => {
-    if (!gridEl) return;
+// export const exportTableToPdf = async (
+//     gridEl: HTMLDivElement | null,
+//     jsonData: any,
+//     appMetadata: any,
+//     allData: any[],
+// ) => {
+//     if (!gridEl) return;
 
-    try {
-        console.log(jsonData, 'jsonData jsonData');
+//     try {
+//         console.log(jsonData, 'jsonData jsonData');
 
-        const { head, foot } = getGridContent(gridEl);
+//         const { head, foot } = getGridContent(gridEl);
 
-        // Prepare table body with proper formatting
-        const body = allData.map(row => {
-            return Object.keys(row).map(key => {
-                const value = row[key];
+//         // Prepare table body with proper formatting
+//         const body = allData.map(row => {
+//             return Object.keys(row).map(key => {
+//                 const value = row[key];
 
-                // Handle date formatting
-                if (key.toLowerCase() === 'date') {
-                    return value ? moment(value).format('DD-MM-YYYY') : '';
-                }
+//                 // Handle date formatting
+//                 if (key.toLowerCase() === 'date') {
+//                     return value ? moment(value).format('DD-MM-YYYY') : '';
+//                 }
 
-                // Handle numeric fields
-                if (['debit', 'credit', 'balance'].includes(key.toLowerCase())) {
-                    const numValue = typeof value === 'string'
-                        ? parseFloat(value.replace(/,/g, ''))
-                        : Number(value);
-                    return isNaN(numValue) ? '0.00' : numValue.toFixed(2);
-                }
+//                 // Handle numeric fields
+//                 if (['debit', 'credit', 'balance'].includes(key.toLowerCase())) {
+//                     const numValue = typeof value === 'string'
+//                         ? parseFloat(value.replace(/,/g, ''))
+//                         : Number(value);
+//                     return isNaN(numValue) ? '0.00' : numValue.toFixed(2);
+//                 }
 
-                return value !== null && value !== undefined ? String(value) : '';
-            });
-        });
+//                 return value !== null && value !== undefined ? String(value) : '';
+//             });
+//         });
 
-        // ✅ Attach foot row directly inside the body (only on the last page)
-        if (foot && foot.length > 0) {
-            body.push(...foot);
-        }
+//         // ✅ Attach foot row directly inside the body (only on the last page)
+//         if (foot && foot.length > 0) {
+//             body.push(...foot);
+//         }
 
-        const [{ jsPDF }, { default: autoTable }] = await Promise.all([
-            import('jspdf'),
-            import('jspdf-autotable')
-        ]);
+//         const [{ jsPDF }, { default: autoTable }] = await Promise.all([
+//             import('jspdf'),
+//             import('jspdf-autotable')
+//         ]);
 
-        const doc = new jsPDF({
-            orientation: 'landscape',
-            unit: 'px',
-            format: [800, 600]
-        });
+//         const doc = new jsPDF({
+//             orientation: 'landscape',
+//             unit: 'px',
+//             format: [800, 600]
+//         });
 
-        const pageWidth = doc.internal.pageSize.getWidth();
-        let textY = 20;
+//         const pageWidth = doc.internal.pageSize.getWidth();
+//         let textY = 20;
 
-        // Add company logo if available
-        if (appMetadata?.companyLogo) {
-            doc.addImage(appMetadata.companyLogo, 'JPEG', 20, 15, 50, 20);
-        }
+//         // Add company logo if available
+//         if (appMetadata?.companyLogo) {
+//             doc.addImage(appMetadata.companyLogo, 'JPEG', 20, 15, 50, 20);
+//         }
 
-        // Add company name
-        doc.setFontSize(14);
-        doc.setFont('helvetica', 'bold');
-        if (jsonData.CompanyName?.[0]) {
-            const companyName = jsonData.CompanyName[0].trim();
-            const companyNameWidth = doc.getTextWidth(companyName);
-            doc.text(companyName, (pageWidth - companyNameWidth) / 2, textY);
-        }
-        textY += 15;
+//         // Add company name
+//         doc.setFontSize(14);
+//         doc.setFont('helvetica', 'bold');
+//         if (jsonData.CompanyName?.[0]) {
+//             const companyName = jsonData.CompanyName[0].trim();
+//             const companyNameWidth = doc.getTextWidth(companyName);
+//             doc.text(companyName, (pageWidth - companyNameWidth) / 2, textY);
+//         }
+//         textY += 15;
 
-        // Process report header
-        if (jsonData.ReportHeader?.[0]) {
-            const reportHeaderLines = jsonData.ReportHeader[0].split(/\\n|\n/);
-            doc.setFontSize(12);
-            doc.setFont('helvetica', 'normal');
+//         // Process report header
+//         if (jsonData.ReportHeader?.[0]) {
+//             const reportHeaderLines = jsonData.ReportHeader[0].split(/\\n|\n/);
+//             doc.setFontSize(12);
+//             doc.setFont('helvetica', 'normal');
 
-            reportHeaderLines.forEach(line => {
-                if (line.trim()) {
-                    const lineWidth = doc.getTextWidth(line);
-                    doc.text(line, (pageWidth - lineWidth) / 2, textY);
-                    textY += 10;
-                }
-            });
-        }
-        textY += 10;
+//             reportHeaderLines.forEach(line => {
+//                 if (line.trim()) {
+//                     const lineWidth = doc.getTextWidth(line);
+//                     doc.text(line, (pageWidth - lineWidth) / 2, textY);
+//                     textY += 10;
+//                 }
+//             });
+//         }
+//         textY += 10;
 
-        // Get right-aligned columns from jsonData.RightList
-        const rightAlignedColumns = jsonData.RightList?.[0]?.filter(Boolean) || [];
+//         // Get right-aligned columns from jsonData.RightList
+//         const rightAlignedColumns = jsonData.RightList?.[0]?.filter(Boolean) || [];
 
-        // Create column styles dynamically based on RightList
-        const columnStyles = {};
-        if (head && head[0]) {
-            head[0].forEach((col, index) => {
-                columnStyles[index] = { halign: rightAlignedColumns.includes(col) ? 'right' : 'left', cellPadding: 4 };
-                if (col === 'Flag') {
-                    columnStyles[index] = { halign: 'center', cellPadding: 4 };
-                }
-            });
-        }
+//         // Create column styles dynamically based on RightList
+//         const columnStyles = {};
+//         if (head && head[0]) {
+//             head[0].forEach((col, index) => {
+//                 columnStyles[index] = { halign: rightAlignedColumns.includes(col) ? 'right' : 'left', cellPadding: 4 };
+//                 if (col === 'Flag') {
+//                     columnStyles[index] = { halign: 'center', cellPadding: 4 };
+//                 }
+//             });
+//         }
 
-        let finalY = textY;
+//         let finalY = textY;
 
-        // ✅ Generate the table INCLUDING the total row in `body`
-        autoTable(doc, {
-            head,
-            body,  // **Foot row is now inside body**
-            startY: textY,
-            margin: { top: 10, horizontal: 20 },
-            styles: {
-                fontSize: 10,
-                cellPadding: 4,
-                lineColor: [0, 0, 0],
-                lineWidth: 0.2,
-                valign: 'middle',
-                halign: 'left'
-            },
-            headStyles: {
-                fillColor: [255, 255, 255],  // White background for header
-                textColor: [0, 0, 0],
-                fontStyle: 'bold',
-                lineWidth: 0.3
-            },
-            columnStyles,
-            tableWidth: 'auto',
+//         // ✅ Generate the table INCLUDING the total row in `body`
+//         autoTable(doc, {
+//             head,
+//             body,  // **Foot row is now inside body**
+//             startY: textY,
+//             margin: { top: 10, horizontal: 20 },
+//             styles: {
+//                 fontSize: 10,
+//                 cellPadding: 4,
+//                 lineColor: [0, 0, 0],
+//                 lineWidth: 0.2,
+//                 valign: 'middle',
+//                 halign: 'left'
+//             },
+//             headStyles: {
+//                 fillColor: [255, 255, 255],  // White background for header
+//                 textColor: [0, 0, 0],
+//                 fontStyle: 'bold',
+//                 lineWidth: 0.3
+//             },
+//             columnStyles,
+//             tableWidth: 'auto',
 
-            // ✅ Apply blue color to the last row (total row)
-            didParseCell: (data) => {
-                if (data.row.index === body.length - 1) {
-                    data.cell.styles.fillColor = [173, 216, 230];  // Light Blue (RGB)
-                    data.cell.styles.textColor = [0, 0, 139];      // Dark Blue text
-                    data.cell.styles.fontStyle = 'bold';           // Bold text for total
-                }
-            },
+//             // ✅ Apply blue color to the last row (total row)
+//             didParseCell: (data) => {
+//                 if (data.row.index === body.length - 1) {
+//                     data.cell.styles.fillColor = [173, 216, 230];  // Light Blue (RGB)
+//                     data.cell.styles.textColor = [0, 0, 139];      // Dark Blue text
+//                     data.cell.styles.fontStyle = 'bold';           // Bold text for total
+//                 }
+//             },
 
-            didDrawPage: (data) => {
-                finalY = data.cursor.y; // Track last printed row position
-            }
-        });
-
-
-        let totalPages = 0;
-        try {
-            totalPages = doc.internal.pages.length;
-        } catch (error) {
-            console.error("Error getting number of pages:", error);
-            totalPages = 1; // Default to 1 page
-        }
-
-        // Add footer
-        // const totalPages = doc.internal.getNumberOfPages();
-        console.log(totalPages, 'totalPages');
-
-        const now = new Date();
-        const formattedDate = now.toLocaleDateString('en-GB', {
-            day: '2-digit',
-            month: '2-digit',
-            year: '2-digit'
-        }).replace(/\//g, '-');
-        const formattedTime = now.toLocaleTimeString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true
-        });
-
-        for (let i = 1; i <= totalPages; i++) {
-            doc.setPage(i);
-            doc.setFontSize(10);
-            doc.text(`Print Date: ${formattedDate} ${formattedTime}`, 20, doc.internal.pageSize.getHeight() - 15);
-
-            const appName = appMetadata?.applicationName || '';
-            doc.text(`${ACTION_NAME}[Page ${i} of ${totalPages}]`, pageWidth - 100, doc.internal.pageSize.getHeight() - 15);
-        }
+//             didDrawPage: (data) => {
+//                 finalY = data.cursor.y; // Track last printed row position
+//             }
+//         });
 
 
-        doc.save('TradingDetails.pdf');
-    } catch (error) {
-        console.error('Error exporting to PDF:', error);
-    }
-};
+//         let totalPages = 0;
+//         try {
+//             totalPages = doc.internal.pages.length;
+//         } catch (error) {
+//             console.error("Error getting number of pages:", error);
+//             totalPages = 1; // Default to 1 page
+//         }
+
+//         // Add footer
+//         // const totalPages = doc.internal.getNumberOfPages();
+//         console.log(totalPages, 'totalPages');
+
+//         const now = new Date();
+//         const formattedDate = now.toLocaleDateString('en-GB', {
+//             day: '2-digit',
+//             month: '2-digit',
+//             year: '2-digit'
+//         }).replace(/\//g, '-');
+//         const formattedTime = now.toLocaleTimeString('en-US', {
+//             hour: '2-digit',
+//             minute: '2-digit',
+//             hour12: true
+//         });
+
+//         for (let i = 1; i <= totalPages; i++) {
+//             doc.setPage(i);
+//             doc.setFontSize(10);
+//             doc.text(`Print Date: ${formattedDate} ${formattedTime}`, 20, doc.internal.pageSize.getHeight() - 15);
+
+//             const appName = appMetadata?.applicationName || '';
+//             doc.text(`${ACTION_NAME}[Page ${i} of ${totalPages}]`, pageWidth - 100, doc.internal.pageSize.getHeight() - 15);
+//         }
+
+
+//         doc.save('TradingDetails.pdf');
+//     } catch (error) {
+//         console.error('Error exporting to PDF:', error);
+//     }
+// };
 
 
 export default DataTable; 

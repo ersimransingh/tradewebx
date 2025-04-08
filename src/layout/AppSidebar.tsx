@@ -317,7 +317,7 @@ const AppSidebar: React.FC = () => {
               alt="Company Logo"
               width={64}
               height={64}
-              className="h-16 w-auto object-contain"
+              className="h-6 w-auto object-contain"
               priority
             />
           )}

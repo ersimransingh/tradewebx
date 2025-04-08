@@ -14,11 +14,11 @@ import { APP_METADATA_KEY } from "@/utils/constants";
 
 // const { companyLogo, companyName } = useAppSelector((state) => state.common);
 
-interface DynamicReportComponentProps {
+interface DynamicEntryComponentProps {
     componentName: string;
 }
 
-const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ componentName }) => {
+const DynamicEntryComponent: React.FC<DynamicEntryComponentProps> = ({ componentName }) => {
     const menuItems = useAppSelector(selectAllMenuItems);
     const [currentLevel, setCurrentLevel] = useState(0);
     const [apiData, setApiData] = useState<any>(null);
@@ -68,6 +68,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
     };
 
     const pageData: any = findPageData();
+    console.log('pageData', pageData);
     // Helper functions for parsing XML settings
     const parseXmlList = (xmlString: string, tag: string): string[] => {
         const regex = new RegExp(`<${tag}>(.*?)</${tag}>`, 'g');
@@ -173,6 +174,11 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                 });
             }
 
+            console.log('Final filter XML:', filterXml);
+            console.log('Has Filters:', hasFilters);
+            console.log('Filters Initialized:', areFiltersInitialized);
+            console.log('Current Filters:', currentFilters);
+
             const xmlData = `<dsXml>
                 <J_Ui>${JSON.stringify(pageData[0].levels[currentLevel].J_Ui).slice(1, -1)}</J_Ui>
                 <Sql>${pageData[0].Sql || ''}</Sql>
@@ -181,6 +187,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                 <J_Api>"UserId":"${localStorage.getItem('userId')}", "UserType":"${localStorage.getItem('userType')}"</J_Api>
             </dsXml>`;
 
+            console.log('Request XML:', xmlData);
 
             const response = await axios.post(BASE_URL + PATH_URL, xmlData, {
                 headers: {
@@ -223,6 +230,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                     headings: parseHeadings(xmlString)
                 };
 
+                // console.log('Settings JSON:', xmlString);
                 const json = convertXmlToJson(xmlString);
                 setJsonData(json);
                 setRs1Settings(settingsJson);
@@ -249,6 +257,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
 
     // Modify handleRecordClick
     const handleRecordClick = (record: any) => {
+        console.log('Record clicked:', record);
 
         if (currentLevel < (pageData?.[0].levels.length || 0) - 1) {
             // Get primary key from the current level's primaryHeaderKey or fallback to rs1Settings
@@ -256,12 +265,16 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                 rs1Settings?.primaryKey ||
                 'id';
 
+            console.log('Primary key:', primaryKey);
+            console.log('Record value:', record[primaryKey]);
+
             // Set primary key filters based on the clicked record
             setPrimaryKeyFilters(prev => {
                 const newFilters = {
                     ...prev,
                     [primaryKey]: record[primaryKey]
                 };
+                console.log('New primary key filters:', newFilters);
                 return newFilters;
             });
 
@@ -284,6 +297,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
 
     // Modified filter change handler
     const handleFilterChange = (newFilters: Record<string, any>) => {
+        console.log('New filters received from modal:', newFilters);
         setFilters(newFilters);
         fetchData(newFilters); // Call API with new filters
     };
@@ -328,6 +342,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                 });
             });
 
+            console.log('Setting default filters:', defaultFilters);
             setFilters(defaultFilters);
             setAreFiltersInitialized(true);
         } else {
@@ -399,39 +414,15 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                         >
                             <FaSync size={20} />
                         </button>
-                        {/* {pageData[0].filters && pageData[0].filters.length > 0 && (
+                        {pageData[0].filters && pageData[0].filters.length > 0 && (
                             <button
                                 className="p-2 rounded"
-                                onClick={() => exportTableToCsv(tableRef.current, jsonData, apiData, pageData)}
+                                onClick={() => setIsFilterModalOpen(true)}
                                 style={{ color: colors.text }}
                             >
-                                <FaFileCsv size={20} />
+                                <FaFilter size={20} />
                             </button>
-                            <button
-                                className="p-2 rounded"
-                                onClick={() => exportTableToPdf(tableRef.current)}
-                                style={{ color: colors.text }}
-                            >
-                                <FaFilePdf size={20} />
-                            </button>
-                            <button
-                                className="p-2 rounded"
-                                onClick={() => fetchData()}
-                                style={{ color: colors.text }}
-                            >
-                                <FaSync size={20} />
-                            </button> */}
-
-                            {pageData[0].filters && pageData[0].filters.length > 0 && (
-                                <button
-                                    className="p-2 rounded"
-                                    onClick={() => setIsFilterModalOpen(true)}
-                                    style={{ color: colors.text }}
-                                >
-                                    <FaFilter size={20} />
-                                </button>
-                            )}
-                        {/* </div> */}
+                        )}
                     </div>
                 </div>
             )}
@@ -508,4 +499,4 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
     );
 };
 
-export default DynamicReportComponent; 
+export default DynamicEntryComponent; 

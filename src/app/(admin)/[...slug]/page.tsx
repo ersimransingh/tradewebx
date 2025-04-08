@@ -3,9 +3,12 @@ import React from "react";
 import Dashboard from "@/apppages/Dashboard";
 import LogoutPage from "../(auth)/logout/page";
 import DynamicReportComponent from "@/components/DynamicReportComponent";
+import DynamicEntryComponent from "@/components/DynamicEntryComponent";
 import ChangePassword from "@/apppages/ChangePassword";
 import ThemePage from "@/apppages/ThemePage";
 import Downloads from "@/apppages/Downloads";
+import { useAppSelector } from "@/redux/hooks";
+import { selectAllMenuItems } from "@/redux/features/menuSlice";
 
 // Define static route components
 const staticRoutes: Record<string, React.ReactNode> = {
@@ -41,5 +44,35 @@ export default function DynamicPage({ params }: { params: any | Promise<any> }) 
     .map((part: string) => part.charAt(0).toUpperCase() + part.slice(1))
     .join("");
 
-  return <DynamicReportComponent componentName={formattedComponentName} />;
+  return <DynamicComponentRenderer componentName={formattedComponentName} />;
+}
+
+// Client component that determines whether to show report or entry view
+function DynamicComponentRenderer({ componentName }: { componentName: string }) {
+  const menuItems = useAppSelector(selectAllMenuItems);
+
+  // Find the component in menu items and check its type
+  const findComponentType = (items: any[]): string | undefined => {
+    for (const item of items) {
+      if (item.componentName?.toLowerCase() === componentName.toLowerCase()) {
+        return item.componentType;
+      }
+
+      if (item.subItems) {
+        for (const subItem of item.subItems) {
+          if (subItem.componentName?.toLowerCase() === componentName.toLowerCase()) {
+            return subItem.componentType;
+          }
+        }
+      }
+    }
+    return undefined;
+  };
+
+  const componentType = findComponentType(menuItems);
+
+  // Show entry component if componentType is 'entry', otherwise show report component
+  return componentType === 'entry'
+    ? <DynamicEntryComponent componentName={componentName} />
+    : <DynamicReportComponent componentName={componentName} />;
 }
