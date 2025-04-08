@@ -10,6 +10,9 @@ import { ACTION_NAME } from '@/utils/constants';
 // import jsPDF from 'jspdf';
 // import autoTable from 'jspdf-autotable';
 // import moment from 'moment';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
+import dayjs from 'dayjs';
 
 interface DataTableProps {
     data: any[];
@@ -486,6 +489,183 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
         </div>
     );
 };
+
+const convertBmpToPng = (bmpBase64: string): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = image.width;
+            canvas.height = image.height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return reject('Canvas context is null');
+            ctx.drawImage(image, 0, 0);
+            const pngBase64 = canvas.toDataURL('image/png');
+            resolve(pngBase64);
+        };
+        image.onerror = reject;
+        image.src = 'data:image/bmp;base64,' + bmpBase64;
+    });
+};
+
+export const exportTableToExcel = async (
+    gridEl: HTMLDivElement | null,
+    headerData: any,
+    apiData: any,
+    pageData: any,
+    appMetadata: any
+) => {
+    if (!apiData || apiData.length === 0) return;
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Report');
+
+    const levelData = pageData[0]?.levels[0] || {};
+    const settings = levelData.settings || {};
+    const columnsToShowTotal = levelData.summary?.columnsToShowTotal || [];
+    // const dateFormatMap: Record<string, string> = {};
+
+    // (settings.dateFormat || []).forEach((df: { key: string; format: string }) => {
+    //     const normKey = df.key.replace(/\s+/g, '');
+    //     dateFormatMap[normKey] = df.format;
+    // });
+
+    const dateFormatMap: Record<string, string> = {};
+
+    const dateFormatSetting = settings.dateFormat;
+    if (Array.isArray(dateFormatSetting)) {
+        dateFormatSetting.forEach((df: { key: string; format: string }) => {
+            const normKey = df.key.replace(/\s+/g, '');
+            dateFormatMap[normKey] = df.format;
+        });
+    } else if (typeof dateFormatSetting === 'object' && dateFormatSetting !== null) {
+        const normKey = dateFormatSetting.key.replace(/\s+/g, '');
+        dateFormatMap[normKey] = dateFormatSetting.format;
+    }
+
+
+    const companyName = headerData.CompanyName?.[0] || "Company Name";
+    const reportHeader = headerData.ReportHeader?.[0] || "Report Header";
+    const rightList: string[] = headerData.RightList?.[0] || [];
+    const normalizedRightList = rightList.map(k => k.replace(/\s+/g, ''));
+
+    let [fileTitle] = reportHeader.split("From Date");
+    fileTitle = fileTitle?.trim() || "Report";
+
+    const headers = Object.keys(apiData[0] || {});
+    const hiddenColumns = settings.hideEntireColumn?.split(",") || [];
+    const filteredHeaders = headers.filter(header => !hiddenColumns.includes(header.trim()));
+
+    const decimalColumnsMap: Record<string, number> = {};
+    (settings.decimalColumns || []).forEach((col: { key: string; decimalPlaces: number }) => {
+        const columnKeys = col.key.split(",").map(k => k.trim().replace(/\s+/g, ''));
+        columnKeys.forEach(key => {
+            if (key) decimalColumnsMap[key] = col.decimalPlaces;
+        });
+    });
+
+    const totals: Record<string, number> = {};
+    const totalLabels: Record<string, string> = {};
+    columnsToShowTotal.forEach(({ key, label }: { key: string; label: string }) => {
+        const normKey = key.replace(/\s+/g, '');
+        totals[normKey] = 0;
+        totalLabels[normKey] = label;
+    });
+
+    // Convert BMP to PNG and add logo
+    const bmpBase64 = appMetadata.companyLogo;
+    const pngBase64 = await convertBmpToPng(bmpBase64);
+    const imageId = workbook.addImage({ base64: pngBase64, extension: 'png' });
+    worksheet.addImage(imageId, { tl: { col: 0, row: 0 }, ext: { width: 150, height: 80 } });
+
+    let rowCursor = 1;
+
+    worksheet.getCell(`D${rowCursor}`).value = companyName;
+    worksheet.getCell(`D${rowCursor}`).font = { bold: true };
+    rowCursor++;
+
+    reportHeader.split("\\n").forEach(line => {
+        worksheet.getCell(`D${rowCursor}`).value = line.trim();
+        rowCursor++;
+    });
+
+    rowCursor++;
+
+    // Header Row
+    const headerRow = worksheet.getRow(rowCursor);
+    filteredHeaders.forEach((header, colIdx) => {
+        const normKey = header.replace(/\s+/g, '');
+        const cell = headerRow.getCell(colIdx + 1);
+        cell.value = header;
+        cell.alignment = { horizontal: normalizedRightList.includes(normKey) ? 'right' : 'left' };
+        cell.font = { bold: true };
+    });
+    headerRow.commit();
+    rowCursor++;
+
+    // Data Rows
+    apiData.forEach(row => {
+        const currentRow = worksheet.getRow(rowCursor);
+
+        filteredHeaders.forEach((header, colIdx) => {
+            const normKey = header.replace(/\s+/g, '');
+            const originalKey = Object.keys(row).find(k => k.replace(/\s+/g, '') === normKey);
+            let value = originalKey ? row[originalKey] : "";
+
+            // Format decimals
+            if (decimalColumnsMap[normKey] !== undefined && !isNaN(parseFloat(value))) {
+                const fixed = parseFloat(value).toFixed(decimalColumnsMap[normKey]);
+                if (totals.hasOwnProperty(normKey)) {
+                    totals[normKey] += parseFloat(fixed);
+                }
+                value = fixed;
+            }
+
+            // Format date
+            if (dateFormatMap[normKey] && value) {
+                value = dayjs(value).format(dateFormatMap[normKey]);
+            }
+
+            const cell = currentRow.getCell(colIdx + 1);
+            cell.value = isNaN(value) || typeof value === 'string' ? value : Number(value);
+            cell.alignment = {
+                horizontal: normalizedRightList.includes(normKey) ? 'right' : 'left'
+            };
+        });
+
+        currentRow.commit();
+        rowCursor++;
+    });
+
+    // Total Row
+    const totalRow = worksheet.getRow(rowCursor);
+    filteredHeaders.forEach((header, colIdx) => {
+        const normKey = header.replace(/\s+/g, '');
+        const cell = totalRow.getCell(colIdx + 1);
+
+        if (colIdx === 0) {
+            cell.value = 'Total';
+        } else if (totals.hasOwnProperty(normKey)) {
+            cell.value = totals[normKey].toFixed(decimalColumnsMap[normKey] ?? 0);
+        } else {
+            cell.value = '';
+        }
+
+        cell.alignment = {
+            horizontal: normalizedRightList.includes(normKey) ? 'right' : 'left'
+        };
+        cell.font = { bold: true };
+    });
+    totalRow.commit();
+
+    // Export file
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    });
+    saveAs(blob, `${fileTitle.replace(/[^a-zA-Z0-9]/g, "_")}.xlsx`);
+};
+
 export const exportTableToCsv = (
     gridEl: HTMLDivElement | null,
     headerData: any,
@@ -498,23 +678,16 @@ export const exportTableToCsv = (
     const settings = levelData.settings || {};
     const columnsToShowTotal = levelData.summary?.columnsToShowTotal || [];
 
-    // Extract report details
     const companyName = headerData.CompanyName?.[0] || "Company Name";
     const reportHeader = headerData.ReportHeader?.[0] || "Report Header";
-
-    // Split Report Header before "From Date"
     let [fileTitle] = reportHeader.split("From Date");
-    fileTitle = fileTitle?.trim() || "Report"; // Fallback title
+    fileTitle = fileTitle?.trim() || "Report";
 
-    // **1. Get all available headers from API data**
     const headers = Object.keys(apiData[0] || {});
-
-    // **2. Remove columns mentioned in hideEntireColumn**
     const hiddenColumns = settings.hideEntireColumn?.split(",") || [];
     const filteredHeaders = headers.filter(header => !hiddenColumns.includes(header.trim()));
 
-    // **3. Decimal Formatting Logic (Bind Dynamically)**
-
+    // Decimal formatting map
     const decimalColumnsMap: Record<string, number> = {};
     settings.decimalColumns?.forEach((col: { key: string; decimalPlaces: number }) => {
         const columnKeys = col.key.split(",").map(k => k.trim());
@@ -523,26 +696,45 @@ export const exportTableToCsv = (
         });
     });
 
-    // **4. Initialize totals (only for columns in columnsToShowTotal)**
+    // Total tracking
     const totals: Record<string, number> = {};
     const totalLabels: Record<string, string> = {};
-
     columnsToShowTotal.forEach(({ key, label }: { key: string; label: string }) => {
         totals[key] = 0;
         totalLabels[key] = label;
     });
 
-    // **5. Prepare table body rows with decimal formatting & total calculation**
+    // Date format map
+    const dateFormatMap: Record<string, string> = {};
+    const dateFormatSetting = settings.dateFormat;
 
+    if (Array.isArray(dateFormatSetting)) {
+        dateFormatSetting.forEach((df: { key: string; format: string }) => {
+            const normKey = df.key?.replace(/\s+/g, '');
+            if (normKey) dateFormatMap[normKey] = df.format;
+        });
+    } else if (typeof dateFormatSetting === 'object' && dateFormatSetting !== null) {
+        const normKey = dateFormatSetting.key?.replace(/\s+/g, '');
+        if (normKey) dateFormatMap[normKey] = dateFormatSetting.format;
+    }
+
+    // Table body
     const bodyRows = apiData.map(row =>
         filteredHeaders.map(header => {
+            const normKey = header.replace(/\s+/g, '');
             let value = row[header] ?? "";
 
-            // Apply decimal formatting if needed
-            if (decimalColumnsMap[header] && !isNaN(parseFloat(value))) {
-                value = parseFloat(value).toFixed(decimalColumnsMap[header]);
+            // Apply date format
+            if (dateFormatMap[normKey] && value) {
+                const parsed = dayjs(value);
+                if (parsed.isValid()) {
+                    value = parsed.format(dateFormatMap[normKey]);
+                }
+            }
 
-                // Add to total if the column is in columnsToShowTotal
+            // Decimal formatting
+            if (decimalColumnsMap[header] !== undefined && !isNaN(parseFloat(value))) {
+                value = parseFloat(value).toFixed(decimalColumnsMap[header]);
                 if (totals.hasOwnProperty(header)) {
                     totals[header] += parseFloat(value);
                 }
@@ -552,28 +744,26 @@ export const exportTableToCsv = (
         }).join(',')
     );
 
-
-    // **6. Format total row (only for selected columns)**
+    // Total row
     const totalRow = filteredHeaders.map(header => {
         if (totals[header] !== undefined) {
-            return `"${totals[header].toFixed(decimalColumnsMap[header] || 0)}"`; // Apply decimals if specified
+            return `"${totals[header].toFixed(decimalColumnsMap[header] || 0)}"`; 
         }
-        return '""'; // Empty for non-numeric columns
+        return '""';
     }).join(',');
 
-    // **7. Center Company Name in CSV**
+    // Centered company name
     const startColumnIndex = 1;
     const centerText = (text: string, columnWidth: number) => {
         const padding = Math.max(0, Math.floor((columnWidth - text.length) / 2));
         return `${' '.repeat(padding)}${text}${' '.repeat(padding)}`;
     };
-
     const formattedCompanyName = [
-        ...Array(startColumnIndex).fill('""'), // Empty columns for shifting to column E
+        ...Array(startColumnIndex).fill('""'),
         `"${centerText(companyName, 20)}"`
     ].join(',');
 
-    // **8. Handle multiline Report Header**
+    // Multiline Report Header
     const reportHeaderLines = reportHeader.split("\\n").map(line =>
         [
             ...Array(startColumnIndex).fill('""'),
@@ -581,20 +771,18 @@ export const exportTableToCsv = (
         ].join(',')
     );
 
-    // **9. Prepare CSV content**
+    // Compose CSV content
     const csvContent = [
-        formattedCompanyName,   // Line 1: Company Name (Centered)
-        ...reportHeaderLines,   // Line 2+: Report Header (Shifted)
-        '',                     // Empty row for spacing
-        filteredHeaders.map(header => `"${header}"`).join(','), // Table Header
-        ...bodyRows,            // Table Data
-        totalRow                // Total Row at the End
+        formattedCompanyName,
+        ...reportHeaderLines,
+        '',
+        filteredHeaders.map(header => `"${header}"`).join(','),
+        ...bodyRows,
+        totalRow
     ].join('\n');
 
-    // **10. Construct the filename dynamically**
+    // Download CSV
     const filename = `${fileTitle.replace(/[^a-zA-Z0-9]/g, "_")}.csv`;
-
-    // **11. Download CSV file**
     downloadFile(
         filename,
         new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })

@@ -6,9 +6,9 @@ import axios from 'axios';
 import { BASE_URL, PATH_URL } from '@/utils/constants';
 import moment from 'moment';
 import FilterModal from './FilterModal';
-import { FaSync, FaFilter, FaDownload, FaFileCsv, FaFilePdf } from 'react-icons/fa';
+import { FaSync, FaFilter, FaDownload, FaFileCsv, FaFilePdf, FaFileExcel } from 'react-icons/fa';
 import { useTheme } from '@/context/ThemeContext';
-import DataTable, { exportTableToCsv } from './DataTable';
+import DataTable, { exportTableToCsv, exportTableToExcel } from './DataTable';
 import { store } from "@/redux/store";
 import { APP_METADATA_KEY } from "@/utils/constants";
 
@@ -379,6 +379,13 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                     <div className="flex gap-2">
                         <button
                             className="p-2 rounded"
+                            onClick={() => exportTableToExcel(tableRef.current, jsonData, apiData, pageData, appMetadata)}
+                            style={{ color: colors.text }}
+                        >
+                            <FaFileExcel size={20} />
+                        </button>
+                        <button
+                            className="p-2 rounded"
                             onClick={() => exportTableToCsv(tableRef.current, jsonData, apiData, pageData)}
                             style={{ color: colors.text }}
                         >
@@ -422,15 +429,15 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                 <FaSync size={20} />
                             </button> */}
 
-                            {pageData[0].filters && pageData[0].filters.length > 0 && (
-                                <button
-                                    className="p-2 rounded"
-                                    onClick={() => setIsFilterModalOpen(true)}
-                                    style={{ color: colors.text }}
-                                >
-                                    <FaFilter size={20} />
-                                </button>
-                            )}
+                        {pageData[0].filters && pageData[0].filters.length > 0 && (
+                            <button
+                                className="p-2 rounded"
+                                onClick={() => setIsFilterModalOpen(true)}
+                                style={{ color: colors.text }}
+                            >
+                                <FaFilter size={20} />
+                            </button>
+                        )}
                         {/* </div> */}
                     </div>
                 </div>
