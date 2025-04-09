@@ -132,6 +132,7 @@ const AppSidebar: React.FC = () => {
               }}
             >
               <span
+                className="flex items-center justify-center w-6 h-6"
                 style={{
                   color: openSubmenu?.type === menuType && openSubmenu?.index === index
                     ? colors.buttonText
@@ -168,6 +169,7 @@ const AppSidebar: React.FC = () => {
                 }}
               >
                 <span
+                  className="flex items-center justify-center w-6 h-6"
                   style={{
                     color: isActive(nav.path) ? colors.buttonText : colors.text
                   }}
