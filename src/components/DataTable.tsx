@@ -5,7 +5,6 @@ import 'react-data-grid/lib/styles.css';
 import { useTheme } from '@/context/ThemeContext';
 import { useAppSelector } from '@/redux/hooks';
 import { RootState } from '@/redux/store';
-import moment from 'moment';
 import { ACTION_NAME } from '@/utils/constants';
 // import jsPDF from 'jspdf';
 // import autoTable from 'jspdf-autotable';
@@ -13,6 +12,9 @@ import { ACTION_NAME } from '@/utils/constants';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import dayjs from 'dayjs';
+import pdfMake from 'pdfmake/build/pdfmake';
+import pdfFonts from 'pdfmake/build/vfs_fonts';
+import moment from 'moment';
 
 interface DataTableProps {
     data: any[];
@@ -790,185 +792,191 @@ export const exportTableToCsv = (
 };
 
 
+// pdfMake.vfs = pdfFonts?.pdfMake?.vfs;
+pdfMake.vfs = pdfFonts.vfs;
+export const exportTableToPdf = async (
+    gridEl: HTMLDivElement | null,
+    jsonData: any,
+    appMetadata: any,
+    allData: any[],
+    pageData: any
+) => {
+    if (!allData || allData.length === 0) return;
 
-// export const exportTableToPdf = async (
-//     gridEl: HTMLDivElement | null,
-//     jsonData: any,
-//     appMetadata: any,
-//     allData: any[],
-// ) => {
-//     if (!gridEl) return;
+    const decimalSettings = pageData[0]?.levels?.[0]?.settings?.decimalColumns || [];
+    const columnsToHide = pageData[0]?.levels?.[0]?.settings?.hideEntireColumn?.split(',') || [];
+    const totalColumns = pageData[0]?.levels?.[0]?.summary?.columnsToShowTotal || [];
 
-//     try {
-//         console.log(jsonData, 'jsonData jsonData');
+    const decimalMap: Record<string, number> = {};
+    decimalSettings.forEach(({ key, decimalPlaces }: any) => {
+        key.split(',').forEach((k: string) => {
+            const cleanKey = k.trim();
+            if (cleanKey) decimalMap[cleanKey] = decimalPlaces;
+        });
+    });
 
-//         const { head, foot } = getGridContent(gridEl);
+    console.log(jsonData)
+    const headers = Object.keys(allData[0]).filter(key => !columnsToHide.includes(key));
+    const rightAlignedKeys: string[] = jsonData?.RightList?.[0] || [];
 
-//         // Prepare table body with proper formatting
-//         const body = allData.map(row => {
-//             return Object.keys(row).map(key => {
-//                 const value = row[key];
+    const reportHeader = (jsonData?.ReportHeader?.[0] || '').replace(/\\n/g, '\n');
+    let fileTitle = 'Report';
+    let dateRange = '';
+    let clientName = '';
+    let clientCode = '';
 
-//                 // Handle date formatting
-//                 if (key.toLowerCase() === 'date') {
-//                     return value ? moment(value).format('DD-MM-YYYY') : '';
-//                 }
+    if (reportHeader.includes('From Date')) {
+        const [left, right] = reportHeader.split('From Date');
+        fileTitle = left.trim();
+        const [range, clientLine] = right.split('\n');
+        dateRange = `From Date${range?.trim() ? ' ' + range.trim() : ''}`;
 
-//                 // Handle numeric fields
-//                 if (['debit', 'credit', 'balance'].includes(key.toLowerCase())) {
-//                     const numValue = typeof value === 'string'
-//                         ? parseFloat(value.replace(/,/g, ''))
-//                         : Number(value);
-//                     return isNaN(numValue) ? '0.00' : numValue.toFixed(2);
-//                 }
+        if (clientLine) {
+            const match = clientLine.trim().match(/^(.*)\((.*)\)$/);
+            if (match) {
+                clientName = match[1].trim();
+                clientCode = match[2].trim();
+            } else {
+                clientName = clientLine.trim();
+            }
+        }
+    }
 
-//                 return value !== null && value !== undefined ? String(value) : '';
-//             });
-//         });
+    const totals: Record<string, number> = {};
+    totalColumns.forEach(col => (totals[col.key] = 0));
 
-//         // ✅ Attach foot row directly inside the body (only on the last page)
-//         if (foot && foot.length > 0) {
-//             body.push(...foot);
-//         }
+    const formatValue = (value: any, key: string) => {
+        console.log(key)
+        if (key.toLowerCase() === 'date') {
+            const date = new Date(value);
+            return isNaN(date.getTime()) ? value : date.toLocaleDateString('en-GB');
+        }
 
-//         const [{ jsPDF }, { default: autoTable }] = await Promise.all([
-//             import('jspdf'),
-//             import('jspdf-autotable')
-//         ]);
+        if (decimalMap[key]) {
+            const num = parseFloat(String(value).replace(/,/g, ''));
+            const safeNum = isNaN(num) ? 0 : num;
+            if (totals.hasOwnProperty(key)) totals[key] += safeNum;
+            return safeNum.toFixed(decimalMap[key]);
+        }
 
-//         const doc = new jsPDF({
-//             orientation: 'landscape',
-//             unit: 'px',
-//             format: [800, 600]
-//         });
+        return value !== null && value !== undefined ? String(value) : '';
+    };
 
-//         const pageWidth = doc.internal.pageSize.getWidth();
-//         let textY = 20;
-
-//         // Add company logo if available
-//         if (appMetadata?.companyLogo) {
-//             doc.addImage(appMetadata.companyLogo, 'JPEG', 20, 15, 50, 20);
-//         }
-
-//         // Add company name
-//         doc.setFontSize(14);
-//         doc.setFont('helvetica', 'bold');
-//         if (jsonData.CompanyName?.[0]) {
-//             const companyName = jsonData.CompanyName[0].trim();
-//             const companyNameWidth = doc.getTextWidth(companyName);
-//             doc.text(companyName, (pageWidth - companyNameWidth) / 2, textY);
-//         }
-//         textY += 15;
-
-//         // Process report header
-//         if (jsonData.ReportHeader?.[0]) {
-//             const reportHeaderLines = jsonData.ReportHeader[0].split(/\\n|\n/);
-//             doc.setFontSize(12);
-//             doc.setFont('helvetica', 'normal');
-
-//             reportHeaderLines.forEach(line => {
-//                 if (line.trim()) {
-//                     const lineWidth = doc.getTextWidth(line);
-//                     doc.text(line, (pageWidth - lineWidth) / 2, textY);
-//                     textY += 10;
-//                 }
-//             });
-//         }
-//         textY += 10;
-
-//         // Get right-aligned columns from jsonData.RightList
-//         const rightAlignedColumns = jsonData.RightList?.[0]?.filter(Boolean) || [];
-
-//         // Create column styles dynamically based on RightList
-//         const columnStyles = {};
-//         if (head && head[0]) {
-//             head[0].forEach((col, index) => {
-//                 columnStyles[index] = { halign: rightAlignedColumns.includes(col) ? 'right' : 'left', cellPadding: 4 };
-//                 if (col === 'Flag') {
-//                     columnStyles[index] = { halign: 'center', cellPadding: 4 };
-//                 }
-//             });
-//         }
-
-//         let finalY = textY;
-
-//         // ✅ Generate the table INCLUDING the total row in `body`
-//         autoTable(doc, {
-//             head,
-//             body,  // **Foot row is now inside body**
-//             startY: textY,
-//             margin: { top: 10, horizontal: 20 },
-//             styles: {
-//                 fontSize: 10,
-//                 cellPadding: 4,
-//                 lineColor: [0, 0, 0],
-//                 lineWidth: 0.2,
-//                 valign: 'middle',
-//                 halign: 'left'
-//             },
-//             headStyles: {
-//                 fillColor: [255, 255, 255],  // White background for header
-//                 textColor: [0, 0, 0],
-//                 fontStyle: 'bold',
-//                 lineWidth: 0.3
-//             },
-//             columnStyles,
-//             tableWidth: 'auto',
-
-//             // ✅ Apply blue color to the last row (total row)
-//             didParseCell: (data) => {
-//                 if (data.row.index === body.length - 1) {
-//                     data.cell.styles.fillColor = [173, 216, 230];  // Light Blue (RGB)
-//                     data.cell.styles.textColor = [0, 0, 139];      // Dark Blue text
-//                     data.cell.styles.fontStyle = 'bold';           // Bold text for total
-//                 }
-//             },
-
-//             didDrawPage: (data) => {
-//                 finalY = data.cursor.y; // Track last printed row position
-//             }
-//         });
+    const tableBody = [];
 
 
-//         let totalPages = 0;
-//         try {
-//             totalPages = doc.internal.pages.length;
-//         } catch (error) {
-//             console.error("Error getting number of pages:", error);
-//             totalPages = 1; // Default to 1 page
-//         }
-
-//         // Add footer
-//         // const totalPages = doc.internal.getNumberOfPages();
-//         console.log(totalPages, 'totalPages');
-
-//         const now = new Date();
-//         const formattedDate = now.toLocaleDateString('en-GB', {
-//             day: '2-digit',
-//             month: '2-digit',
-//             year: '2-digit'
-//         }).replace(/\//g, '-');
-//         const formattedTime = now.toLocaleTimeString('en-US', {
-//             hour: '2-digit',
-//             minute: '2-digit',
-//             hour12: true
-//         });
-
-//         for (let i = 1; i <= totalPages; i++) {
-//             doc.setPage(i);
-//             doc.setFontSize(10);
-//             doc.text(`Print Date: ${formattedDate} ${formattedTime}`, 20, doc.internal.pageSize.getHeight() - 15);
-
-//             const appName = appMetadata?.applicationName || '';
-//             doc.text(`${ACTION_NAME}[Page ${i} of ${totalPages}]`, pageWidth - 100, doc.internal.pageSize.getHeight() - 15);
-//         }
+    tableBody.push(
+        headers.map(key => {
+            const normalizedKey = key.replace(/\s+/g, '');
+            return {
+                text: key,
+                bold: true,
+                fillColor: '#eeeeee',
+                alignment: rightAlignedKeys.includes(normalizedKey) ? 'right' : 'left',
+            };
+        })
+    );
 
 
-//         doc.save('TradingDetails.pdf');
-//     } catch (error) {
-//         console.error('Error exporting to PDF:', error);
-//     }
-// };
+    // Data rows
+    allData.forEach(row => {
+        const rowData = headers.map(key => {
+            const normalizedKey = key.replace(/\s+/g, '');
+            return {
+                text: formatValue(row[key], key),
+                alignment: rightAlignedKeys.includes(normalizedKey) ? 'right' : 'left',
+            };
+        });
+        tableBody.push(rowData);
+    });
+
+    const totalRow = headers.map(key => {
+        const normalizedKey = key.replace(/\s+/g, '');
+        const isTotalCol = totalColumns.find(col => col.key.replace(/\s+/g, '') === normalizedKey);
+        return {
+            text: isTotalCol ? totals[key].toFixed(decimalMap[key] || 2) : '',
+            bold: true,
+            alignment: rightAlignedKeys.includes(normalizedKey) ? 'right' : 'left',
+        };
+    });
+    tableBody.push(totalRow);
 
 
+    const columnCount = headers.length;
+    const columnWidth = (100 / columnCount).toFixed(2) + '%';
+
+    // Convert BMP logo if available
+    let logoImage = '';
+    if (appMetadata?.companyLogo) {
+        try {
+            logoImage = await convertBmpToPng(appMetadata.companyLogo);
+        } catch (err) {
+            console.warn('Logo conversion failed:', err);
+        }
+    }
+
+    const docDefinition: any = {
+        content: [
+            {
+                columns: [
+                    logoImage
+                        ? {
+                            image: logoImage,
+                            width: 60,
+                            height: 40,
+                            margin: [0, 0, 10, 0],
+                        }
+                        : {},
+                    {
+                        stack: [
+                            { text: jsonData?.CompanyName?.[0] || '', style: 'header' },
+                            { text: `${fileTitle} ${dateRange}`, style: 'subheader' },
+                            { text: `${clientName} (${clientCode})`, style: 'small' },
+                        ],
+                        alignment: 'center',
+                        width: '*',
+                    },
+                    { text: '', width: 60 },
+                ]
+            },
+            {
+                style: 'tableStyle',
+                table: {
+                    headerRows: 1,
+                    widths: headers.map(() => columnWidth),
+                    body: tableBody,
+                },
+                layout: {
+                    paddingLeft: () => 2,
+                    paddingRight: () => 2,
+                    paddingTop: () => 2,
+                    paddingBottom: () => 2,
+                    fillColor: (rowIndex: number) =>
+                        rowIndex === tableBody.length - 1 ? '#e8f4ff' : null,
+                },
+            },
+        ],
+        styles: {
+            header: { fontSize: 14, bold: true, alignment: 'center', margin: [0, 0, 0, 2] },
+            subheader: { fontSize: 10, alignment: 'center', margin: [0, 0, 0, 2] },
+            small: { fontSize: 9, alignment: 'center', margin: [0, 0, 0, 6] },
+            tableStyle: { fontSize: 8, margin: [0, 2, 0, 2] },
+        },
+        footer: function (currentPage: number, pageCount: number) {
+            const now = new Date().toLocaleString('en-GB');
+            return {
+                columns: [
+                    { text: `Printed on: ${now}`, alignment: 'left', margin: [40, 0] },
+                    { text: `${ACTION_NAME}[Page ${currentPage} of ${pageCount}]`, alignment: 'right', margin: [0, 0, 40, 0] },
+                ],
+                fontSize: 8,
+            };
+        },
+        pageOrientation: 'landscape' ,
+        pageSize: headers.length > 15 ? 'A3' : 'A4',
+        
+    };
+
+    pdfMake.createPdf(docDefinition).download(`${fileTitle}.pdf`);
+};
 export default DataTable; 
