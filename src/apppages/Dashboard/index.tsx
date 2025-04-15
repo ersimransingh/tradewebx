@@ -10,6 +10,7 @@ import { ACTION_NAME, PATH_URL } from '@/utils/constants';
 import { BASE_URL } from '@/utils/constants';
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
 import { fetchLastTradingDate, fetchInitializeLogin } from '@/redux/features/common/commonSlice';
+import { Dropdown } from '@/components/ui/dropdown/Dropdown';
 
 const ReactApexChart = nextDynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -320,6 +321,56 @@ function Dashboard() {
     const dispatch = useAppDispatch();
     const lastTradingDate = useAppSelector(state => state.common.lastTradingDate);
     const companyLogo = useAppSelector(state => state.common.companyLogo);
+    const [userDashData, setUserDashData] = useState([]);
+    const [selectedValue, setSelectedValue] = useState('');
+    const [dropdownOpen, setDropdownOpen] = useState(false);
+    const selectedItem = userDashData.find(item => item.Value.trim() === selectedValue);
+
+    console.log(selectedValue)
+
+    const getUserDashboardData = async () => {
+        try {
+            const userId = localStorage.getItem('userId');
+            const authToken = document.cookie.split('auth_token=')[1] || '';
+
+            const xmlData1 = `
+            <dsXml>
+                <J_Ui>"ActionName":"Common","Option":"Search","RequestFrom":"W"</J_Ui>
+                <Sql/>
+                <X_Filter></X_Filter>
+                <J_Api>"UserId":"${userId}","AccYear":24,"MyDbPrefix":"SVVS","MenuCode":7,"ModuleID":0,"MyDb":null,"DenyRights":null</J_Api>
+            </dsXml>`;
+
+            const response = await axios.post(BASE_URL + PATH_URL, xmlData1, {
+                headers: {
+                    'Content-Type': 'application/xml',
+                    'Authorization': `Bearer ${authToken}`
+                },
+                timeout: 300000
+            });
+
+            const result = response?.data?.data?.rs0;
+
+            if (result && Array.isArray(result)) {
+                console.log(result, 'userDashData');
+                setUserDashData(result);
+            } else {
+                console.warn('No dashboard data received or data format incorrect');
+                setUserDashData([]); // fallback empty array
+            }
+
+        } catch (error) {
+            console.error('Error fetching user dashboard data:', error);
+            setUserDashData([]); // fallback in case of error
+        }
+    };
+
+
+
+    useEffect(() => {
+        getUserDashboardData();
+    }, []);
+
 
     const getDashboardData = async () => {
         setLoading(true);
@@ -329,6 +380,7 @@ function Dashboard() {
                 <J_Ui>"ActionName":"${ACTION_NAME}", "Option":"DASHBOARD_F","Level":1, "RequestFrom":"W"</J_Ui>
                 <Sql></Sql>
                 <X_Filter>
+                <ClientCode>${selectedValue}</ClientCode>
                 </X_Filter>
                 <X_GFilter></X_GFilter>
                 <J_Api>"UserId":"${localStorage.getItem('userId')}", "UserType":"${localStorage.getItem('userType')}"</J_Api>
@@ -365,7 +417,7 @@ function Dashboard() {
         if (!companyLogo) {
             dispatch(fetchInitializeLogin());
         }
-    }, [dispatch, lastTradingDate, companyLogo]);
+    }, [dispatch, lastTradingDate, companyLogo, selectedValue]);
 
     if (loading) {
         return (
@@ -418,6 +470,57 @@ function Dashboard() {
             className="container mx-auto"
             style={{ backgroundColor: colors?.background2 || '#f0f0f0' }}
         >
+            {/* {
+                localStorage.getItem('userType') === "user" ?
+                    <div>
+                        <label> </label>
+                        <select
+                            value={selectedValue}
+                            onChange={(e) => setSelectedValue(e.target.value)}
+                            style={{cursor:"pointer"}}
+                        >
+                            <option value="">Please Select</option>
+                            {userDashData.map((item, index) => (
+                                <option key={index} value={item.Value.trim()}>
+                                    {item.DisplayName.trim()}
+                                </option>
+                            ))}
+                        </select>
+
+                    </div> : ""
+            } */}
+
+            {localStorage.getItem('userType') === "user" && (
+                <div className="relative inline-block w-64 mb-4">
+                    <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-white">Select Account</label>
+                    <button
+                        type="button"
+                        className="dropdown-toggle w-full px-4 py-2 text-left bg-white border rounded-md shadow-sm cursor-pointer dark:bg-gray-800 dark:text-white"
+                        onClick={() => setDropdownOpen(prev => !prev)}
+                    >
+                        {selectedItem ? selectedItem.DisplayName.trim() : 'Please Select'}
+                    </button>
+
+                    <Dropdown isOpen={dropdownOpen} onClose={() => setDropdownOpen(false)} className="w-full max-h-64 overflow-y-auto">
+                        <ul className="py-1">
+                            {userDashData.map((item, index) => (
+                                <li
+                                    key={index}
+                                    className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                                    onClick={() => {
+                                        setSelectedValue(item.Value.trim());
+                                        setDropdownOpen(false);
+                                    }}
+                                >
+                                    {item.DisplayName.trim()}
+                                </li>
+                            ))}
+                        </ul>
+                    </Dropdown>
+                </div>
+            )}
+
+
             <div className="space-y-4">
                 {dashboardData && dashboardData.map((cardData: any, index: number) => (
                     <Card
