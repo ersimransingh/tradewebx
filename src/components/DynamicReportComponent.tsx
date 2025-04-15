@@ -240,7 +240,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
     };
 
 
-    console.log(fetchData, 'fetchData fetchData');
+
 
 
 
@@ -391,13 +391,13 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                         >
                             <FaFileCsv size={20} />
                         </button>
-                             <button
+                        <button
                             className="p-2 rounded"
-                            onClick={() => exportTableToPdf(tableRef.current,jsonData,appMetadata,apiData,pageData)}
+                            onClick={() => exportTableToPdf(tableRef.current, jsonData, appMetadata, apiData, pageData)}
                             style={{ color: colors.text }}
                         >
                             <FaFilePdf size={20} />
-                        </button> 
+                        </button>
 
                         <button
                             className="p-2 rounded"

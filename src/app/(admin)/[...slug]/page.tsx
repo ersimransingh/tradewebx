@@ -70,7 +70,7 @@ function DynamicComponentRenderer({ componentName }: { componentName: string }) 
   };
 
   const componentType = findComponentType(menuItems);
-
+  console.log('componentType', componentType);
   // Show entry component if componentType is 'entry', otherwise show report component
   return componentType === 'entry'
     ? <DynamicEntryComponent componentName={componentName} />

@@ -6,11 +6,12 @@ import axios from 'axios';
 import { BASE_URL, PATH_URL } from '@/utils/constants';
 import moment from 'moment';
 import FilterModal from './FilterModal';
-import { FaSync, FaFilter, FaDownload, FaFileCsv, FaFilePdf } from 'react-icons/fa';
+import { FaSync, FaFilter, FaDownload, FaFileCsv, FaFilePdf, FaPlus } from 'react-icons/fa';
 import { useTheme } from '@/context/ThemeContext';
 import DataTable, { exportTableToCsv } from './DataTable';
 import { store } from "@/redux/store";
 import { APP_METADATA_KEY } from "@/utils/constants";
+import EntryFormModal from './EntryFormModal';
 
 // const { companyLogo, companyName } = useAppSelector((state) => state.common);
 
@@ -37,6 +38,7 @@ const DynamicEntryComponent: React.FC<DynamicEntryComponentProps> = ({ component
     const [levelStack, setLevelStack] = useState<number[]>([0]); // Track navigation stack
     const [areFiltersInitialized, setAreFiltersInitialized] = useState(false);
     const [apiResponseTime, setApiResponseTime] = useState<number | undefined>(undefined);
+    const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
 
     const tableRef = useRef<HTMLDivElement>(null);
     const { colors, fonts } = useTheme();
@@ -68,7 +70,7 @@ const DynamicEntryComponent: React.FC<DynamicEntryComponentProps> = ({ component
     };
 
     const pageData: any = findPageData();
-    console.log('pageData', pageData);
+    console.log('pageData', pageData[0].Entry);
     // Helper functions for parsing XML settings
     const parseXmlList = (xmlString: string, tag: string): string[] => {
         const regex = new RegExp(`<${tag}>(.*?)</${tag}>`, 'g');
@@ -394,6 +396,13 @@ const DynamicEntryComponent: React.FC<DynamicEntryComponentProps> = ({ component
                     <div className="flex gap-2">
                         <button
                             className="p-2 rounded"
+                            onClick={() => setIsEntryModalOpen(true)}
+                            style={{ color: colors.text }}
+                        >
+                            <FaPlus size={20} />
+                        </button>
+                        <button
+                            className="p-2 rounded"
                             onClick={() => exportTableToCsv(tableRef.current, jsonData, apiData, pageData)}
                             style={{ color: colors.text }}
                         >
@@ -495,6 +504,13 @@ const DynamicEntryComponent: React.FC<DynamicEntryComponentProps> = ({ component
                     />
                 </div>
             )}
+
+
+            <EntryFormModal
+                isOpen={isEntryModalOpen}
+                onClose={() => setIsEntryModalOpen(false)}
+                pageData={pageData}
+            />
         </div>
     );
 };

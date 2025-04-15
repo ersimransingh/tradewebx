@@ -1,0 +1,25 @@
+97f6968ce8b23bb938f2b7ef9b9ab35c5c5d11e9<|ENT|><|RY|>Add Secmark logo and update DataTable and SignInForm components<|COM|><|MIT|>
+be1bf29935aa388c662c30a7eb55319b73ca20b5<|ENT|><|RY|>Update FormCreator component to conditionally include X_Filter elements<|COM|><|MIT|>
+ab0d1d82811ae7bfe3700a2da23e76ade0cb3490<|ENT|><|RY|>Implement file download functionality in Downloads component<|COM|><|MIT|>
+129b5f1c8ae8f1f8da5291f05de8790dd3a47958<|ENT|><|RY|>Implement loading state for dropdown options in FormCreator component<|COM|><|MIT|>
+1af7731c16ecb793b8b527be773cb016bfe7fc1b<|ENT|><|RY|>Enhance FormCreator component to support multiple filter conditions<|COM|><|MIT|>
+10a60f32bce53f0305c81f8894fe6c5416307009<|ENT|><|RY|>Enhance DataTable component to support left-aligned columns<|COM|><|MIT|>
+34eaeb9e6be3de8355282772de7aebdf2d138c08<|ENT|><|RY|>Implement API response time tracking in DynamicReportComponent<|COM|><|MIT|>
+65d4110ebe2f6600a4d02e5861b1791e7c0864a6<|ENT|><|RY|>Add filter functionality to Downloads component with FilterModal integration<|COM|><|MIT|>
+b4d5680259115903590894786dea754dc2500fae<|ENT|><|RY|>Refactor Dashboard and Downloads components to enhance navigation and styling<|COM|><|MIT|>
+78a0fb6a29066ac0b6b21d111b0907851fcc6581<|ENT|><|RY|>Enhance authentication flow by integrating dynamic login options and improving API request headers<|COM|><|MIT|>
+c1377b55e9bc306647b678eaf4f31060a271e4bf<|ENT|><|RY|>Update FilterModal component to improve overflow behavior and clean up layout<|COM|><|MIT|>
+d92d7c0ab3fe3a8f2f7fbe487a6222e07d57f705<|ENT|><|RY|>Merge remote-tracking branch 'origin/fix/persistent-theme'<|COM|><|MIT|>
+d73d99a03ddb092b55d77b5809b50f36ad4635e5<|ENT|><|RY|>Persist themes on logout<|COM|><|MIT|>
+c77ee18313a3cd366b961d5c5cccb5bd1a78415d<|ENT|><|RY|>Enhance FormCreator component to support complex dependencies and improve data handling<|COM|><|MIT|>
+570a5c35f1c1e078eaaa5f40ac014d2fcfa4094e<|ENT|><|RY|>Enhance DataTable component with value-based text color formatting<|COM|><|MIT|>
+0ff102592c95c51eb132e75a86278c88270a452d<|ENT|><|RY|>Update AppSidebar component to enhance styling and improve readability<|COM|><|MIT|>
+8d4c7543bfeba5f83a30369fe411ebe926e3540c<|ENT|><|RY|>Update .gitignore to include .env file for environment variable management<|COM|><|MIT|>
+914eae7c101080ac6137d97d812f14e890ba6b83<|ENT|><|RY|>Merge remote-tracking branch 'origin/fix/app-title'<|COM|><|MIT|>
+7da905b0cd221f0eba65560d0e914611628f68db<|ENT|><|RY|>Update tableStyle in commonSlice to 'small' for improved UI consistency<|COM|><|MIT|>
+a05fedcca82784bab75bd9e78c60499f35ef9608<|ENT|><|RY|>Refactor layout and styling in AdminLayout, Dashboard, DataTable, and DynamicReportComponent<|COM|><|MIT|>
+7d6a079a088666a26104d55fdc52753924d62f0b<|ENT|><|RY|>Merge branch 'master' into fix/app-title<|COM|><|MIT|>
+52d74048b8c86ef7a3cd59c16da24546fbdeb8c1<|ENT|><|RY|>Changes in the design bold font 3 grid layout for lg screen<|COM|><|MIT|>
+7c87ce4dad39bddd232159ebbd46bf6cf5909729<|ENT|><|RY|>Enhance DataTable with summary row calculations and improved total display<|COM|><|MIT|>
+e234f30ba52e7541dead35c11240696f03ec27f0<|ENT|><|RY|>Enhance Dashboard Card component with custom legend and total item display<|COM|><|MIT|>
+cb51dfcc33edd2c7e63de002711ec786d93fc1da<|ENT|><|RY|>Enhance Profile and UserMetaCard components with theming and data fetching<|COM|><|MIT|>
