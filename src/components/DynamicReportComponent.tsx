@@ -139,12 +139,15 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
     // Set autoFetch based on pageData
     useEffect(() => {
         if (pageData?.[0]?.autoFetch !== undefined) {
+            // console.log('AutoFetch value PAGE_DATA:', pageData[0].autoFetch);
             const newAutoFetch = pageData[0].autoFetch === "true";
             setAutoFetch(newAutoFetch);
+            // console.log('AutoFetch value:', newAutoFetch);
             // If autoFetch is false, we don't want to fetch data automatically
             if (!newAutoFetch) {
                 return;
             }
+            // console.log('Auto-fetching data for level 0');
             // Only fetch if autoFetch is true
             fetchData();
         }
@@ -153,21 +156,23 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
     // Add new useEffect to handle level changes and manual fetching
     useEffect(() => {
         // If we're in a level > 0, we should always fetch data regardless of autoFetch
-        if (currentLevel > 0) {
-            console.log('Fetching data for level:', currentLevel);
-            fetchData();
-        }
-        // If we're in level 0 and autoFetch is true, fetch data
-        else if (autoFetch) {
-            console.log('Auto-fetching data for level 0');
-            fetchData();
+        if (pageLoaded) {
+            if (currentLevel > 0) {
+                console.log('Fetching data for level:', currentLevel);
+                fetchData();
+            }
+            // If we're in level 0 and autoFetch is true, fetch data
+            else if (autoFetch) {
+                console.log('Auto-fetching data for level 0');
+                fetchData();
+            }
         }
     }, [currentLevel, autoFetch]);
 
     const fetchData = async (currentFilters = filters) => {
-        console.log('fetchData called for level:', currentLevel);
-        console.log('AutoFetch value:', autoFetch);
-        console.log('Primary key filters:', primaryKeyFilters);
+        // console.log('fetchData called for level:', currentLevel);
+        // console.log('AutoFetch value:', autoFetch);
+        // console.log('Primary key filters:', primaryKeyFilters);
 
         if (!pageData) return;
 
@@ -203,9 +208,9 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                 });
             }
 
-            console.log('Final filter XML:', filterXml);
-            console.log('Current Level:', currentLevel);
-            console.log('Using J_Ui for level:', currentLevel);
+            // console.log('Final filter XML:', filterXml);
+            // console.log('Current Level:', currentLevel);
+            // console.log('Using J_Ui for level:', currentLevel);
 
             const xmlData = `<dsXml>
                 <J_Ui>${JSON.stringify(pageData[0].levels[currentLevel].J_Ui).slice(1, -1)}</J_Ui>
@@ -215,6 +220,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                 <J_Api>"UserId":"${localStorage.getItem('userId')}", "UserType":"${localStorage.getItem('userType')}"</J_Api>
             </dsXml>`;
 
+            // console.log('Request XML:', xmlData);
 
             const response = await axios.post(BASE_URL + PATH_URL, xmlData, {
                 headers: {
@@ -227,7 +233,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
             const endTime = performance.now();
             setApiResponseTime(Math.round(endTime - startTime));
 
-            console.log('API Response:', response.data);
+            // console.log('API Response:', response.data);
             setApiData(response.data.data.rs0);
 
             // Parse RS1 Settings if available
@@ -257,7 +263,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                     headings: parseHeadings(xmlString)
                 };
 
-                console.log('Settings JSON:', settingsJson);
+                // console.log('Settings JSON:', settingsJson);
                 const json = convertXmlToJson(xmlString);
                 setJsonData(json);
                 setRs1Settings(settingsJson);
@@ -276,9 +282,9 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
 
     // Modify handleRecordClick
     const handleRecordClick = (record: any) => {
-        console.log('Record clicked:', record);
-        console.log('Current level:', currentLevel);
-        console.log('Total levels:', pageData?.[0].levels.length);
+        // console.log('Record clicked:', record);
+        // console.log('Current level:', currentLevel);
+        // console.log('Total levels:', pageData?.[0].levels.length);
 
         if (currentLevel < (pageData?.[0].levels.length || 0) - 1) {
             // Get primary key from the current level's primaryHeaderKey or fallback to rs1Settings
@@ -286,9 +292,9 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                 rs1Settings?.primaryKey ||
                 'id';
 
-            console.log('Primary key:', primaryKey);
-            console.log('Record value:', record[primaryKey]);
-            console.log('RS1 Settings:', rs1Settings);
+            // console.log('Primary key:', primaryKey);
+            // console.log('Record value:', record[primaryKey]);
+            // console.log('RS1 Settings:', rs1Settings);
 
             // Set primary key filters based on the clicked record
             setPrimaryKeyFilters(prev => {
@@ -296,6 +302,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                     ...prev,
                     [primaryKey]: record[primaryKey]
                 };
+                // console.log('New primary key filters:', newFilters);
                 return newFilters;
             });
 
@@ -305,14 +312,14 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
             setCurrentLevel(nextLevel);
         }
     };
-
+    const [pageLoaded, setPageLoaded] = useState(false);
     // Add useEffect to handle data fetching when level changes
     useEffect(() => {
-        console.log('Level changed to:', currentLevel);
-        console.log('Primary key filters:', primaryKeyFilters);
+        // console.log('Level changed to:', currentLevel);
+        // console.log('Primary key filters:', primaryKeyFilters);
 
         // If we have page data, fetch for the current level
-        if (pageData) {
+        if (pageData && pageLoaded) {
             // Add a small delay to ensure state updates are complete
             const timer = setTimeout(() => {
                 fetchData();
@@ -320,17 +327,21 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
 
             return () => clearTimeout(timer);
         }
+
+        setTimeout(() => {
+            setPageLoaded(true);
+        }, 1000);
     }, [currentLevel, primaryKeyFilters]);
 
     // Add handleTabClick function
     const handleTabClick = (level: number, index: number) => {
-        console.log('Tab clicked - Level:', level, 'Index:', index);
+        // console.log('Tab clicked - Level:', level, 'Index:', index);
         const newStack = levelStack.slice(0, index + 1);
         setLevelStack(newStack);
 
         // If going back to first level (index 0), clear primary key filters first
         if (index === 0) {
-            console.log('Clearing primary key filters for first level');
+            // console.log('Clearing primary key filters for first level');
             setPrimaryKeyFilters({});
         }
 
@@ -340,8 +351,11 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
 
     // Modified filter change handler
     const handleFilterChange = (newFilters: Record<string, any>) => {
+        // console.log('New filters received from modal:', newFilters);
         setFilters(newFilters);
-        fetchData(newFilters); // Call API with new filters
+        if (pageLoaded) {
+            fetchData(newFilters); // Call API with new filters
+        }
     };
 
     const handleDownloadFilterChange = (newFilters: Record<string, any>) => {
@@ -384,6 +398,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                 });
             });
 
+            // console.log('Setting default filters:', defaultFilters);
             setFilters(defaultFilters);
             setAreFiltersInitialized(true);
         } else {
