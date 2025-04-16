@@ -1,5 +1,5 @@
 "use client";
-import React, { useMemo, useState, useRef } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { DataGrid } from 'react-data-grid';
 import 'react-data-grid/lib/styles.css';
 import { useTheme } from '@/context/ThemeContext';
@@ -18,7 +18,15 @@ import moment from 'moment';
 
 interface DataTableProps {
     data: any[];
-    settings?: any;
+    settings?: {
+        hideEntireColumn?: string;
+        leftAlignedColumns?: string;
+        leftAlignedColums?: string;
+        mobileColumns?: string[];
+        tabletColumns?: string[];
+        webColumns?: string[];
+        [key: string]: any;
+    };
     onRowClick?: (record: any) => void;
     tableRef?: React.RefObject<HTMLDivElement>;
     summary?: any;
@@ -87,12 +95,39 @@ function downloadFile(fileName: string, data: Blob) {
     URL.revokeObjectURL(url);
 }
 
+const useScreenSize = () => {
+    const [screenSize, setScreenSize] = useState<'mobile' | 'tablet' | 'web'>('web');
+
+    useEffect(() => {
+        const checkScreenSize = () => {
+            const width = window.innerWidth;
+            let newSize: 'mobile' | 'tablet' | 'web' = 'web';
+            if (width < 768) {
+                newSize = 'mobile';
+            } else if (width < 1024) {
+                newSize = 'tablet';
+            } else {
+                newSize = 'web';
+            }
+            console.log('Screen width:', width, 'Screen size:', newSize);
+            setScreenSize(newSize);
+        };
+
+        checkScreenSize();
+        window.addEventListener('resize', checkScreenSize);
+        return () => window.removeEventListener('resize', checkScreenSize);
+    }, []);
+
+    return screenSize;
+};
+
 const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, tableRef, summary }) => {
     console.log(JSON.stringify(settings, null, 2), 'settings');
     const { colors, fonts } = useTheme();
     const [sortColumns, setSortColumns] = useState<any[]>([]);
     const { tableStyle } = useAppSelector((state: RootState) => state.common);
     const rowHeight = tableStyle === 'small' ? 30 : tableStyle === 'medium' ? 40 : 50;
+    const screenSize = useScreenSize();
 
     // Format date function
     const formatDateValue = (value: string | number | Date, format: string = 'DD-MM-YYYY'): string => {
@@ -219,6 +254,12 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
     const columns = useMemo(() => {
         if (!formattedData || formattedData.length === 0) return [];
 
+        console.log('Current screen size:', screenSize);
+        console.log('Settings:', settings);
+        console.log('Mobile columns:', settings?.mobileColumns);
+        console.log('Tablet columns:', settings?.tabletColumns);
+        console.log('Web columns:', settings?.webColumns);
+
         // Get columns to hide (if specified in settings)
         const columnsToHide = settings?.hideEntireColumn
             ? settings.hideEntireColumn.split(',').map((col: string) => col.trim())
@@ -229,85 +270,106 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
             ? (settings?.leftAlignedColumns || settings?.leftAlignedColums).split(',').map((col: string) => col.trim())
             : [];
 
-        return Object.keys(formattedData[0])
-            .filter(key => !columnsToHide.includes(key)) // Filter out columns that should be hidden
-            .map((key: any) => {
-                // Check if this column should be forcibly left-aligned
-                const isLeftAligned = leftAlignedColumns.includes(key);
+        // Get columns to show based on screen size
+        let columnsToShow: string[] = [];
+        if (settings?.mobileColumns && screenSize === 'mobile') {
+            columnsToShow = settings.mobileColumns;
+            console.log('Using mobile columns:', columnsToShow);
+        } else if (settings?.tabletColumns && screenSize === 'tablet') {
+            columnsToShow = settings.tabletColumns;
+            console.log('Using tablet columns:', columnsToShow);
+        } else if (settings?.webColumns) {
+            columnsToShow = settings.webColumns;
+            console.log('Using web columns:', columnsToShow);
+        }
 
-                // Check if this column contains numeric values (only if not forced left-aligned)
-                const isNumericColumn = !isLeftAligned && formattedData.some((row: any) => {
-                    const value = row[key];
+        // If no responsive columns are defined, show all columns
+        if (columnsToShow.length === 0) {
+            columnsToShow = Object.keys(formattedData[0]);
+            console.log('No responsive columns defined, using all columns:', columnsToShow);
+        }
+
+        // Filter out hidden columns
+        columnsToShow = columnsToShow.filter(key => !columnsToHide.includes(key));
+        console.log('Final columns to show:', columnsToShow);
+
+        return columnsToShow.map((key: any) => {
+            // Check if this column should be forcibly left-aligned
+            const isLeftAligned = leftAlignedColumns.includes(key);
+
+            // Check if this column contains numeric values (only if not forced left-aligned)
+            const isNumericColumn = !isLeftAligned && formattedData.some((row: any) => {
+                const value = row[key];
+                const rawValue = React.isValidElement(value) ? (value as StyledValue).props.children : value;
+                return !isNaN(parseFloat(rawValue)) && isFinite(rawValue);
+            });
+
+            // Check if this column should show a total in the summary row
+            const shouldShowTotal = summary?.columnsToShowTotal?.some(
+                (col: any) => col.key === key
+            );
+
+            return {
+                key,
+                name: key,
+                sortable: true,
+                minWidth: 80,
+                maxWidth: 400,
+                resizable: true,
+                // Add a class to identify numeric columns or forced left-aligned columns
+                headerCellClass: isNumericColumn ? 'numeric-column-header' : '',
+                cellClass: isNumericColumn ? 'numeric-column-cell' : '',
+                renderSummaryCell: (props: any) => {
+                    // Only show values for totalCount and columns that should show totals
+                    if (key === 'totalCount' || shouldShowTotal) {
+                        return <div className={isNumericColumn ? "numeric-value font-bold" : "font-bold"} style={{ color: colors.text }}>{props.row[key]}</div>;
+                    }
+                    // Return empty div for columns that shouldn't show totals
+                    return <div></div>;
+                },
+                formatter: (props: any) => {
+                    const value = props.row[key];
+                    // Check if the value is numeric
                     const rawValue = React.isValidElement(value) ? (value as StyledValue).props.children : value;
-                    return !isNaN(parseFloat(rawValue)) && isFinite(rawValue);
-                });
+                    const numValue = parseFloat(rawValue);
 
-                // Check if this column should show a total in the summary row
-                const shouldShowTotal = summary?.columnsToShowTotal?.some(
-                    (col: any) => col.key === key
-                );
+                    if (!isNaN(numValue) && !isLeftAligned) {
+                        // Format number with commas and 2 decimal places
+                        const formattedValue = new Intl.NumberFormat('en-IN', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        }).format(numValue);
 
-                return {
-                    key,
-                    name: key,
-                    sortable: true,
-                    minWidth: 80,
-                    maxWidth: 400,
-                    resizable: true,
-                    // Add a class to identify numeric columns or forced left-aligned columns
-                    headerCellClass: isNumericColumn ? 'numeric-column-header' : '',
-                    cellClass: isNumericColumn ? 'numeric-column-cell' : '',
-                    renderSummaryCell: (props: any) => {
-                        // Only show values for totalCount and columns that should show totals
-                        if (key === 'totalCount' || shouldShowTotal) {
-                            return <div className={isNumericColumn ? "numeric-value font-bold" : "font-bold"} style={{ color: colors.text }}>{props.row[key]}</div>;
-                        }
-                        // Return empty div for columns that shouldn't show totals
-                        return <div></div>;
-                    },
-                    formatter: (props: any) => {
-                        const value = props.row[key];
-                        // Check if the value is numeric
-                        const rawValue = React.isValidElement(value) ? (value as StyledValue).props.children : value;
-                        const numValue = parseFloat(rawValue);
+                        // Determine text color based on value
+                        const textColor = numValue < 0 ? '#dc2626' :
+                            numValue > 0 ? '#16a34a' :
+                                colors.text;
 
-                        if (!isNaN(numValue) && !isLeftAligned) {
-                            // Format number with commas and 2 decimal places
-                            const formattedValue = new Intl.NumberFormat('en-IN', {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2
-                            }).format(numValue);
+                        return <div className="numeric-value" style={{ color: textColor }}>{formattedValue}</div>;
+                    }
 
-                            // Determine text color based on value
-                            const textColor = numValue < 0 ? '#dc2626' :
-                                numValue > 0 ? '#16a34a' :
-                                    colors.text;
+                    // If it's already a React element (from value-based formatting) and contains a number
+                    if (React.isValidElement(value)) {
+                        const childValue = (value as StyledValue).props.children;
+                        const childNumValue = parseFloat(childValue.toString());
 
-                            return <div className="numeric-value" style={{ color: textColor }}>{formattedValue}</div>;
+                        if (!isNaN(childNumValue) && !isLeftAligned) {
+                            return React.cloneElement(value as StyledElement, {
+                                className: "numeric-value",
+                                style: { ...(value as StyledElement).props.style }
+                            });
                         }
 
-                        // If it's already a React element (from value-based formatting) and contains a number
-                        if (React.isValidElement(value)) {
-                            const childValue = (value as StyledValue).props.children;
-                            const childNumValue = parseFloat(childValue.toString());
-
-                            if (!isNaN(childNumValue) && !isLeftAligned) {
-                                return React.cloneElement(value as StyledElement, {
-                                    className: "numeric-value",
-                                    style: { ...(value as StyledElement).props.style }
-                                });
-                            }
-
-                            // Return the original React element if it's not numeric or should be left-aligned
-                            return value;
-                        }
-
-                        // For numeric values that should be left-aligned and non-numeric values
+                        // Return the original React element if it's not numeric or should be left-aligned
                         return value;
                     }
-                };
-            });
-    }, [formattedData, colors.text, settings?.hideEntireColumn, settings?.leftAlignedColumns, settings?.leftAlignedColums, summary?.columnsToShowTotal]);
+
+                    // For numeric values that should be left-aligned and non-numeric values
+                    return value;
+                }
+            };
+        });
+    }, [formattedData, colors.text, settings?.hideEntireColumn, settings?.leftAlignedColumns, settings?.leftAlignedColums, summary?.columnsToShowTotal, screenSize, settings?.mobileColumns, settings?.tabletColumns, settings?.webColumns]);
 
     // Sort function
     const sortRows = (initialRows: any[], sortColumns: any[]) => {
@@ -972,9 +1034,9 @@ export const exportTableToPdf = async (
                 fontSize: 8,
             };
         },
-        pageOrientation: 'landscape' ,
+        pageOrientation: 'landscape',
         pageSize: headers.length > 15 ? 'A3' : 'A4',
-        
+
     };
 
     pdfMake.createPdf(docDefinition).download(`${fileTitle}.pdf`);

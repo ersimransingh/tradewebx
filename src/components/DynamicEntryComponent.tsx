@@ -357,16 +357,16 @@ const DynamicEntryComponent: React.FC<DynamicEntryComponentProps> = ({ component
     // Set autoFetch based on pageData
     useEffect(() => {
         if (pageData?.[0]?.autoFetch !== undefined) {
-            setAutoFetch(pageData[0].autoFetch === "true");
-        }
-    }, [pageData]);
-
-    // Modified initial data fetch useEffect
-    useEffect(() => {
-        if (pageData && autoFetch) {
+            const newAutoFetch = pageData[0].autoFetch === "true";
+            setAutoFetch(newAutoFetch);
+            // If autoFetch is false, we don't want to fetch data
+            if (!newAutoFetch) {
+                return;
+            }
+            // Only fetch if autoFetch is true
             fetchData();
         }
-    }, [currentLevel, pageData, autoFetch]);
+    }, [pageData]);
 
     if (!pageData) {
         return <div>Loading report data...</div>;
