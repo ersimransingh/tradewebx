@@ -34,6 +34,7 @@ interface FormElement {
         key: string;
         value: string;
     };
+    wValue?: string;
 }
 
 interface FormCreatorProps {
@@ -56,6 +57,28 @@ const FormCreator: React.FC<FormCreatorProps> = ({
         setFormValues(initialValues);
     }, [initialValues]);
 
+    useEffect(() => {
+        formData?.[0]?.forEach(item => {
+            if (item.type === 'WDateRangeBox') {
+                const [fromKey, toKey] = item.wKey as string[];
+                if (!formValues[fromKey] && !formValues[toKey]) {
+                    const defaultValues = { ...formValues };
+                    defaultValues[fromKey] = moment().subtract(3, 'months').toDate();
+                    defaultValues[toKey] = moment().toDate();
+                    setFormValues(defaultValues);
+                }
+            } else if (item.type === 'WDateBox' && item.wValue && !formValues[item.wKey as string]) {
+                const defaultValues = { ...formValues };
+                // Convert YYYYMMDD format to Date object
+                const year = parseInt(item.wValue.substring(0, 4));
+                const month = parseInt(item.wValue.substring(4, 6)) - 1; // Month is 0-based
+                const day = parseInt(item.wValue.substring(6, 8));
+                defaultValues[item.wKey as string] = new Date(year, month, day);
+                setFormValues(defaultValues);
+            }
+        });
+    }, [formData, formValues]);
+
     const handleFormChange = useCallback((newValues: any) => {
         const cleanedValues = Object.fromEntries(
             Object.entries(newValues).filter(([_, value]) =>
@@ -74,20 +97,6 @@ const FormCreator: React.FC<FormCreatorProps> = ({
         };
         handleFormChange(newValues);
     };
-
-    useEffect(() => {
-        formData?.[0]?.forEach(item => {
-            if (item.type === 'WDateRangeBox') {
-                const [fromKey, toKey] = item.wKey as string[];
-                if (!formValues[fromKey] && !formValues[toKey]) {
-                    const defaultValues = { ...formValues };
-                    defaultValues[fromKey] = moment().subtract(3, 'months').toDate();
-                    defaultValues[toKey] = moment().toDate();
-                    setFormValues(defaultValues);
-                }
-            }
-        });
-    }, [formData, formValues]);
 
     const fetchDropdownOptions = async (item: FormElement) => {
         try {

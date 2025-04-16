@@ -10,7 +10,7 @@ import { ACTION_NAME, PATH_URL } from '@/utils/constants';
 import { BASE_URL } from '@/utils/constants';
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
 import { fetchLastTradingDate, fetchInitializeLogin } from '@/redux/features/common/commonSlice';
-import { Dropdown } from '@/components/ui/dropdown/Dropdown';
+import Select from 'react-select';
 
 const ReactApexChart = nextDynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -318,16 +318,13 @@ function Dashboard() {
     const [dashboardData, setDashboardData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
+    const [selectedClient, setSelectedClient] = useState(null);
     const dispatch = useAppDispatch();
     const lastTradingDate = useAppSelector(state => state.common.lastTradingDate);
     const companyLogo = useAppSelector(state => state.common.companyLogo);
     const [userDashData, setUserDashData] = useState([]);
-    const [selectedValue, setSelectedValue] = useState('');
-    const [dropdownOpen, setDropdownOpen] = useState(false);
-    const selectedItem = userDashData.find(item => item.Value.trim() === selectedValue);
-
-    console.log(selectedValue)
-
+    const auth = useAppSelector(state => state.auth);
+    console.log(auth.userType, 'auth');
     const getUserDashboardData = async () => {
         try {
             const userId = localStorage.getItem('userId');
@@ -351,26 +348,26 @@ function Dashboard() {
 
             const result = response?.data?.data?.rs0;
 
-            if (result && Array.isArray(result)) {
+            if (result && Array.isArray(result) && result.length > 0) {
                 console.log(result, 'userDashData');
                 setUserDashData(result);
+                // Set the first client as selected immediately
+                setSelectedClient({
+                    value: result[0].Value,
+                    label: result[0].DisplayName
+                });
             } else {
                 console.warn('No dashboard data received or data format incorrect');
                 setUserDashData([]); // fallback empty array
+                setSelectedClient(null);
             }
 
         } catch (error) {
             console.error('Error fetching user dashboard data:', error);
             setUserDashData([]); // fallback in case of error
+            setSelectedClient(null);
         }
     };
-
-
-
-    useEffect(() => {
-        getUserDashboardData();
-    }, []);
-
 
     const getDashboardData = async () => {
         setLoading(true);
@@ -380,7 +377,7 @@ function Dashboard() {
                 <J_Ui>"ActionName":"${ACTION_NAME}", "Option":"DASHBOARD_F","Level":1, "RequestFrom":"W"</J_Ui>
                 <Sql></Sql>
                 <X_Filter>
-                <ClientCode>${selectedValue}</ClientCode>
+                    ${selectedClient ? `<ClientCode>${selectedClient.value}</ClientCode>` : ''}
                 </X_Filter>
                 <X_GFilter></X_GFilter>
                 <J_Api>"UserId":"${localStorage.getItem('userId')}", "UserType":"${localStorage.getItem('userType')}"</J_Api>
@@ -406,18 +403,25 @@ function Dashboard() {
     };
 
     useEffect(() => {
-        // Fetch dashboard data
-        getDashboardData();
-
-        // Fetch last trading date and company logo if not already in Redux store
+        if (auth.userType === 'branch') {
+            getUserDashboardData();
+        } else {
+            getDashboardData();
+        }
         if (!lastTradingDate) {
             dispatch(fetchLastTradingDate());
         }
-
         if (!companyLogo) {
             dispatch(fetchInitializeLogin());
         }
-    }, [dispatch, lastTradingDate, companyLogo, selectedValue]);
+    }, [dispatch, lastTradingDate, companyLogo]);
+
+    // Keep only the useEffect for refetching dashboard data
+    useEffect(() => {
+        if (selectedClient && auth.userType === 'branch') {
+            getDashboardData();
+        }
+    }, [selectedClient]);
 
     if (loading) {
         return (
@@ -467,60 +471,48 @@ function Dashboard() {
 
     return (
         <div
-            className="container mx-auto"
+            className="container mx-auto p-4"
             style={{ backgroundColor: colors?.background2 || '#f0f0f0' }}
         >
-            {/* {
-                localStorage.getItem('userType') === "user" ?
-                    <div>
-                        <label> </label>
-                        <select
-                            value={selectedValue}
-                            onChange={(e) => setSelectedValue(e.target.value)}
-                            style={{cursor:"pointer"}}
-                        >
-                            <option value="">Please Select</option>
-                            {userDashData.map((item, index) => (
-                                <option key={index} value={item.Value.trim()}>
-                                    {item.DisplayName.trim()}
-                                </option>
-                            ))}
-                        </select>
-
-                    </div> : ""
-            } */}
-
-            {localStorage.getItem('userType') === "user" && (
-                <div className="relative inline-block w-64 mb-4">
-                    <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-white">Select Account</label>
-                    <button
-                        type="button"
-                        className="dropdown-toggle w-full px-4 py-2 text-left bg-white border rounded-md shadow-sm cursor-pointer dark:bg-gray-800 dark:text-white"
-                        onClick={() => setDropdownOpen(prev => !prev)}
-                    >
-                        {selectedItem ? selectedItem.DisplayName.trim() : 'Please Select'}
-                    </button>
-
-                    <Dropdown isOpen={dropdownOpen} onClose={() => setDropdownOpen(false)} className="w-full max-h-64 overflow-y-auto">
-                        <ul className="py-1">
-                            {userDashData.map((item, index) => (
-                                <li
-                                    key={index}
-                                    className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
-                                    onClick={() => {
-                                        setSelectedValue(item.Value.trim());
-                                        setDropdownOpen(false);
-                                    }}
-                                >
-                                    {item.DisplayName.trim()}
-                                </li>
-                            ))}
-                        </ul>
-                    </Dropdown>
+            {auth.userType === 'branch' && (
+                <div className="mb-4">
+                    <Select
+                        options={userDashData.map(item => ({
+                            value: item.Value,
+                            label: item.DisplayName
+                        }))}
+                        value={selectedClient}
+                        onChange={setSelectedClient}
+                        className="w-full max-w-md"
+                        styles={{
+                            control: (base) => ({
+                                ...base,
+                                backgroundColor: colors.cardBackground,
+                                borderColor: colors.color3,
+                                color: colors.text
+                            }),
+                            menu: (base) => ({
+                                ...base,
+                                backgroundColor: colors.cardBackground,
+                                color: colors.text
+                            }),
+                            option: (base, state) => ({
+                                ...base,
+                                backgroundColor: state.isSelected ? colors.primary : colors.cardBackground,
+                                color: state.isSelected ? colors.buttonText : colors.text,
+                                '&:hover': {
+                                    backgroundColor: colors.primary,
+                                    color: colors.buttonText
+                                }
+                            }),
+                            singleValue: (base) => ({
+                                ...base,
+                                color: colors.text
+                            })
+                        }}
+                    />
                 </div>
             )}
-
-
             <div className="space-y-4">
                 {dashboardData && dashboardData.map((cardData: any, index: number) => (
                     <Card

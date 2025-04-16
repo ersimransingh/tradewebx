@@ -8,7 +8,7 @@ import moment from 'moment';
 import FilterModal from './FilterModal';
 import { FaSync, FaFilter, FaDownload, FaFileCsv, FaFilePdf, FaPlus } from 'react-icons/fa';
 import { useTheme } from '@/context/ThemeContext';
-import DataTable, { exportTableToCsv } from './DataTable';
+import DataTable, { exportTableToCsv, exportTableToPdf } from './DataTable';
 import { store } from "@/redux/store";
 import { APP_METADATA_KEY } from "@/utils/constants";
 import EntryFormModal from './EntryFormModal';
@@ -39,6 +39,7 @@ const DynamicEntryComponent: React.FC<DynamicEntryComponentProps> = ({ component
     const [areFiltersInitialized, setAreFiltersInitialized] = useState(false);
     const [apiResponseTime, setApiResponseTime] = useState<number | undefined>(undefined);
     const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
+    const [autoFetch, setAutoFetch] = useState<boolean>(true);
 
     const tableRef = useRef<HTMLDivElement>(null);
     const { colors, fonts } = useTheme();
@@ -353,14 +354,19 @@ const DynamicEntryComponent: React.FC<DynamicEntryComponentProps> = ({ component
         }
     }, [pageData]);
 
+    // Set autoFetch based on pageData
+    useEffect(() => {
+        if (pageData?.[0]?.autoFetch !== undefined) {
+            setAutoFetch(pageData[0].autoFetch === "true");
+        }
+    }, [pageData]);
+
     // Modified initial data fetch useEffect
     useEffect(() => {
-        if (pageData && areFiltersInitialized) {
-            // If page has filters, use the initialized filters
-            // If no filters, just fetch the data
+        if (pageData && autoFetch) {
             fetchData();
         }
-    }, [currentLevel, pageData, areFiltersInitialized]); // Added areFiltersInitialized dependency
+    }, [currentLevel, pageData, autoFetch]);
 
     if (!pageData) {
         return <div>Loading report data...</div>;
@@ -408,13 +414,13 @@ const DynamicEntryComponent: React.FC<DynamicEntryComponentProps> = ({ component
                         >
                             <FaFileCsv size={20} />
                         </button>
-                        {/* <button
+                        <button
                             className="p-2 rounded"
-                            onClick={() => exportTableToPdf(tableRef.current,jsonData,appMetadata,apiData)}
+                            onClick={() => exportTableToPdf(tableRef.current, jsonData, appMetadata, apiData, pageData)}
                             style={{ color: colors.text }}
                         >
                             <FaFilePdf size={20} />
-                        </button> */}
+                        </button>
 
                         <button
                             className="p-2 rounded"
