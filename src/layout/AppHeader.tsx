@@ -13,9 +13,8 @@ const AppHeader: React.FC = () => {
   const dispatch = useAppDispatch();
   const { theme, setTheme, availableThemes, colors, fonts } = useTheme();
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
-  const { companyLogo, companyName } = useAppSelector((state) => state.common);
+  const { companyLogo, companyName, companyInfo } = useAppSelector((state) => state.common);
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
-
   const handleToggle = () => {
     if (window.innerWidth >= 991) {
       toggleSidebar();
@@ -111,14 +110,18 @@ const AppHeader: React.FC = () => {
           </button>
           {companyLogo && (
             <Link className="lg:hidden" href="/dashboard">
-              <Image
-                src={companyLogo}
-                alt={companyName || "Company Logo"}
-                width={32}
-                height={32}
-                loader={({ src }) => src}
-                unoptimized
-              />
+              {companyInfo?.CompanyLogo && (
+                <Image
+                  src={companyInfo.CompanyLogo.startsWith('data:')
+                    ? companyInfo.CompanyLogo
+                    : `data:image/png;base64,${companyInfo.CompanyLogo}`}
+                  alt="Company Logo"
+                  width={64}
+                  height={64}
+                  className="h-6 w-auto object-contain"
+                  priority
+                />
+              )}
             </Link>
           )}
           {/* <Link href="/" className="lg:hidden">

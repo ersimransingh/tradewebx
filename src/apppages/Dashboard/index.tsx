@@ -16,7 +16,7 @@ const ReactApexChart = nextDynamic(() => import("react-apexcharts"), { ssr: fals
 
 
 
-function Card({ cardData, onRefresh }: any) {
+function Card({ cardData, onRefresh, selectedClient, auth }: any) {
     const { colors } = useTheme();
     const [showDropdown, setShowDropdown] = useState(false);
 
@@ -43,7 +43,7 @@ function Card({ cardData, onRefresh }: any) {
     }
 
     // Helper function to generate proper link path for navigateTo values
-    const getLinkPath = (navigateTo: string) => {
+    const getLinkPath = (navigateTo: string, queryParams?: Record<string, string>) => {
         if (!navigateTo) return "";
 
         // Format the component name to match the dynamic routing pattern
@@ -51,6 +51,12 @@ function Card({ cardData, onRefresh }: any) {
         const formattedPath = navigateTo
             .replace(/([a-z])([A-Z])/g, '$1-$2')
             .toLowerCase();
+
+        // If query parameters are provided, add them to the URL
+        if (queryParams) {
+            const queryString = new URLSearchParams(queryParams).toString();
+            return `/${formattedPath}?${queryString}`;
+        }
 
         return `/${formattedPath}`;
     };
@@ -113,7 +119,10 @@ function Card({ cardData, onRefresh }: any) {
                         <h3 className="text-lg font-bold" style={{ color: chart.color }}>
                             {chart.navigateTo ? (
                                 <Link
-                                    href={getLinkPath(chart.navigateTo)}
+                                    href={getLinkPath(chart.navigateTo, {
+                                        clientCode: selectedClient?.value || '',
+                                        userType: auth.userType || ''
+                                    })}
                                     className="hover:underline flex items-center gap-2"
                                     style={{ color: colors.text }}
                                 >
@@ -128,7 +137,10 @@ function Card({ cardData, onRefresh }: any) {
                         </h3>
                         {chart.navigateTo && (
                             <Link
-                                href={getLinkPath(chart.navigateTo)}
+                                href={getLinkPath(chart.navigateTo, {
+                                    clientCode: selectedClient?.value || '',
+                                    userType: auth.userType || ''
+                                })}
                                 style={{ color: colors.primary }}
                                 className="text-sm hover:opacity-80"
                             >
@@ -158,7 +170,10 @@ function Card({ cardData, onRefresh }: any) {
                                             <span style={{ color: item.label.color || colors.text }}>
                                                 {item.navigateTo ? (
                                                     <Link
-                                                        href={getLinkPath(item.navigateTo)}
+                                                        href={getLinkPath(item.navigateTo, {
+                                                            clientCode: selectedClient?.value || '',
+                                                            userType: auth.userType || ''
+                                                        })}
                                                         className="hover:underline"
                                                     >
                                                         {item.label.text}
@@ -171,7 +186,10 @@ function Card({ cardData, onRefresh }: any) {
                                         <span style={{ color: item.value.color || colors.text }}>
                                             {item.navigateTo ? (
                                                 <Link
-                                                    href={getLinkPath(item.navigateTo)}
+                                                    href={getLinkPath(item.navigateTo, {
+                                                        clientCode: selectedClient?.value || '',
+                                                        userType: auth.userType || ''
+                                                    })}
                                                     className="hover:underline"
                                                 >
                                                     {item.value.text}
@@ -218,7 +236,10 @@ function Card({ cardData, onRefresh }: any) {
                     <h2 className="font-bold">
                         {cardData.navigateTo ? (
                             <Link
-                                href={getLinkPath(cardData.navigateTo)}
+                                href={getLinkPath(cardData.navigateTo, {
+                                    clientCode: selectedClient?.value || '',
+                                    userType: auth.userType || ''
+                                })}
                                 className="hover:underline flex items-center gap-2"
                             >
                                 {cardData.name}
@@ -250,7 +271,10 @@ function Card({ cardData, onRefresh }: any) {
                                 <h3 className="font-bold mb-4" style={{ color: grid.color }}>
                                     {grid.navigateTo ? (
                                         <Link
-                                            href={getLinkPath(grid.navigateTo)}
+                                            href={getLinkPath(grid.navigateTo, {
+                                                clientCode: selectedClient?.value || '',
+                                                userType: auth.userType || ''
+                                            })}
                                             className="hover:underline flex items-center gap-2"
                                         >
                                             {grid.name}
@@ -273,7 +297,10 @@ function Card({ cardData, onRefresh }: any) {
                                                 <span style={{ color: item.label.color }}>
                                                     {navigateTo && item.navigateTo ? (
                                                         <Link
-                                                            href={getLinkPath(item.navigateTo)}
+                                                            href={getLinkPath(item.navigateTo, {
+                                                                clientCode: selectedClient?.value || '',
+                                                                userType: auth.userType || ''
+                                                            })}
                                                             className="hover:underline flex items-center gap-2"
                                                         >
                                                             {item.label.text}
@@ -288,7 +315,10 @@ function Card({ cardData, onRefresh }: any) {
                                                 <span style={{ color: item.value.color }}>
                                                     {navigateTo && item.navigateTo ? (
                                                         <Link
-                                                            href={getLinkPath(item.navigateTo)}
+                                                            href={getLinkPath(item.navigateTo, {
+                                                                clientCode: selectedClient?.value || '',
+                                                                userType: auth.userType || ''
+                                                            })}
                                                             className="hover:underline flex items-center gap-2"
                                                         >
                                                             {item.value.text}
@@ -522,6 +552,8 @@ function Dashboard() {
                             onRefresh: getDashboardData,
                             loading: loading
                         }}
+                        selectedClient={selectedClient}
+                        auth={auth}
                     />
                 ))}
             </div>
