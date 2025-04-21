@@ -28,7 +28,13 @@ type NavItem = {
   name: string;
   icon: React.ReactNode;
   path?: string;
-  subItems?: { name: string; path: string; pro?: boolean; new?: boolean }[];
+  subItems?: {
+    name: string;
+    path?: string;
+    pro?: boolean;
+    new?: boolean;
+    subItems?: { name: string; path: string; pro?: boolean; new?: boolean }[];
+  }[];
 };
 
 import { FaHome, FaCalendar, FaUser, FaList, FaTable, FaFileAlt } from 'react-icons/fa';
@@ -123,23 +129,26 @@ const AppSidebar: React.FC = () => {
               className={`menu-item group cursor-pointer ${fontStyles.menuItem} ${!isExpanded && !isHovered ? "lg:justify-center" : "lg:justify-start"
                 }`}
               style={{
-                backgroundColor: openSubmenu?.type === menuType && openSubmenu?.index === index
-                  ? colors.primary
-                  : 'transparent',
-                color: openSubmenu?.type === menuType && openSubmenu?.index === index
-                  ? colors.buttonText
-                  : colors.text
+                backgroundColor:
+                  openSubmenu?.type === menuType && openSubmenu?.index === index
+                    ? colors.primary
+                    : "transparent",
+                color:
+                  openSubmenu?.type === menuType && openSubmenu?.index === index
+                    ? colors.buttonText
+                    : colors.text,
               }}
             >
               <span
                 className="flex items-center justify-center w-6 h-6"
                 style={{
-                  color: openSubmenu?.type === menuType && openSubmenu?.index === index
-                    ? colors.buttonText
-                    : colors.text
+                  color:
+                    openSubmenu?.type === menuType && openSubmenu?.index === index
+                      ? colors.buttonText
+                      : colors.text,
                 }}
               >
-                {iconMap[nav.icon as keyof typeof iconMap] || iconMap['default-icon']}
+                {iconMap[nav.icon as keyof typeof iconMap] || iconMap["default-icon"]}
               </span>
               {(isExpanded || isHovered || isMobileOpen) && (
                 <span className="font-bold">{nav.name}</span>
@@ -151,9 +160,10 @@ const AppSidebar: React.FC = () => {
                     : ""
                     }`}
                   style={{
-                    color: openSubmenu?.type === menuType && openSubmenu?.index === index
-                      ? colors.buttonText
-                      : colors.text
+                    color:
+                      openSubmenu?.type === menuType && openSubmenu?.index === index
+                        ? colors.buttonText
+                        : colors.text,
                   }}
                 />
               )}
@@ -164,17 +174,17 @@ const AppSidebar: React.FC = () => {
                 href={nav.path}
                 className={`menu-item group ${fontStyles.menuItem}`}
                 style={{
-                  backgroundColor: isActive(nav.path) ? colors.primary : 'transparent',
-                  color: isActive(nav.path) ? colors.buttonText : colors.text
+                  backgroundColor: isActive(nav.path) ? colors.primary : "transparent",
+                  color: isActive(nav.path) ? colors.buttonText : colors.text,
                 }}
               >
                 <span
                   className="flex items-center justify-center w-6 h-6"
                   style={{
-                    color: isActive(nav.path) ? colors.buttonText : colors.text
+                    color: isActive(nav.path) ? colors.buttonText : colors.text,
                   }}
                 >
-                  {iconMap[nav.icon as keyof typeof iconMap] || iconMap['default-icon']}
+                  {iconMap[nav.icon as keyof typeof iconMap] || iconMap["default-icon"]}
                 </span>
                 {(isExpanded || isHovered || isMobileOpen) && (
                   <span className="font-bold">{nav.name}</span>
@@ -196,18 +206,73 @@ const AppSidebar: React.FC = () => {
               }}
             >
               <ul className="mt-2 space-y-1 ml-9 font-bold">
-                {nav.subItems.map((subItem) => (
+                {nav.subItems.map((subItem, subIndex) => (
                   <li key={subItem.name}>
-                    <Link
-                      href={subItem.path}
-                      style={{
-                        backgroundColor: isActive(subItem.path) ? colors.primary : 'transparent',
-                        color: isActive(subItem.path) ? colors.buttonText : colors.text
-                      }}
-                      className={`menu-dropdown-item font-bold ${fontStyles.submenuItem}`}
-                    >
-                      <span className="font-bold">{subItem.name}</span>
-                    </Link>
+                    {subItem.subItems ? (
+                      <div>
+                        <button
+                          onClick={() => handleSubmenuToggle(`${index}-${subIndex}`, menuType)}
+                          className={`menu-dropdown-item font-bold ${fontStyles.submenuItem} w-full text-left`}
+                          style={{
+                            backgroundColor: isActive(subItem.path || '') ? colors.primary : 'transparent',
+                            color: isActive(subItem.path || '') ? colors.buttonText : colors.text
+                          }}
+                        >
+                          <span className="font-bold">{subItem.name}</span>
+                          <ChevronDownIcon
+                            className={`ml-auto w-4 h-4 transition-transform duration-200 ${openSubmenu?.type === menuType && openSubmenu?.index === `${index}-${subIndex}`
+                              ? "rotate-180"
+                              : ""
+                              }`}
+                            style={{
+                              color: isActive(subItem.path || '') ? colors.buttonText : colors.text,
+                            }}
+                          />
+                        </button>
+                        {subItem.subItems && (
+                          <div
+                            ref={(el) => {
+                              subMenuRefs.current[`${menuType}-${index}-${subIndex}`] = el;
+                            }}
+                            className="overflow-hidden transition-all duration-300"
+                            style={{
+                              height:
+                                openSubmenu?.type === menuType && openSubmenu?.index === `${index}-${subIndex}`
+                                  ? `${subMenuHeight[`${menuType}-${index}-${subIndex}`]}px`
+                                  : "0px",
+                            }}
+                          >
+                            <ul className="mt-2 space-y-1 ml-9 font-bold">
+                              {subItem.subItems.map((nestedItem) => (
+                                <li key={nestedItem.name}>
+                                  <Link
+                                    href={nestedItem.path}
+                                    style={{
+                                      backgroundColor: isActive(nestedItem.path) ? colors.primary : 'transparent',
+                                      color: isActive(nestedItem.path) ? colors.buttonText : colors.text
+                                    }}
+                                    className={`menu-dropdown-item font-bold ${fontStyles.submenuItem}`}
+                                  >
+                                    <span className="font-bold">{nestedItem.name}</span>
+                                  </Link>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <Link
+                        href={subItem.path || '#'}
+                        style={{
+                          backgroundColor: isActive(subItem.path || '') ? colors.primary : 'transparent',
+                          color: isActive(subItem.path || '') ? colors.buttonText : colors.text
+                        }}
+                        className={`menu-dropdown-item font-bold ${fontStyles.submenuItem}`}
+                      >
+                        <span className="font-bold">{subItem.name}</span>
+                      </Link>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -220,7 +285,7 @@ const AppSidebar: React.FC = () => {
 
   const [openSubmenu, setOpenSubmenu] = useState<{
     type: "main" | "others";
-    index: number;
+    index: string | number;
   } | null>(null);
   const [subMenuHeight, setSubMenuHeight] = useState<Record<string, number>>(
     {}
@@ -269,7 +334,7 @@ const AppSidebar: React.FC = () => {
     }
   }, [openSubmenu]);
 
-  const handleSubmenuToggle = (index: number, menuType: "main" | "others") => {
+  const handleSubmenuToggle = (index: string | number, menuType: "main" | "others") => {
     setOpenSubmenu((prevOpenSubmenu) => {
       if (
         prevOpenSubmenu &&

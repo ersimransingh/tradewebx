@@ -62,6 +62,12 @@ interface StyledElement extends React.ReactElement {
     };
 }
 
+interface RowData {
+    id: string | number;
+    expanded: boolean;
+    data: any;
+}
+
 function getGridContent(gridEl: HTMLDivElement) {
     return {
         head: getRows('.rdg-header-row'),
@@ -128,6 +134,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
     const { tableStyle } = useAppSelector((state: RootState) => state.common);
     const rowHeight = tableStyle === 'small' ? 30 : tableStyle === 'medium' ? 40 : 50;
     const screenSize = useScreenSize();
+    const [expandedRows, setExpandedRows] = useState<Set<string | number>>(new Set());
 
     // Format date function
     const formatDateValue = (value: string | number | Date, format: string = 'DD-MM-YYYY'): string => {
@@ -201,8 +208,9 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
             return data;
         }
 
-        return data.map(row => {
+        return data.map((row, index) => {
             const newRow = { ...row };
+            const rowId = row.id || index;
 
             // Handle date formatting
             if (settings?.dateFormat?.key) {
@@ -246,9 +254,13 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
                 });
             }
 
-            return newRow;
+            return {
+                ...newRow,
+                _expanded: expandedRows.has(rowId),
+                _id: rowId
+            };
         });
-    }, [data, settings?.dateFormat, settings?.decimalColumns, settings?.valueBasedTextColor]);
+    }, [data, settings?.dateFormat, settings?.decimalColumns, settings?.valueBasedTextColor, expandedRows]);
 
     // Dynamically create columns from the first data item
     const columns = useMemo(() => {
@@ -285,7 +297,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
 
         // If no responsive columns are defined, show all columns
         if (columnsToShow.length === 0) {
-            columnsToShow = Object.keys(formattedData[0]);
+            columnsToShow = Object.keys(formattedData[0]).filter(key => !key.startsWith('_'));
             console.log('No responsive columns defined, using all columns:', columnsToShow);
         }
 
@@ -293,83 +305,169 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
         columnsToShow = columnsToShow.filter(key => !columnsToHide.includes(key));
         console.log('Final columns to show:', columnsToShow);
 
-        return columnsToShow.map((key: any) => {
-            // Check if this column should be forcibly left-aligned
-            const isLeftAligned = leftAlignedColumns.includes(key);
-
-            // Check if this column contains numeric values (only if not forced left-aligned)
-            const isNumericColumn = !isLeftAligned && formattedData.some((row: any) => {
-                const value = row[key];
-                const rawValue = React.isValidElement(value) ? (value as StyledValue).props.children : value;
-                return !isNaN(parseFloat(rawValue)) && isFinite(rawValue);
-            });
-
-            // Check if this column should show a total in the summary row
-            const shouldShowTotal = summary?.columnsToShowTotal?.some(
-                (col: any) => col.key === key
-            );
-
-            return {
-                key,
-                name: key,
-                sortable: true,
-                minWidth: 80,
-                maxWidth: 400,
-                resizable: true,
-                // Add a class to identify numeric columns or forced left-aligned columns
-                headerCellClass: isNumericColumn ? 'numeric-column-header' : '',
-                cellClass: isNumericColumn ? 'numeric-column-cell' : '',
-                renderSummaryCell: (props: any) => {
-                    // Only show values for totalCount and columns that should show totals
-                    if (key === 'totalCount' || shouldShowTotal) {
-                        return <div className={isNumericColumn ? "numeric-value font-bold" : "font-bold"} style={{ color: colors.text }}>{props.row[key]}</div>;
+        return [
+            {
+                key: '_expanded',
+                name: '',
+                minWidth: 30,
+                width: 30,
+                colSpan: (props: any) => {
+                    if (props.type === 'ROW' && props.row._expanded) {
+                        return columnsToShow.length + 1;
                     }
-                    // Return empty div for columns that shouldn't show totals
-                    return <div></div>;
+                    return undefined;
                 },
-                formatter: (props: any) => {
-                    const value = props.row[key];
-                    // Check if the value is numeric
-                    const rawValue = React.isValidElement(value) ? (value as StyledValue).props.children : value;
-                    const numValue = parseFloat(rawValue);
+                // cellClass: (row: any) => {
+                //     if (row._expanded) {
+                //         return 'expanded-row';
+                //     }
+                //     return undefined;
+                // },
+                renderCell: ({ row, tabIndex, onRowChange }: any) => {
+                    if (row._expanded) {
+                        return (
+                            <div className="expanded-content" style={{ height: '100%', overflow: 'auto' }}>
+                                <div className="expanded-header">
+                                    <div
+                                        className="expand-button"
+                                        onClick={() => {
+                                            const newExpandedRows = new Set(expandedRows);
+                                            newExpandedRows.delete(row._id);
+                                            setExpandedRows(newExpandedRows);
+                                        }}
+                                    >
+                                        ▼
+                                    </div>
+                                </div>
+                                <div className="expanded-details">
+                                    {Object.entries(row)
+                                        .filter(([key]) => !key.startsWith('_'))
+                                        .map(([key, value]) => {
+                                            // Use the same formatter logic as the main table
+                                            const isLeftAligned = leftAlignedColumns.includes(key);
+                                            const isNumericColumn = !isLeftAligned && ['Balance', 'Credit', 'Debit'].includes(key);
 
-                    if (!isNaN(numValue) && !isLeftAligned) {
-                        // Format number with commas and 2 decimal places
-                        const formattedValue = new Intl.NumberFormat('en-IN', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2
-                        }).format(numValue);
+                                            let formattedValue: React.ReactNode;
+                                            if (React.isValidElement(value)) {
+                                                formattedValue = value;
+                                            } else if (isNumericColumn) {
+                                                const rawValue = React.isValidElement(value) ? (value as StyledValue).props.children : value;
+                                                const numValue = parseFloat(String(rawValue).replace(/,/g, ''));
 
-                        // Determine text color based on value
-                        const textColor = numValue < 0 ? '#dc2626' :
-                            numValue > 0 ? '#16a34a' :
-                                colors.text;
+                                                if (!isNaN(numValue)) {
+                                                    const formattedNumber = new Intl.NumberFormat('en-IN', {
+                                                        minimumFractionDigits: 2,
+                                                        maximumFractionDigits: 2
+                                                    }).format(numValue);
 
-                        return <div className="numeric-value" style={{ color: textColor }}>{formattedValue}</div>;
+                                                    const textColor = numValue < 0 ? '#dc2626' :
+                                                        numValue > 0 ? '#16a34a' :
+                                                            colors.text;
+
+                                                    formattedValue = <div style={{ color: textColor }}>{formattedNumber}</div>;
+                                                } else {
+                                                    formattedValue = String(value);
+                                                }
+                                            } else {
+                                                formattedValue = String(value);
+                                            }
+
+                                            return (
+                                                <div key={key} className="expanded-row-item">
+                                                    <span className="expanded-row-label">{key}:</span>
+                                                    <span className="expanded-row-value">
+                                                        {formattedValue}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })}
+                                </div>
+                            </div>
+                        );
                     }
 
-                    // If it's already a React element (from value-based formatting) and contains a number
-                    if (React.isValidElement(value)) {
-                        const childValue = (value as StyledValue).props.children;
-                        const childNumValue = parseFloat(childValue.toString());
+                    return (
+                        <div
+                            className="expand-button"
+                            onClick={() => {
+                                const newExpandedRows = new Set(expandedRows);
+                                if (row._expanded) {
+                                    newExpandedRows.delete(row._id);
+                                } else {
+                                    newExpandedRows.add(row._id);
+                                }
+                                setExpandedRows(newExpandedRows);
+                            }}
+                        >
+                            {row._expanded ? '▼' : '▶'}
+                        </div>
+                    );
+                }
+            },
+            ...columnsToShow.map((key: any) => {
+                const isLeftAligned = leftAlignedColumns.includes(key);
+                const isNumericColumn = !isLeftAligned && formattedData.some((row: any) => {
+                    const value = row[key];
+                    const rawValue = React.isValidElement(value) ? (value as StyledValue).props.children : value;
+                    return !isNaN(parseFloat(rawValue)) && isFinite(rawValue);
+                });
 
-                        if (!isNaN(childNumValue) && !isLeftAligned) {
-                            return React.cloneElement(value as StyledElement, {
-                                className: "numeric-value",
-                                style: { ...(value as StyledElement).props.style }
-                            });
+                const shouldShowTotal = summary?.columnsToShowTotal?.some(
+                    (col: any) => col.key === key
+                );
+
+                return {
+                    key,
+                    name: key,
+                    sortable: true,
+                    minWidth: 80,
+                    maxWidth: 400,
+                    resizable: true,
+                    headerCellClass: isNumericColumn ? 'numeric-column-header' : '',
+                    cellClass: isNumericColumn ? 'numeric-column-cell' : '',
+                    renderSummaryCell: (props: any) => {
+                        if (key === 'totalCount' || shouldShowTotal) {
+                            return <div className={isNumericColumn ? "numeric-value font-bold" : "font-bold"} style={{ color: colors.text }}>{props.row[key]}</div>;
+                        }
+                        return <div></div>;
+                    },
+                    formatter: (props: any) => {
+                        const value = props.row[key];
+                        const rawValue = React.isValidElement(value) ? (value as StyledValue).props.children : value;
+                        const numValue = parseFloat(rawValue);
+
+                        if (!isNaN(numValue) && !isLeftAligned) {
+                            const formattedValue = new Intl.NumberFormat('en-IN', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            }).format(numValue);
+
+                            const textColor = numValue < 0 ? '#dc2626' :
+                                numValue > 0 ? '#16a34a' :
+                                    colors.text;
+
+                            return <div className="numeric-value" style={{ color: textColor }}>{formattedValue}</div>;
                         }
 
-                        // Return the original React element if it's not numeric or should be left-aligned
+                        if (React.isValidElement(value)) {
+                            const childValue = (value as StyledValue).props.children;
+                            const childNumValue = parseFloat(childValue.toString());
+
+                            if (!isNaN(childNumValue) && !isLeftAligned) {
+                                return React.cloneElement(value as StyledElement, {
+                                    className: "numeric-value",
+                                    style: { ...(value as StyledElement).props.style }
+                                });
+                            }
+                            return value;
+                        }
+
                         return value;
                     }
-
-                    // For numeric values that should be left-aligned and non-numeric values
-                    return value;
-                }
-            };
-        });
-    }, [formattedData, colors.text, settings?.hideEntireColumn, settings?.leftAlignedColumns, settings?.leftAlignedColums, summary?.columnsToShowTotal, screenSize, settings?.mobileColumns, settings?.tabletColumns, settings?.webColumns]);
+                };
+            })
+        ];
+    }, [formattedData, colors.text, settings?.hideEntireColumn, settings?.leftAlignedColumns, settings?.leftAlignedColums, summary?.columnsToShowTotal, screenSize, settings?.mobileColumns, settings?.tabletColumns, settings?.webColumns, expandedRows]);
 
     // Sort function
     const sortRows = (initialRows: any[], sortColumns: any[]) => {
@@ -378,6 +476,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
         return [...initialRows].sort((a, b) => {
             for (const sort of sortColumns) {
                 const { columnKey, direction } = sort;
+                if (columnKey.startsWith('_')) continue; // Skip internal columns
                 const aValue = a[columnKey];
                 const bValue = b[columnKey];
 
@@ -476,7 +575,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
                 sortColumns={sortColumns}
                 onSortColumnsChange={setSortColumns}
                 className="rdg-light"
-                rowHeight={rowHeight}
+                rowHeight={(row) => row._expanded ? 200 : rowHeight}
                 headerRowHeight={rowHeight}
                 style={{
                     backgroundColor: colors.background,
@@ -485,8 +584,9 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
                 }}
                 bottomSummaryRows={summmaryRows}
                 onCellClick={(props: any) => {
-                    if (onRowClick) {
-                        onRowClick(rows[props.rowIdx]);
+                    if (onRowClick && !props.column.key.startsWith('_')) {
+                        const { _id, _expanded, ...rowData } = rows[props.rowIdx];
+                        onRowClick(rowData);
                     }
                 }}
             />
@@ -548,6 +648,78 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
 
                 .rdg-header-sort-cell:hover {
                     background-color: ${colors.primary}dd;
+                }
+
+                .expanded-content {
+                    position: relative;
+                    width: 100%;
+                    min-height: 200px;
+                    background-color: ${colors.background};
+                    border: 1px solid ${colors.textInputBorder};
+                    margin-top: 4px;
+                }
+
+                .expanded-header {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 30px;
+                    height: 30px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    background-color: ${colors.background};
+                    border-right: 1px solid ${colors.textInputBorder};
+                    border-bottom: 1px solid ${colors.textInputBorder};
+                }
+
+                .expanded-details {
+                    padding: 16px 16px 16px 46px;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 8px;
+                }
+
+                .expanded-row-item {
+                    display: flex;
+                    align-items: flex-start;
+                }
+
+                .expanded-row-label {
+                    font-weight: bold;
+                    min-width: 150px;
+                    color: ${colors.text};
+                    padding-right: 16px;
+                }
+
+                .expanded-row-value {
+                    color: ${colors.text};
+                    flex: 1;
+                    word-break: break-word;
+                    display: flex;
+                    align-items: center;
+                }
+
+                .expanded-row-value > div {
+                    display: inline;
+                    width: 100%;
+                }
+
+                .expand-button {
+                    cursor: pointer;
+                    width: 100%;
+                    height: 100%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 12px;
+                    background-color: transparent;
+                    border: none;
+                    color: ${colors.text};
+                }
+
+                .expand-button:hover {
+                    background-color: ${colors.color1};
                 }
             `}</style>
         </div>
