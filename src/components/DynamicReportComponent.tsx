@@ -44,6 +44,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
 
     const tableRef = useRef<HTMLDivElement>(null);
     const { colors, fonts } = useTheme();
+    const hasFetchedRef = useRef(false);
 
     const appMetadata = (() => {
         try {
@@ -199,7 +200,10 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
             } else if (!newAutoFetch) {
                 return;
             }
-            fetchData();
+            if (!hasFetchedRef.current) {
+                fetchData();
+                hasFetchedRef.current = true; // prevent second run
+            }
         }
     }, [pageData, clientCode]);
 
