@@ -40,12 +40,13 @@ type PageData = {
 
 type SubMenuItem = {
     name: string;
-    path: string;
+    path?: string;
     pro?: boolean;
     new?: boolean;
     componentName: string;
     componentType?: string;
     pageData?: PageData[];
+    subItems?: SubMenuItem[];
 };
 
 type NavItem = {
@@ -94,15 +95,35 @@ const convertToNavItems = (data: any): NavItem[] => {
         };
 
         if (item.submenu && item.submenu.length > 0) {
-            navItem.subItems = item.submenu.map((subItem: any) => ({
-                name: subItem.title,
-                path: `${basePath}/${subItem.componentName.toLowerCase().replace(/\s+/g, '-')}`,
-                componentName: subItem.componentName,
-                componentType: subItem.componentType || null,
-                pageData: subItem.pageData,
-                pro: false,
-                new: false
-            }));
+            navItem.subItems = item.submenu.map((subItem: any) => {
+                const subItemPath = `${basePath}/${subItem.componentName.toLowerCase().replace(/\s+/g, '-')}`;
+                const subNavItem: SubMenuItem = {
+                    name: subItem.title,
+                    path: subItemPath,
+                    componentName: subItem.componentName,
+                    componentType: subItem.componentType || null,
+                    pageData: subItem.pageData,
+                    pro: false,
+                    new: false
+                };
+
+                // Handle third level submenu
+                if (subItem.submenu && subItem.submenu.length > 0) {
+                    subNavItem.subItems = subItem.submenu.map((thirdItem: any) => ({
+                        name: thirdItem.title,
+                        path: `${subItemPath}/${thirdItem.componentName.toLowerCase().replace(/\s+/g, '-')}`,
+                        componentName: thirdItem.componentName,
+                        componentType: thirdItem.componentType || null,
+                        pageData: thirdItem.pageData,
+                        pro: false,
+                        new: false
+                    }));
+                    // Remove path from parent if it has subItems
+                    delete subNavItem.path;
+                }
+
+                return subNavItem;
+            });
             // Remove path from parent if it has subItems
             delete navItem.path;
         }

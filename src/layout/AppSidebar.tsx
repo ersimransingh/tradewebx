@@ -24,17 +24,25 @@ import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { fetchMenuItems, selectAllMenuItems, selectMenuStatus, selectMenuError } from "@/redux/features/menuSlice";
 
 
+type SubMenuItem = {
+  name: string;
+  path?: string;
+  pro?: boolean;
+  new?: boolean;
+  componentName: string;
+  componentType?: string;
+  pageData?: any[];
+  subItems?: SubMenuItem[];
+};
+
 type NavItem = {
   name: string;
-  icon: React.ReactNode;
+  icon: string;
   path?: string;
-  subItems?: {
-    name: string;
-    path?: string;
-    pro?: boolean;
-    new?: boolean;
-    subItems?: { name: string; path: string; pro?: boolean; new?: boolean }[];
-  }[];
+  componentName: string;
+  componentType?: string;
+  pageData?: any[];
+  subItems?: SubMenuItem[];
 };
 
 import { FaHome, FaCalendar, FaUser, FaList, FaTable, FaFileAlt } from 'react-icons/fa';
@@ -66,12 +74,16 @@ const AppSidebar: React.FC = () => {
   const menuError = useAppSelector(selectMenuError);
   const { companyLogo, companyName, companyInfo } = useAppSelector((state) => state.common);
 
+  // State for managing open submenus
+  const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>({});
+  const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
   // Font styling class for consistent typography
   const fontStyles = {
     title: "text-xl font-bold",
     menuHeader: "text-xs uppercase leading-[20px]",
     menuItem: "text-sm font-medium",
-    submenuItem: "text-xs font-normal",
+    submenuItem: "text-xs font-bold",
     badge: "text-xs font-semibold",
   };
 
@@ -101,255 +113,200 @@ const AppSidebar: React.FC = () => {
       const navItem: NavItem = {
         icon: item.icon,
         name: item.title,
-        path: basePath
+        path: basePath,
+        componentName: item.componentName,
+        componentType: item.componentType,
+        pageData: item.pageData,
       };
 
       if (item.submenu && item.submenu.length > 0) {
         navItem.subItems = item.submenu.map((subItem: any) => ({
           name: subItem.title,
           path: `${basePath}/${subItem.componentName.toLowerCase().replace(/\s+/g, '-')}`,
-          pro: false
+          pro: false,
+          componentName: subItem.componentName,
+          componentType: subItem.componentType,
+          pageData: subItem.pageData,
         }));
       }
 
       return navItem;
     });
+
   }
 
-  const renderMenuItems = (
-    navItemsFromApi: NavItem[],
-    menuType: "main" | "others"
-  ) => (
-    <ul className="flex flex-col gap-4 font-bold">
-      {navItemsFromApi.map((nav, index) => (
-        <li key={nav.name}>
-          {nav.subItems ? (
-            <button
-              onClick={() => handleSubmenuToggle(index, menuType)}
-              className={`menu-item group cursor-pointer ${fontStyles.menuItem} ${!isExpanded && !isHovered ? "lg:justify-center" : "lg:justify-start"
-                }`}
-              style={{
-                backgroundColor:
-                  openSubmenu?.type === menuType && openSubmenu?.index === index
-                    ? colors.primary
-                    : "transparent",
-                color:
-                  openSubmenu?.type === menuType && openSubmenu?.index === index
-                    ? colors.buttonText
-                    : colors.text,
-              }}
-            >
-              <span
-                className="flex items-center justify-center w-6 h-6"
+  // Calculate submenu height
+  const getSubmenuHeight = (menuPath: string) => {
+    const ref = subMenuRefs.current[menuPath];
+    if (!ref) return 0;
+    return ref.scrollHeight;
+  };
+
+  // Handle submenu toggle
+  const handleSubmenuToggle = (menuPath: string) => {
+    setOpenSubmenus(prev => ({
+      ...prev,
+      [menuPath]: !prev[menuPath]
+    }));
+  };
+
+  // Check if a path is active
+  const isActive = (path: string) => {
+    return pathname === path;
+  };
+
+  // Render nested menu items
+  const renderNestedMenu = (items: any[], parentPath: string = '') => {
+    return items.map((item, index) => {
+      const currentPath = parentPath ? `${parentPath}-${index}` : `${index}`;
+      const hasSubItems = item.subItems && item.subItems.length > 0;
+      const isOpen = openSubmenus[currentPath];
+      const uniqueKey = `${item.name}-${item.path || ''}-${currentPath}`;
+
+      return (
+        <li key={uniqueKey} className="relative">
+          {hasSubItems ? (
+            <div className="w-full">
+              <button
+                onClick={() => handleSubmenuToggle(currentPath)}
+                className={`menu-dropdown-item font-bold ${fontStyles.submenuItem} w-full text-left`}
                 style={{
-                  color:
-                    openSubmenu?.type === menuType && openSubmenu?.index === index
-                      ? colors.buttonText
-                      : colors.text,
+                  backgroundColor: isActive(item.path || '') ? colors.primary : 'transparent',
+                  color: isActive(item.path || '') ? colors.buttonText : colors.text
                 }}
               >
-                {iconMap[nav.icon as keyof typeof iconMap] || iconMap["default-icon"]}
-              </span>
-              {(isExpanded || isHovered || isMobileOpen) && (
-                <span className="font-bold">{nav.name}</span>
-              )}
-              {(isExpanded || isHovered || isMobileOpen) && (
+                <span className="font-bold">{item.name}</span>
                 <ChevronDownIcon
-                  className={`ml-auto w-5 h-5 transition-transform duration-200 ${openSubmenu?.type === menuType && openSubmenu?.index === index
-                    ? "rotate-180"
-                    : ""
-                    }`}
+                  className={`ml-auto w-4 h-4 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
                   style={{
-                    color:
-                      openSubmenu?.type === menuType && openSubmenu?.index === index
-                        ? colors.buttonText
-                        : colors.text,
+                    color: isActive(item.path || '') ? colors.buttonText : colors.text,
                   }}
                 />
-              )}
-            </button>
-          ) : (
-            nav.path && (
-              <Link
-                href={nav.path}
-                className={`menu-item group ${fontStyles.menuItem}`}
+              </button>
+              <div
+                ref={(el) => {
+                  if (el) {
+                    subMenuRefs.current[currentPath] = el;
+                  }
+                }}
+                className="overflow-hidden"
                 style={{
-                  backgroundColor: isActive(nav.path) ? colors.primary : "transparent",
-                  color: isActive(nav.path) ? colors.buttonText : colors.text,
+                  display: isOpen ? 'block' : 'none',
+                  paddingLeft: '1rem'
                 }}
               >
-                <span
-                  className="flex items-center justify-center w-6 h-6"
-                  style={{
-                    color: isActive(nav.path) ? colors.buttonText : colors.text,
-                  }}
-                >
-                  {iconMap[nav.icon as keyof typeof iconMap] || iconMap["default-icon"]}
-                </span>
-                {(isExpanded || isHovered || isMobileOpen) && (
-                  <span className="font-bold">{nav.name}</span>
-                )}
-              </Link>
-            )
-          )}
-          {nav.subItems && (isExpanded || isHovered || isMobileOpen) && (
-            <div
-              ref={(el) => {
-                subMenuRefs.current[`${menuType}-${index}`] = el;
-              }}
-              className="overflow-hidden transition-all duration-300"
+                <ul className="mt-2 space-y-1 font-bold">
+                  {renderNestedMenu(item.subItems, currentPath)}
+                </ul>
+              </div>
+            </div>
+          ) : (
+            <Link
+              href={item.path || '#'}
+              className={`menu-dropdown-item font-bold ${fontStyles.submenuItem}`}
               style={{
-                height:
-                  openSubmenu?.type === menuType && openSubmenu?.index === index
-                    ? `${subMenuHeight[`${menuType}-${index}`]}px`
-                    : "0px",
+                backgroundColor: isActive(item.path || '') ? colors.primary : 'transparent',
+                color: isActive(item.path || '') ? colors.buttonText : colors.text
               }}
             >
-              <ul className="mt-2 space-y-1 ml-9 font-bold">
-                {nav.subItems.map((subItem, subIndex) => (
-                  <li key={subItem.name}>
-                    {subItem.subItems ? (
-                      <div>
-                        <button
-                          onClick={() => handleSubmenuToggle(`${index}-${subIndex}`, menuType)}
-                          className={`menu-dropdown-item font-bold ${fontStyles.submenuItem} w-full text-left`}
-                          style={{
-                            backgroundColor: isActive(subItem.path || '') ? colors.primary : 'transparent',
-                            color: isActive(subItem.path || '') ? colors.buttonText : colors.text
-                          }}
-                        >
-                          <span className="font-bold">{subItem.name}</span>
-                          <ChevronDownIcon
-                            className={`ml-auto w-4 h-4 transition-transform duration-200 ${openSubmenu?.type === menuType && openSubmenu?.index === `${index}-${subIndex}`
-                              ? "rotate-180"
-                              : ""
-                              }`}
-                            style={{
-                              color: isActive(subItem.path || '') ? colors.buttonText : colors.text,
-                            }}
-                          />
-                        </button>
-                        {subItem.subItems && (
-                          <div
-                            ref={(el) => {
-                              subMenuRefs.current[`${menuType}-${index}-${subIndex}`] = el;
-                            }}
-                            className="overflow-hidden transition-all duration-300"
-                            style={{
-                              height:
-                                openSubmenu?.type === menuType && openSubmenu?.index === `${index}-${subIndex}`
-                                  ? `${subMenuHeight[`${menuType}-${index}-${subIndex}`]}px`
-                                  : "0px",
-                            }}
-                          >
-                            <ul className="mt-2 space-y-1 ml-9 font-bold">
-                              {subItem.subItems.map((nestedItem) => (
-                                <li key={nestedItem.name}>
-                                  <Link
-                                    href={nestedItem.path}
-                                    style={{
-                                      backgroundColor: isActive(nestedItem.path) ? colors.primary : 'transparent',
-                                      color: isActive(nestedItem.path) ? colors.buttonText : colors.text
-                                    }}
-                                    className={`menu-dropdown-item font-bold ${fontStyles.submenuItem}`}
-                                  >
-                                    <span className="font-bold">{nestedItem.name}</span>
-                                  </Link>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <Link
-                        href={subItem.path || '#'}
-                        style={{
-                          backgroundColor: isActive(subItem.path || '') ? colors.primary : 'transparent',
-                          color: isActive(subItem.path || '') ? colors.buttonText : colors.text
-                        }}
-                        className={`menu-dropdown-item font-bold ${fontStyles.submenuItem}`}
-                      >
-                        <span className="font-bold">{subItem.name}</span>
-                      </Link>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
+              {item.name}
+            </Link>
           )}
         </li>
-      ))}
-    </ul>
-  );
-
-  const [openSubmenu, setOpenSubmenu] = useState<{
-    type: "main" | "others";
-    index: string | number;
-  } | null>(null);
-  const [subMenuHeight, setSubMenuHeight] = useState<Record<string, number>>(
-    {}
-  );
-  const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
-
-  // const isActive = (path: string) => path === pathname;
-  const isActive = useCallback((path: string) => path === pathname, [pathname]);
-
-  useEffect(() => {
-    // Check if the current path matches any submenu item
-    let submenuMatched = false;
-    ["main", "others"].forEach((menuType) => {
-      const items = menuItems;
-      items.forEach((nav, index) => {
-        if (nav.subItems) {
-          nav.subItems.forEach((subItem) => {
-            if (isActive(subItem.path)) {
-              setOpenSubmenu({
-                type: menuType as "main" | "others",
-                index,
-              });
-              submenuMatched = true;
-            }
-          });
-        }
-      });
-    });
-
-    // If no submenu item matches, close the open submenu
-    if (!submenuMatched) {
-      setOpenSubmenu(null);
-    }
-  }, [pathname, isActive, menuItems]);
-
-  useEffect(() => {
-    // Set the height of the submenu items when the submenu is opened
-    if (openSubmenu !== null) {
-      const key = `${openSubmenu.type}-${openSubmenu.index}`;
-      if (subMenuRefs.current[key]) {
-        setSubMenuHeight((prevHeights) => ({
-          ...prevHeights,
-          [key]: subMenuRefs.current[key]?.scrollHeight || 0,
-        }));
-      }
-    }
-  }, [openSubmenu]);
-
-  const handleSubmenuToggle = (index: string | number, menuType: "main" | "others") => {
-    setOpenSubmenu((prevOpenSubmenu) => {
-      if (
-        prevOpenSubmenu &&
-        prevOpenSubmenu.type === menuType &&
-        prevOpenSubmenu.index === index
-      ) {
-        return null;
-      }
-      return { type: menuType, index };
+      );
     });
   };
 
+  // Render main menu items
+  const renderMenuItems = (navItemsFromApi: NavItem[]) => (
+    <ul className="flex flex-col gap-4 font-bold">
+      {navItemsFromApi.map((nav, index) => {
+        const currentPath = `${index}`;
+        const isOpen = openSubmenus[currentPath];
+        const uniqueKey = `${nav.name}-${nav.path || ''}-${currentPath}`;
+
+        return (
+          <li key={uniqueKey} className="relative">
+            {nav.subItems ? (
+              <div className="w-full">
+                <button
+                  onClick={() => handleSubmenuToggle(currentPath)}
+                  className={`menu-item group cursor-pointer ${fontStyles.menuItem} ${!isExpanded && !isHovered ? "lg:justify-center" : "lg:justify-start"}`}
+                  style={{
+                    backgroundColor: isOpen ? colors.primary : "transparent",
+                    color: isOpen ? colors.buttonText : colors.text,
+                  }}
+                >
+                  <span
+                    style={{
+                      color: isOpen ? colors.buttonText : colors.text,
+                    }}
+                  >
+                    {iconMap[nav.icon as keyof typeof iconMap] || iconMap["default-icon"]}
+                  </span>
+                  {(isExpanded || isHovered || isMobileOpen) && (
+                    <span className="font-bold">{nav.name}</span>
+                  )}
+                  {(isExpanded || isHovered || isMobileOpen) && (
+                    <ChevronDownIcon
+                      className={`ml-auto w-5 h-5 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+                      style={{
+                        color: isOpen ? colors.buttonText : colors.text,
+                      }}
+                    />
+                  )}
+                </button>
+                {(isExpanded || isHovered || isMobileOpen) && (
+                  <div
+                    ref={(el) => {
+                      if (el) {
+                        subMenuRefs.current[currentPath] = el;
+                      }
+                    }}
+                    className="overflow-hidden"
+                    style={{
+                      display: isOpen ? 'block' : 'none',
+                      paddingLeft: '1rem'
+                    }}
+                  >
+                    <ul className="mt-2 space-y-1 font-bold">
+                      {renderNestedMenu(nav.subItems, currentPath)}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            ) : (
+              nav.path && (
+                <Link
+                  href={nav.path}
+                  className={`menu-item group ${fontStyles.menuItem}`}
+                  style={{
+                    backgroundColor: isActive(nav.path) ? colors.primary : "transparent",
+                    color: isActive(nav.path) ? colors.buttonText : colors.text,
+                  }}
+                >
+                  <span
+                    style={{
+                      color: isActive(nav.path) ? colors.buttonText : colors.text,
+                    }}
+                  >
+                    {iconMap[nav.icon as keyof typeof iconMap] || iconMap["default-icon"]}
+                  </span>
+                  {(isExpanded || isHovered || isMobileOpen) && (
+                    <span className="font-bold">{nav.name}</span>
+                  )}
+                </Link>
+              )
+            )}
+          </li>
+        );
+      })}
+    </ul>
+  );
+
   return (
     <aside
-      className={`fixed mt-16 flex flex-col lg:mt-0 top-0 px-5 left-0 h-screen transition-all duration-300 ease-in-out z-50
+      className={`fixed mt-16 flex flex-col lg:mt-0 top-0 px-5 left-0 h-screen z-50
         ${isExpanded || isMobileOpen
           ? "w-[290px]"
           : isHovered
@@ -419,7 +376,7 @@ const AppSidebar: React.FC = () => {
               {menuStatus === 'loading' && <div className={fontStyles.menuItem}>Loading...</div>}
               {menuStatus === 'failed' && <div className={fontStyles.menuItem}>Error: {menuError}</div>}
               {menuStatus === 'succeeded' && (
-                renderMenuItems(menuItems, "main")
+                renderMenuItems(menuItems)
               )}
             </div>
 

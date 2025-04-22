@@ -29,6 +29,7 @@ export default function DynamicPage({ params }: { params: any | Promise<any> }) 
   const unwrappedParams = params instanceof Promise ? React.use(params) : params;
   const route = unwrappedParams.slug[0];
   const subRoute = unwrappedParams.slug[1];
+  const subSubRoute = unwrappedParams.slug[2];
 
   // Handle static routes
   if (staticRoutes[route]) {
@@ -36,8 +37,10 @@ export default function DynamicPage({ params }: { params: any | Promise<any> }) 
   }
 
   // For dynamic routes, determine the actual componentName
-  const componentName = subRoute || route;
-
+  const componentName = subSubRoute || subRoute || route;
+  console.log('componentName_', componentName);
+  console.log('route_', route);
+  console.log('subRoute_', subRoute);
   // Convert kebab-case to PascalCase if needed
   const formattedComponentName = componentName
     .split("-")
@@ -70,7 +73,8 @@ function DynamicComponentRenderer({ componentName }: { componentName: string }) 
   };
 
   const componentType = findComponentType(menuItems);
-  console.log('componentType', componentType);
+  // console.log('componentType', componentType);
+  // console.log('componentName', componentName);
   // Show entry component if componentType is 'entry', otherwise show report component
   return componentType === 'entry'
     ? <DynamicEntryComponent componentName={componentName} />

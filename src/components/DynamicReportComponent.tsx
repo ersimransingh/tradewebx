@@ -56,20 +56,25 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
 
 
     const findPageData = () => {
-        for (const item of menuItems) {
-            if (item.componentName.toLowerCase() === componentName.toLowerCase() && item.pageData) {
-                return item.pageData;
-            }
+        const searchInItems = (items: any[]): any => {
+            // console.log('items', items);
+            // console.log('componentName', componentName);
+            for (const item of items) {
+                if (item.componentName.toLowerCase() === componentName.toLowerCase() && item.pageData) {
+                    return item.pageData;
+                }
 
-            if (item.subItems) {
-                for (const subItem of item.subItems) {
-                    if (subItem.componentName.toLowerCase() === componentName.toLowerCase() && subItem.pageData) {
-                        return subItem.pageData;
+                if (item.subItems && item.subItems.length > 0) {
+                    const foundInSubItems = searchInItems(item.subItems);
+                    if (foundInSubItems) {
+                        return foundInSubItems;
                     }
                 }
             }
-        }
-        return null;
+            return null;
+        };
+
+        return searchInItems(menuItems);
     };
 
     const pageData: any = findPageData();
