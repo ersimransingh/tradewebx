@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { BASE_URL, PATH_URL } from '@/utils/constants';
 import DatePicker from 'react-datepicker';
@@ -82,6 +82,96 @@ interface ChildEntryModalProps {
     fieldErrors: Record<string, string>;
     setFieldErrors: React.Dispatch<React.SetStateAction<Record<string, string>>>;
 }
+
+const DropdownField = ({
+    field,
+    formValues,
+    setFormValues,
+    dropdownOptions,
+    loadingDropdowns,
+    onDropdownChange,
+    fieldErrors,
+    handleBlur
+  }) => {
+    const { colors } = useTheme();
+    const marginBottom = 'mb-1';
+    const options = useMemo(() => dropdownOptions[field.wKey] || [], [dropdownOptions, field.wKey]);
+  
+    const [visibleOptions, setVisibleOptions] = useState<any[]>(options.slice(0, 50));
+    const [searchText, setSearchText] = useState('');
+    useEffect(() => {
+        const filtered = options.filter(opt =>
+          opt.label.toLowerCase().includes(searchText.toLowerCase()) ||
+          opt.value.toLowerCase().includes(searchText.toLowerCase())
+        );
+        setVisibleOptions(filtered.slice(0, 50));
+      }, [searchText, options]);
+      
+  
+    const handleInputChange = (key: string, value: any) => {
+      setFormValues(prev => ({ ...prev, [key]: value }));
+      if (onDropdownChange) onDropdownChange(key, value);
+    };
+  
+    const handleScrollBottom = () => {
+      const filtered = options.filter(opt =>
+        opt.label.toLowerCase().includes(searchText.toLowerCase()) ||
+        opt.value.toLowerCase().includes(searchText.toLowerCase())
+      );
+      const next = filtered.slice(visibleOptions.length, visibleOptions.length + 50);
+      if (next.length) {
+        setVisibleOptions(prev => [...prev, ...next]);
+      }
+    };
+  
+    return (
+      <div className={marginBottom}>
+        <label className="block text-sm font-medium mb-1" style={{ color: colors.text }}>
+          {field.label}
+        </label>
+        <Select
+          options={visibleOptions}
+          value={options.find((opt: any) => opt.value === formValues[field.wKey])}
+          onChange={(selected) => handleInputChange(field.wKey, selected?.value)}
+          onInputChange={(inputValue, { action }) => {
+            if (action === 'input-change') setSearchText(inputValue);
+            return inputValue;
+          }}
+          placeholder="Select..."
+          isLoading={loadingDropdowns[field.wKey]}
+          filterOption={() => true}
+          onMenuScrollToBottom={handleScrollBottom}
+          className="react-select-container"
+          classNamePrefix="react-select"
+          styles={{
+            control: (base) => ({
+              ...base,
+              borderColor: fieldErrors?.[field.wKey] ? 'red' : colors.textInputBorder,
+              backgroundColor: colors.textInputBackground,
+            }),
+            singleValue: (base) => ({
+              ...base,
+              color: colors.textInputText,
+            }),
+            option: (base, state) => ({
+              ...base,
+              backgroundColor: state.isFocused ? colors.primary : colors.textInputBackground,
+              color: state.isFocused ? colors.buttonText : colors.textInputText,
+            }),
+            menuList: (base) => ({
+              ...base,
+              maxHeight: '300px',
+              overflowY: 'auto',
+            }),
+          }}
+          onBlur={() => handleBlur(field)}
+        />
+        {fieldErrors?.[field.wKey] && (
+          <span className="text-red-500 text-sm">{fieldErrors[field.wKey]}</span>
+        )}
+      </div>
+    );
+  };
 
 const EntryForm: React.FC<EntryFormProps> = ({
     formData,
@@ -243,11 +333,15 @@ const EntryForm: React.FC<EntryFormProps> = ({
         }
     };
 
+
+      
+
     const renderFormField = (field: FormField) => {
         const isEnabled = field.FieldEnabledTag === 'Y';
 
         switch (field.type) {
             case 'WDropDownBox':
+<<<<<<< Updated upstream
                 const options = dropdownOptions[field.wKey] || [];
                 const [visibleOptions, setVisibleOptions] = useState(options.slice(0, 50));
                 const [searchText, setSearchText] = useState('');
@@ -316,6 +410,22 @@ const EntryForm: React.FC<EntryFormProps> = ({
                     </div>
                 );
 
+=======
+                return (
+                    <DropdownField
+                      key={field.Srno}
+                      field={field}
+                      formValues={formValues}
+                      setFormValues={setFormValues}
+                      dropdownOptions={dropdownOptions}
+                      loadingDropdowns={loadingDropdowns}
+                      onDropdownChange={onDropdownChange}
+                      fieldErrors={fieldErrors}
+                      handleBlur={handleBlur}
+                    />
+                  );
+              
+>>>>>>> Stashed changes
 
             case 'WDateBox':
                 return (
