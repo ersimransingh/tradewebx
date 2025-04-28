@@ -76,7 +76,7 @@ function DynamicComponentRenderer({ componentName }: { componentName: string }) 
   // console.log('componentType', componentType);
   // console.log('componentName', componentName);
   // Show entry component if componentType is 'entry', otherwise show report component
-  return componentType === 'entry'
-    ? <DynamicEntryComponent componentName={componentName} />
-    : <DynamicReportComponent componentName={componentName} />;
+  return (
+    <DynamicReportComponent componentName={componentName} componentType={componentType} />
+  );
 }

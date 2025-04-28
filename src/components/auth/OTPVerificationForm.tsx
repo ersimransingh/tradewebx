@@ -7,7 +7,9 @@ import { useRouter } from "next/navigation";
 import axios from 'axios';
 import { useDispatch, useSelector } from 'react-redux';
 import { setFinalAuthData, setError as setAuthError } from '@/redux/features/authSlice';
-import { BASE_URL, OTP_VERIFICATION_URL } from "@/utils/constants";
+import { ACTION_NAME, BASE_URL, OTP_VERIFICATION_URL } from "@/utils/constants";
+import { useTheme } from "@/context/ThemeContext";
+
 import Image from "next/image";
 import { RootState } from "@/redux/store";
 
@@ -18,13 +20,15 @@ export default function OTPVerificationForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const { companyInfo, status } = useSelector((state: RootState) => state.common);
+  const { colors } = useTheme();
+
   const handleOTPVerification = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
 
     const xmlData = `<dsXml>
-      <J_Ui>"ActionName":"TradeWeb", "Option":"Verify2FA","Level":1, "RequestFrom":"M"</J_Ui>
+      <J_Ui>"ActionName":"${ACTION_NAME}", "Option":"Verify2FA","Level":1, "RequestFrom":"M"</J_Ui>
       <Sql/>
       <X_Data>
           <OTP>${otp}</OTP>
@@ -87,7 +91,7 @@ export default function OTPVerificationForm() {
   };
 
   return (
-    <div className="flex flex-col flex-1 lg:w-1/2 w-full bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-800">
+    <div style={{background:colors.background}} className="flex flex-col flex-1 lg:w-1/2 w-full bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-800">
       <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
           <div>
@@ -105,7 +109,7 @@ export default function OTPVerificationForm() {
                 />
               </div>
             )}
-            <h1 className="text-3xl font-bold text-black dark:text-white text-center mb-2">
+            <h1 style={{color:colors.tabText}} className="text-3xl font-bold text-black dark:text-white text-center mb-2">
               {companyInfo?.CompanyName?.trim() || ""}
             </h1>
           </div>
@@ -114,7 +118,7 @@ export default function OTPVerificationForm() {
             <h1 className="text-2xl font-semibold text-gray-800 dark:text-white/90">
               OTP Verification
             </h1>
-            <p className="text-gray-500 dark:text-gray-400">
+            <p  style={{color:colors.text}} className="text-gray-500 dark:text-gray-400">
               Please enter the OTP sent.
             </p>
           </div>
@@ -135,10 +139,12 @@ export default function OTPVerificationForm() {
                 type="text"
                 value={otp}
                 onChange={(e: any) => setOtp(e.target.value)}
+                  dynamicSelectedThemeApply={true}
                 placeholder="Enter OTP"
                 required
                 className="mt-1 transition-all duration-200 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-900"
                 {...{} as any}
+                
               />
             </div>
 
@@ -146,6 +152,7 @@ export default function OTPVerificationForm() {
               type="submit"
               className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-medium transition-all duration-200 mt-2"
               disabled={isLoading}
+                dynamicSelectedThemeApply={true}
             >
               {isLoading ? (
                 <div className="flex items-center justify-center">

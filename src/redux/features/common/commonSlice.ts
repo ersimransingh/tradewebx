@@ -58,7 +58,7 @@ export const fetchInitializeLogin = createAsyncThunk(
     'common/fetchInitializeLogin',
     async () => {
         const xmlData = `<dsXml>
-            <J_Ui>"ActionName":"TradeWeb", "Option":"InitializeLogin", "Level":1, "RequestFrom":"w"</J_Ui>
+            <J_Ui>"ActionName":"${ACTION_NAME}", "Option":"InitializeLogin", "Level":1, "RequestFrom":"w"</J_Ui>
             <Sql></Sql>
             <X_Filter> </X_Filter>
             <X_Data></X_Data>

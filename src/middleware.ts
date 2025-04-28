@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { BASE_PATH_FRONT_END } from './utils/constants';
 
 export function middleware(request: NextRequest) {
   const authToken = request.cookies.get('auth_token');
@@ -7,13 +8,14 @@ export function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/otp-verification');
 
   // If user is not authenticated and trying to access protected route
+  console.log("pathname", request.nextUrl.pathname);
   if (!authToken && !isAuthPage) {
-    return NextResponse.redirect(new URL('/signin', request.url));
+    return NextResponse.redirect(new URL(`${BASE_PATH_FRONT_END}/signin`, request.url));
   }
 
   // If user is authenticated and trying to access auth pages
   if (authToken && isAuthPage) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    return NextResponse.redirect(new URL(`${BASE_PATH_FRONT_END}/dashboard`, request.url));
   }
 
   return NextResponse.next();

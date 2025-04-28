@@ -5,7 +5,7 @@ import { useSelector } from 'react-redux';
 import axios from 'axios';
 import moment from 'moment';
 import DataTable from '@/components/DataTable';
-import { BASE_URL, PATH_URL } from '@/utils/constants';
+import { ACTION_NAME, BASE_URL, PATH_URL } from '@/utils/constants';
 import { RootState } from '@/redux/store';
 import FilterModal from '@/components/FilterModal';
 
@@ -35,7 +35,7 @@ const Downloads = () => {
         const toDateStr = moment(filterValues.toDate).format('YYYYMMDD');
 
         const xmlData = `<dsXml>
-            <J_Ui>"ActionName":"TradeWeb", "Option":"Download","Level":1, "RequestFrom":"M"</J_Ui>
+            <J_Ui>"ActionName":"${ACTION_NAME}", "Option":"Download","Level":1, "RequestFrom":"M"</J_Ui>
             <Sql></Sql>
             <X_Filter>
                 <FromDate>${fromDateStr}</FromDate>
@@ -145,7 +145,7 @@ const Downloads = () => {
         const toDateStr = moment(filterValues.toDate).format('YYYYMMDD');
 
         const xmlData = `<dsXml>
-            <J_Ui>"ActionName":"TradeWeb", "Option":"Download","Level":1, "RequestFrom":"M"</J_Ui>
+            <J_Ui>"ActionName":"${ACTION_NAME}", "Option":"Download","Level":1, "RequestFrom":"M"</J_Ui>
             <Sql></Sql>
             <X_Filter>
                 <FromDate>${fromDateStr}</FromDate>

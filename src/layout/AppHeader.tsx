@@ -53,7 +53,7 @@ const AppHeader: React.FC = () => {
 
   return (
     <header
-      className="sticky top-0 flex w-full z-99999 lg:border-b"
+      className="sticky top-0 flex w-full z-100 lg:border-b"
       style={{
         backgroundColor: colors?.background || '#f0f0f0',
         borderColor: colors?.color3 || '#000',

@@ -5,7 +5,7 @@ import { useTheme } from "../../context/ThemeContext";
 
 import Image from "next/image";
 import axios from "axios";
-import { BASE_URL, PATH_URL } from "../../utils/constants";
+import { ACTION_NAME, BASE_URL, PATH_URL } from "../../utils/constants";
 
 export default function UserMetaCard() {
   const { isOpen, openModal, closeModal } = useModal();
@@ -24,7 +24,7 @@ export default function UserMetaCard() {
     };
 
     const xmlData = `<dsXml>
-        <J_Ui>"ActionName":"tradeweb", "Option":"UserProfile","Level":1, "RequestFrom":"M"</J_Ui>
+        <J_Ui>"ActionName":"${ACTION_NAME}", "Option":"UserProfile","Level":1, "RequestFrom":"M"</J_Ui>
         <Sql></Sql>
         <X_Filter></X_Filter>
         <X_GFilter></X_GFilter>

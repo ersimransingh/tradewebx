@@ -5,7 +5,7 @@ import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import Button from "@/components/ui/button/Button";
 import axios from "axios";
-import { BASE_URL, PATH_URL } from "@/utils/constants";
+import { ACTION_NAME, BASE_URL, PATH_URL } from "@/utils/constants";
 import { useTheme } from "@/context/ThemeContext";
 
 export default function ChangePassword() {
@@ -47,7 +47,7 @@ export default function ChangePassword() {
         }
 
         const xmlData = `<dsXml>
-            <J_Ui>"ActionName":"TradeWeb","Option":"ChangePassword","Level":1</J_Ui>
+            <J_Ui>"ActionName":"${ACTION_NAME}","Option":"ChangePassword","Level":1</J_Ui>
             <Sql></Sql>
             <X_Data>
                 <OldPassword>${formData.currentPassword}</OldPassword>

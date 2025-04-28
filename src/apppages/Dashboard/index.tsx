@@ -107,6 +107,8 @@ function Card({ cardData, onRefresh, selectedClient, auth }: any) {
             };
 
             const series = pieItems.map((item: any) => parseFloat(item.value.text) || 0);
+            
+            
 
             return (
                 <div

@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
-import { PATH_URL } from '@/utils/constants';
+import { ACTION_NAME, PATH_URL } from '@/utils/constants';
 import { BASE_URL } from '@/utils/constants';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
@@ -186,7 +186,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       };
 
       const xmlData = `<dsXml>
-        <J_Ui>"ActionName":"TradeWeb", "Option":"Theme","Level":1, "RequestFrom":"M"</J_Ui>
+        <J_Ui>"ActionName":"${ACTION_NAME}", "Option":"Theme","Level":1, "RequestFrom":"M"</J_Ui>
         <Sql/>
         <X_Filter>
         </X_Filter>

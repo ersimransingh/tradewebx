@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { APP_METADATA_KEY, BASE_URL } from './constants';
+import { APP_METADATA_KEY, BASE_PATH_FRONT_END, BASE_URL } from './constants';
 import { clearLocalStorage } from './helper';
 
 // Create axios instance with default config
@@ -28,7 +28,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       // Token expired or invalid
       logout();
-      window.location.href = '/signin';
+      window.location.href = `${BASE_PATH_FRONT_END}/signin`;
     }
     return Promise.reject(error);
   }
@@ -40,7 +40,7 @@ export const logout = () => {
   // Clear all localStorage data
   clearLocalStorage();
   // Redirect to login page
-  window.location.href = '/signin';
+  window.location.href = `${BASE_PATH_FRONT_END}/signin`;
 };
 
 export const isAuthenticated = () => {

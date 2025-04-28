@@ -5,6 +5,8 @@
 /node_modules
 /.pnp
 .pnp.js
+.pnp*
+.yarn*
 .yarn/install-state.gz
 .env
 loginOptions.json

@@ -6,20 +6,21 @@ import axios from 'axios';
 import { BASE_URL, PATH_URL } from '@/utils/constants';
 import moment from 'moment';
 import FilterModal from './FilterModal';
-import { FaSync, FaFilter, FaDownload, FaFileCsv, FaFilePdf, FaFileExcel } from 'react-icons/fa';
+import { FaSync, FaFilter, FaDownload, FaFileCsv, FaFilePdf, FaPlus,FaFileExcel } from 'react-icons/fa';
 import { useTheme } from '@/context/ThemeContext';
 import DataTable, { exportTableToCsv, exportTableToExcel,exportTableToPdf } from './DataTable';
 import { store } from "@/redux/store";
 import { APP_METADATA_KEY } from "@/utils/constants";
 import { useSearchParams } from 'next/navigation';
-
+import EntryFormModal from './EntryFormModal';
 // const { companyLogo, companyName } = useAppSelector((state) => state.common);
 
 interface DynamicReportComponentProps {
     componentName: string;
+    componentType: string;
 }
 
-const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ componentName }) => {
+const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ componentName, componentType }) => {
     const menuItems = useAppSelector(selectAllMenuItems);
     const searchParams = useSearchParams();
     const clientCode = searchParams.get('clientCode');
@@ -41,6 +42,8 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
     const [areFiltersInitialized, setAreFiltersInitialized] = useState(false);
     const [apiResponseTime, setApiResponseTime] = useState<number | undefined>(undefined);
     const [autoFetch, setAutoFetch] = useState<boolean>(true);
+    const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
+
 
     const tableRef = useRef<HTMLDivElement>(null);
     const { colors, fonts } = useTheme();
@@ -433,6 +436,15 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                         ))}
                     </div>
                     <div className="flex gap-2">
+                        {componentType === 'entry' && (
+                            <button
+                                className="p-2 rounded"
+                                onClick={() => setIsEntryModalOpen(true)}
+                                style={{ color: colors.text }}
+                            >
+                                <FaPlus size={20} />
+                            </button>
+                        )}
                         <button
                             className="p-2 rounded"
                             onClick={() => exportTableToExcel(tableRef.current, jsonData, apiData, pageData, appMetadata)}
@@ -578,6 +590,13 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                         tableRef={tableRef}
                     />
                 </div>
+            )}
+            {componentType === 'entry' && (
+                <EntryFormModal
+                    isOpen={isEntryModalOpen}
+                    onClose={() => setIsEntryModalOpen(false)}
+                    pageData={pageData}
+                />
             )}
         </div>
     );
