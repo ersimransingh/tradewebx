@@ -5,7 +5,7 @@ import 'react-data-grid/lib/styles.css';
 import { useTheme } from '@/context/ThemeContext';
 import { useAppSelector } from '@/redux/hooks';
 import { RootState } from '@/redux/store';
-import { ACTION_NAME } from '@/utils/constants';
+import { ACTION_NAME, PATH_URL } from '@/utils/constants';
 // import jsPDF from 'jspdf';
 // import autoTable from 'jspdf-autotable';
 // import moment from 'moment';
@@ -15,6 +15,8 @@ import dayjs from 'dayjs';
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
 import moment from 'moment';
+import axios from 'axios';
+import { BASE_URL } from '@/utils/constants';
 
 interface DataTableProps {
     data: any[];
@@ -1033,9 +1035,16 @@ export const exportTableToPdf = async (
     jsonData: any,
     appMetadata: any,
     allData: any[],
-    pageData: any
+    pageData: any,
+    filters: any,
+    mode: 'download' | 'email',
 ) => {
     if (!allData || allData.length === 0) return;
+
+    if (mode === 'email') {
+        const confirmSend = window.confirm('Do you want to send mail?');
+        if (!confirmSend) return;
+    }
 
     const decimalSettings = pageData[0]?.levels?.[0]?.settings?.decimalColumns || [];
     const columnsToHide = pageData[0]?.levels?.[0]?.settings?.hideEntireColumn?.split(',') || [];
@@ -1211,6 +1220,77 @@ export const exportTableToPdf = async (
 
     };
 
-    pdfMake.createPdf(docDefinition).download(`${fileTitle}.pdf`);
+    // pdfMake.createPdf(docDefinition).download(`${fileTitle}.pdf`);
+    if (mode === 'download') {
+        pdfMake.createPdf(docDefinition).download(`${fileTitle}.pdf`);
+    } else if (mode === 'email') {
+        pdfMake.createPdf(docDefinition).getBase64(async (base64Data: string) => {
+            try {
+                const userId = localStorage.getItem('userId') || '';
+                const authToken = document.cookie.split('auth_token=')[1]?.split(';')[0] || '';
+
+                let filterXml;
+
+                if (filters && Object.keys(filters).length > 0) {
+                    filterXml = Object.entries(filters).map(([key, value]) => {
+                        if ((key === 'FromDate' || key === 'ToDate') && value) {
+                            const date = new Date(String(value));
+                            if (!isNaN(date.getTime())) {
+                                // Format as YYYYMMDD in local timezone
+                                const year = date.getFullYear();
+                                const month = String(date.getMonth() + 1).padStart(2, '0');
+                                const day = String(date.getDate()).padStart(2, '0');
+                                const formatted = `${year}${month}${day}`;
+                                return `<${key}>${formatted}</${key}>`;
+                            }
+                        }
+                        return `<${key}>${value}</${key}>`;
+                    }).join('\n');
+                }
+                else {
+                    filterXml = `<ClientCode>${userId}</ClientCode>`;
+                }
+                const xmlData1 = `
+                    <dsXml>
+                    <J_Ui>"ActionName":"TradeWeb", "Option":"EmailSend","RequestFrom":"W"</J_Ui>
+                    <Sql></Sql>
+                    <X_Filter>
+                    ${filterXml}
+                        <ReportName>${fileTitle}</ReportName>
+                        <FileName>${fileTitle}.PDF</FileName>
+                        <Base64>${base64Data}</Base64>
+                    </X_Filter>
+                    <J_Api>"UserId":"${userId}","UserType":"Client","AccYear":24,"MyDbPrefix":"SVVS","MemberCode":"undefined","SecretKey":"undefined"</J_Api>
+                    </dsXml>`;
+
+                console.log('Payload:', xmlData1);
+
+                const response = await axios.post(BASE_URL + PATH_URL, xmlData1, {
+                    headers: {
+                        'Content-Type': 'application/xml',
+                        Authorization: `Bearer ${authToken}`,
+                    },
+                    timeout: 300000,
+                });
+                // Handle based on success and specific message content
+                const result = response?.data;
+                // Get Column1 message if present
+                const columnMsg = result?.data?.rs0?.[0]?.Column1 || '';
+                if (result?.success) {
+                    if (columnMsg.toLowerCase().includes('mail template not define')) {
+                        alert('Mail Template Not Defined');
+                    } else {
+                        alert(columnMsg);
+                    }
+                } else {
+                    // Show error message if available, fallback to default
+                    alert(columnMsg || result?.message);
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Failed to send email.');
+            }
+        });
+    }
 };
 export default DataTable; 
