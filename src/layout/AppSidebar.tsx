@@ -77,6 +77,7 @@ const AppSidebar: React.FC = () => {
   // State for managing open submenus
   const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>({});
   const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [selectedMenu, setSelectedMenu] = useState<string>("0"); // Dashboard is assumed at index 0
 
   // Font styling class for consistent typography
   const fontStyles = {
@@ -144,10 +145,11 @@ const AppSidebar: React.FC = () => {
 
   // Handle submenu toggle
   const handleSubmenuToggle = (menuPath: string) => {
-    setOpenSubmenus(prev => ({
+    setOpenSubmenus((prev) => ({
       ...prev,
-      [menuPath]: !prev[menuPath]
+      [menuPath]: !prev[menuPath],
     }));
+    setSelectedMenu(menuPath); // Mark the current dropdown as selected
   };
 
   // Check if a path is active
@@ -224,6 +226,7 @@ const AppSidebar: React.FC = () => {
         const currentPath = `${index}`;
         const isOpen = openSubmenus[currentPath];
         const uniqueKey = `${nav.name}-${nav.path || ''}-${currentPath}`;
+        const isSelected = selectedMenu === currentPath;
 
         return (
           <li key={uniqueKey} className="relative">
@@ -231,19 +234,23 @@ const AppSidebar: React.FC = () => {
               <div className="w-full">
                 <button
                   onClick={() => handleSubmenuToggle(currentPath)}
-                  className={`menu-item group cursor-pointer ${fontStyles.menuItem} ${!isExpanded && !isHovered ? "lg:justify-center" : "lg:justify-start"}`}
+                  className={`menu-item group cursor-pointer flex items-center gap-2 px-2 py-2 rounded-md transition-all duration-200 
+                ${fontStyles.menuItem}`}
                   style={{
-                    backgroundColor: isOpen ? colors.primary : "transparent",
-                    color: isOpen ? colors.buttonText : colors.text,
+                    backgroundColor: isSelected ? colors.primary : "transparent",
+                    color: isSelected ? colors.buttonText : colors.text,
+                    justifyContent: isExpanded || isHovered || isMobileOpen ? "flex-start" : "center",
                   }}
                 >
                   <span
+                    className="w-10 h-5 flex items-center justify-center shrink-0"
                     style={{
-                      color: isOpen ? colors.buttonText : colors.text,
+                      color: isSelected ? colors.buttonText : colors.text,
                     }}
                   >
                     {iconMap[nav.icon as keyof typeof iconMap] || iconMap["default-icon"]}
                   </span>
+
                   {(isExpanded || isHovered || isMobileOpen) && (
                     <span className="font-bold">{nav.name}</span>
                   )}
@@ -251,11 +258,12 @@ const AppSidebar: React.FC = () => {
                     <ChevronDownIcon
                       className={`ml-auto w-5 h-5 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
                       style={{
-                        color: isOpen ? colors.buttonText : colors.text,
+                        color: isSelected ? colors.buttonText : colors.text,
                       }}
                     />
                   )}
                 </button>
+
                 {(isExpanded || isHovered || isMobileOpen) && (
                   <div
                     ref={(el) => {
@@ -265,8 +273,8 @@ const AppSidebar: React.FC = () => {
                     }}
                     className="overflow-hidden"
                     style={{
-                      display: isOpen ? 'block' : 'none',
-                      paddingLeft: '1rem'
+                      display: isOpen ? "block" : "none",
+                      paddingLeft: "1rem",
                     }}
                   >
                     <ul className="mt-2 space-y-1 font-bold">
@@ -279,19 +287,23 @@ const AppSidebar: React.FC = () => {
               nav.path && (
                 <Link
                   href={nav.path}
-                  className={`menu-item group ${fontStyles.menuItem}`}
+                  onClick={() => setSelectedMenu(currentPath)}
+                  className={`menu-item group flex items-center gap-2 px-2 py-2 rounded-md transition-all duration-200 ${fontStyles.menuItem}`}
                   style={{
-                    backgroundColor: isActive(nav.path) ? colors.primary : "transparent",
-                    color: isActive(nav.path) ? colors.buttonText : colors.text,
+                    backgroundColor: isSelected ? colors.primary : "transparent",
+                    color: isSelected ? colors.buttonText : colors.text,
+                    justifyContent: isExpanded || isHovered || isMobileOpen ? "flex-start" : "center",
                   }}
                 >
                   <span
+                    className="w-10 h-10 flex items-center justify-center shrink-0"
                     style={{
-                      color: isActive(nav.path) ? colors.buttonText : colors.text,
+                      color: isSelected ? colors.buttonText : colors.text,
                     }}
                   >
                     {iconMap[nav.icon as keyof typeof iconMap] || iconMap["default-icon"]}
                   </span>
+
                   {(isExpanded || isHovered || isMobileOpen) && (
                     <span className="font-bold">{nav.name}</span>
                   )}
