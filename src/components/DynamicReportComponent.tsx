@@ -6,9 +6,9 @@ import axios from 'axios';
 import { BASE_URL, PATH_URL } from '@/utils/constants';
 import moment from 'moment';
 import FilterModal from './FilterModal';
-import { FaSync, FaFilter, FaDownload, FaFileCsv, FaFilePdf, FaPlus } from 'react-icons/fa';
+import { FaSync, FaFilter, FaDownload, FaFileCsv, FaFilePdf, FaPlus, FaFileExcel,FaEnvelope } from 'react-icons/fa';
 import { useTheme } from '@/context/ThemeContext';
-import DataTable, { exportTableToCsv, exportTableToPdf } from './DataTable';
+import DataTable, { exportTableToCsv, exportTableToExcel,exportTableToPdf  } from './DataTable';
 import { store } from "@/redux/store";
 import { APP_METADATA_KEY } from "@/utils/constants";
 import { useSearchParams } from 'next/navigation';
@@ -47,6 +47,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
 
     const tableRef = useRef<HTMLDivElement>(null);
     const { colors, fonts } = useTheme();
+    const hasFetchedRef = useRef(false);
 
     const appMetadata = (() => {
         try {
@@ -80,7 +81,6 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
     };
 
     const pageData: any = findPageData();
-    console.log('pageData', pageData);
     // Helper functions for parsing XML settings
     const parseXmlList = (xmlString: string, tag: string): string[] => {
         const regex = new RegExp(`<${tag}>(.*?)</${tag}>`, 'g');
@@ -208,7 +208,10 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
             } else if (!newAutoFetch) {
                 return;
             }
-            fetchData();
+            if (!hasFetchedRef.current) {
+                fetchData();
+                hasFetchedRef.current = true; // prevent second run
+            }
         }
     }, [pageData, clientCode]);
 
@@ -444,6 +447,22 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                         )}
                         <button
                             className="p-2 rounded"
+                            onClick={() =>
+                                exportTableToPdf(tableRef.current, jsonData, appMetadata, apiData, pageData, filters, 'email')
+                            }
+                            style={{ color: colors.text }}
+                        >
+                            <FaEnvelope size={20} />
+                        </button>
+                        <button
+                            className="p-2 rounded"
+                            onClick={() => exportTableToExcel(tableRef.current, jsonData, apiData, pageData, appMetadata)}
+                            style={{ color: colors.text }}
+                        >
+                            <FaFileExcel size={20} />
+                        </button>
+                        <button
+                            className="p-2 rounded"
                             onClick={() => exportTableToCsv(tableRef.current, jsonData, apiData, pageData)}
                             style={{ color: colors.text }}
                         >
@@ -451,11 +470,20 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                         </button>
                         <button
                             className="p-2 rounded"
-                            onClick={() => exportTableToPdf(tableRef.current, jsonData, appMetadata, apiData, pageData)}
+                            onClick={() =>
+                                exportTableToPdf(tableRef.current, jsonData, appMetadata, apiData, pageData, filters, 'download')
+                            }
                             style={{ color: colors.text }}
                         >
                             <FaFilePdf size={20} />
                         </button>
+                        {/* <button
+                            className="p-2 rounded"
+                            onClick={() => exportTableToPdf(tableRef.current, jsonData, appMetadata, apiData, pageData)}
+                            style={{ color: colors.text }}
+                        >
+                            <FaFilePdf size={20} />
+                        </button> */}
 
                         <button
                             className="p-2 rounded"
@@ -464,6 +492,29 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                         >
                             <FaSync size={20} />
                         </button>
+                        {/* {pageData[0].filters && pageData[0].filters.length > 0 && (
+                            <button
+                                className="p-2 rounded"
+                                onClick={() => exportTableToCsv(tableRef.current, jsonData, apiData, pageData)}
+                                style={{ color: colors.text }}
+                            >
+                                <FaFileCsv size={20} />
+                            </button>
+                            <button
+                                className="p-2 rounded"
+                                onClick={() => exportTableToPdf(tableRef.current)}
+                                style={{ color: colors.text }}
+                            >
+                                <FaFilePdf size={20} />
+                            </button>
+                            <button
+                                className="p-2 rounded"
+                                onClick={() => fetchData()}
+                                style={{ color: colors.text }}
+                            >
+                                <FaSync size={20} />
+                            </button> */}
+
                         {pageData[0].filters && pageData[0].filters.length > 0 && (
                             <button
                                 className="p-2 rounded"
@@ -473,6 +524,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                 <FaFilter size={20} />
                             </button>
                         )}
+                        {/* </div> */}
                     </div>
                 </div>
             )}
