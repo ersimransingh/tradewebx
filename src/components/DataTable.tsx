@@ -111,7 +111,6 @@ const useScreenSize = () => {
             } else {
                 newSize = 'web';
             }
-            console.log('Screen width:', width, 'Screen size:', newSize);
             setScreenSize(newSize);
         };
 
@@ -124,12 +123,12 @@ const useScreenSize = () => {
 };
 
 const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, tableRef, summary, isEntryForm = false, handleAction = () => { } }) => {
-    console.log(JSON.stringify(settings, null, 2), 'settings', isEntryForm);
+
     const { colors, fonts } = useTheme();
     const [sortColumns, setSortColumns] = useState<any[]>([]);
-    console.log({ colors })
+
     const { tableStyle } = useAppSelector((state: RootState) => state.common);
-    console.log(tableStyle);
+
     const rowHeight = tableStyle === 'small' ? 30 : tableStyle === 'medium' ? 40 : 50;
     const screenSize = useScreenSize();
     const [expandedRows, setExpandedRows] = useState<Set<string | number>>(new Set());
@@ -264,12 +263,6 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
     const columns = useMemo(() => {
         if (!formattedData || formattedData.length === 0) return [];
 
-        console.log('Current screen size:', screenSize);
-        console.log('Settings:', settings);
-        console.log('Mobile columns:', settings?.mobileColumns);
-        console.log('Tablet columns:', settings?.tabletColumns);
-        console.log('Web columns:', settings?.webColumns);
-
         // Get columns to hide (if specified in settings)
         const columnsToHide = settings?.hideEntireColumn
             ? settings.hideEntireColumn.split(',').map((col: string) => col.trim())
@@ -282,7 +275,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
 
         // Get columns to show based on screen size
         let columnsToShow: string[] = [];
-        console.log('Columns to show:', columnsToShow);
+    
         if (settings?.mobileColumns && screenSize === 'mobile') {
             columnsToShow = settings.mobileColumns;
             console.log('Using mobile columns:', columnsToShow);
@@ -302,8 +295,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
 
         // Filter out hidden columns
         columnsToShow = columnsToShow.filter(key => !columnsToHide.includes(key));
-        console.log('Final columns to show:', columnsToShow);
-
+        
         const baseColumns: any = [
             {
                 key: '_expanded',
@@ -489,11 +481,18 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
                 {
                     key: 'actions',
                     name: 'Actions',
-                    minWidth: 120,
+                    minWidth: 170,
                     maxWidth: 350,
                     renderCell: ({ row }: any) => (
                         isEntryForm && (
                             <div className="action-buttons">
+                                <button
+                                    className="view-button"
+                                    style={{}}
+                                    onClick={() => handleAction('view', row)}
+                                    >
+                                        view
+                                </button>
                                 <button
                                     className="edit-button"
                                     style={{}}
@@ -609,11 +608,6 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
         return [totals];
     }, [rows, summary?.columnsToShowTotal, settings?.valueBasedTextColor]);
 
-    console.log(rows, 'rows of fff');
-    console.log(columns, 'columns of ffff');
-
-
-
     return (
         <div
             ref={tableRef}
@@ -634,7 +628,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
                 }}
                 bottomSummaryRows={summmaryRows}
                 onCellClick={(props: any) => {
-                    if (onRowClick && !props.column.key.startsWith('_')) {
+                    if (onRowClick && !props.column.key.startsWith('_') && !isEntryForm) {
                         const { _id, _expanded, ...rowData } = rows[props.rowIdx];
                         onRowClick(rowData);
                     }
@@ -777,8 +771,8 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
                     gap: 8px;
                 }
 
-                .edit-button, .delete-button {
-                    padding: 4px 8px;
+                .edit-button, .delete-button, .view-button {
+                    padding: 4px 10px;
                     border: none;
                     cursor: pointer;
                     font-size: 12px;
@@ -792,7 +786,10 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
                     color: #a0a0a0;
                     cursor: not-allowed;
                 }
-
+                .view-button {
+                    background-color: ${colors.primary};
+                    color: ${colors.buttonText};
+                }
                 .edit-button {
                     background-color: ${colors.buttonBackground};
                     color: ${colors.buttonText};
@@ -968,7 +965,6 @@ export const exportTableToPdf = async (
         });
     });
 
-    console.log(jsonData)
     const headers = Object.keys(allData[0]).filter(key => !columnsToHide.includes(key));
     const rightAlignedKeys: string[] = jsonData?.RightList?.[0] || [];
 
@@ -999,7 +995,6 @@ export const exportTableToPdf = async (
     totalColumns.forEach(col => (totals[col.key] = 0));
 
     const formatValue = (value: any, key: string) => {
-        console.log(key)
         if (key.toLowerCase() === 'date') {
             const date = new Date(value);
             return isNaN(date.getTime()) ? value : date.toLocaleDateString('en-GB');

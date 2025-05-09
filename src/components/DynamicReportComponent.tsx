@@ -49,9 +49,9 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
     const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
 
     const [entryFormData, setEntryFormData] = useState<any>(null);
-    const [entryAction, setEntryAction] = useState<'edit' | 'delete' | null>(null);
-     const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
-    
+    const [entryAction, setEntryAction] = useState<'edit' | 'delete' | 'view' | null>(null);
+    const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
+
 
     const tableRef = useRef<HTMLDivElement>(null);
     const { colors, fonts } = useTheme();
@@ -66,8 +66,6 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
 
     const findPageData = () => {
         const searchInItems = (items: any[]): any => {
-            // console.log('items', items);
-            // console.log('componentName', componentName);
             for (const item of items) {
                 if (item.componentName.toLowerCase() === componentName.toLowerCase() && item.pageData) {
                     return item.pageData;
@@ -87,7 +85,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
     };
 
     const pageData: any = findPageData();
-    console.log('pageData', pageData);
+
     // Helper functions for parsing XML settings
     const parseXmlList = (xmlString: string, tag: string): string[] => {
         const regex = new RegExp(`<${tag}>(.*?)</${tag}>`, 'g');
@@ -216,7 +214,6 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                 defaultFilters['ClientCode'] = clientCode;
             }
 
-            // console.log('Setting default filters:', defaultFilters);
             setFilters(defaultFilters);
             setAreFiltersInitialized(true);
         } else {
@@ -348,7 +345,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                 const json = convertXmlToJson(xmlString);
                 const jsonUpdated = await convertXmlToJsonUpdated(xmlString);
 
-                // console.log('JSON UPDATED', jsonUpdated);
+                
                 setJsonData(json);
                 setJsonDataUpdated(jsonUpdated);
                 setRs1Settings(settingsJson);
@@ -451,7 +448,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                     if (key === 'Option') {
                         return `"${key}":"delete"`;
                     }
-                    if( key === 'ActionName'){
+                    if (key === 'ActionName') {
                         return `"${key}":"${pageName}"`;
                     }
                     return `"${key}":"${value}"`
@@ -501,10 +498,11 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
     // function to handle table actions
     const handleTableAction = (action: string, record: any) => {
         setEntryFormData(record);
-        setEntryAction(action as 'edit' | 'delete');
-        if (action === "edit") {
+        setEntryAction(action as 'edit' | 'delete' | 'view');
+        if (action === "edit" || action === "view") {
             setIsEntryModalOpen(true);
-        }else{
+        }
+        else {
             setIsConfirmationModalOpen(true);
         }
     }
@@ -517,8 +515,6 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
     const handleCancelDelete = () => {
         setIsConfirmationModalOpen(false);
     };
-
-    console.log("check page data", pageData,rs1Settings);
 
     if (!pageData) {
         return <div>Loading report data...</div>;
@@ -699,12 +695,12 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                         summary={pageData[0].levels[currentLevel].summary}
                         onRowClick={handleRecordClick}
                         tableRef={tableRef}
-                        isEntryForm={componentType === "entry" ? true : false}
+                        isEntryForm={componentType === "entry"}
                         handleAction={handleTableAction}
                     />
                 </div>
             )}
-            
+
             {componentType === 'entry' && (
                 <EntryFormModal
                     isOpen={isEntryModalOpen}
