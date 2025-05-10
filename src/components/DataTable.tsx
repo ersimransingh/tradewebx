@@ -5,10 +5,15 @@ import 'react-data-grid/lib/styles.css';
 import { useTheme } from '@/context/ThemeContext';
 import { useAppSelector } from '@/redux/hooks';
 import { RootState } from '@/redux/store';
-import { ACTION_NAME } from '@/utils/constants';
+import { ACTION_NAME, PATH_URL } from '@/utils/constants';
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
 import moment from 'moment';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
+import dayjs from 'dayjs';
+import axios from 'axios';
+import { BASE_URL } from '@/utils/constants';
 
 interface DataTableProps {
     data: any[];
@@ -806,6 +811,158 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
         </div>
     );
 };
+
+export const exportTableToExcel = async (
+    gridEl: HTMLDivElement | null,
+    headerData: any,
+    apiData: any,
+    pageData: any,
+    appMetadata: any
+) => {
+    if (!apiData || apiData.length === 0) return;
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Report');
+
+    const levelData = pageData[0]?.levels[0] || {};
+    const settings = levelData.settings || {};
+    const columnsToShowTotal = levelData.summary?.columnsToShowTotal || [];
+    const dateFormatMap: Record<string, string> = {};
+
+    const dateFormatSetting = settings.dateFormat;
+    if (Array.isArray(dateFormatSetting)) {
+        dateFormatSetting.forEach((df: { key: string; format: string }) => {
+            const normKey = df.key.replace(/\s+/g, '');
+            dateFormatMap[normKey] = df.format;
+        });
+    } else if (typeof dateFormatSetting === 'object' && dateFormatSetting !== null) {
+        const normKey = dateFormatSetting.key.replace(/\s+/g, '');
+        dateFormatMap[normKey] = dateFormatSetting.format;
+    }
+
+
+    const companyName = headerData.CompanyName?.[0] || "Company Name";
+    const reportHeader = headerData.ReportHeader?.[0] || "Report Header";
+    const rightList: string[] = headerData.RightList?.[0] || [];
+    const normalizedRightList = rightList.map(k => k.replace(/\s+/g, ''));
+
+    let [fileTitle] = reportHeader.split("From Date");
+    fileTitle = fileTitle?.trim() || "Report";
+
+    const headers = Object.keys(apiData[0] || {});
+    const hiddenColumns = settings.hideEntireColumn?.split(",") || [];
+    const filteredHeaders = headers.filter(header => !hiddenColumns.includes(header.trim()));
+
+    const decimalColumnsMap: Record<string, number> = {};
+    (settings.decimalColumns || []).forEach((col: { key: string; decimalPlaces: number }) => {
+        const columnKeys = col.key.split(",").map(k => k.trim().replace(/\s+/g, ''));
+        columnKeys.forEach(key => {
+            if (key) decimalColumnsMap[key] = col.decimalPlaces;
+        });
+    });
+
+    const totals: Record<string, number> = {};
+    const totalLabels: Record<string, string> = {};
+    columnsToShowTotal.forEach(({ key, label }: { key: string; label: string }) => {
+        const normKey = key.replace(/\s+/g, '');
+        totals[normKey] = 0;
+        totalLabels[normKey] = label;
+    });
+
+    // Convert BMP to PNG and add logo
+    const bmpBase64 = appMetadata.companyLogo;
+    const pngBase64 = await convertBmpToPng(bmpBase64);
+    const imageId = workbook.addImage({ base64: pngBase64, extension: 'png' });
+    worksheet.addImage(imageId, { tl: { col: 0, row: 0 }, ext: { width: 150, height: 80 } });
+
+    let rowCursor = 1;
+
+    worksheet.getCell(`D${rowCursor}`).value = companyName;
+    worksheet.getCell(`D${rowCursor}`).font = { bold: true };
+    rowCursor++;
+
+    reportHeader.split("\\n").forEach(line => {
+        worksheet.getCell(`D${rowCursor}`).value = line.trim();
+        rowCursor++;
+    });
+
+    rowCursor++;
+
+    // Header Row
+    const headerRow = worksheet.getRow(rowCursor);
+    filteredHeaders.forEach((header, colIdx) => {
+        const normKey = header.replace(/\s+/g, '');
+        const cell = headerRow.getCell(colIdx + 1);
+        cell.value = header;
+        cell.alignment = { horizontal: normalizedRightList.includes(normKey) ? 'right' : 'left' };
+        cell.font = { bold: true };
+    });
+    headerRow.commit();
+    rowCursor++;
+
+    // Data Rows
+    apiData.forEach(row => {
+        const currentRow = worksheet.getRow(rowCursor);
+
+        filteredHeaders.forEach((header, colIdx) => {
+            const normKey = header.replace(/\s+/g, '');
+            const originalKey = Object.keys(row).find(k => k.replace(/\s+/g, '') === normKey);
+            let value = originalKey ? row[originalKey] : "";
+
+            // Format decimals
+            if (decimalColumnsMap[normKey] !== undefined && !isNaN(parseFloat(value))) {
+                const fixed = parseFloat(value).toFixed(decimalColumnsMap[normKey]);
+                if (totals.hasOwnProperty(normKey)) {
+                    totals[normKey] += parseFloat(fixed);
+                }
+                value = fixed;
+            }
+
+            // Format date
+            if (dateFormatMap[normKey] && value) {
+                value = dayjs(value).format(dateFormatMap[normKey]);
+            }
+
+            const cell = currentRow.getCell(colIdx + 1);
+            cell.value = isNaN(value) || typeof value === 'string' ? value : Number(value);
+            cell.alignment = {
+                horizontal: normalizedRightList.includes(normKey) ? 'right' : 'left'
+            };
+        });
+
+        currentRow.commit();
+        rowCursor++;
+    });
+
+    // Total Row
+    const totalRow = worksheet.getRow(rowCursor);
+    filteredHeaders.forEach((header, colIdx) => {
+        const normKey = header.replace(/\s+/g, '');
+        const cell = totalRow.getCell(colIdx + 1);
+
+        if (colIdx === 0) {
+            cell.value = 'Total';
+        } else if (totals.hasOwnProperty(normKey)) {
+            cell.value = totals[normKey].toFixed(decimalColumnsMap[normKey] ?? 0);
+        } else {
+            cell.value = '';
+        }
+
+        cell.alignment = {
+            horizontal: normalizedRightList.includes(normKey) ? 'right' : 'left'
+        };
+        cell.font = { bold: true };
+    });
+    totalRow.commit();
+
+    // Export file
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    });
+    saveAs(blob, `${fileTitle.replace(/[^a-zA-Z0-9]/g, "_")}.xlsx`);
+};
+
 export const exportTableToCsv = (
     gridEl: HTMLDivElement | null,
     headerData: any,
@@ -925,9 +1082,6 @@ export const exportTableToCsv = (
 // pdfMake.vfs = pdfFonts?.pdfMake?.vfs;
 pdfMake.vfs = pdfFonts.vfs;
 
-
-
-
 const convertBmpToPng = (bmpBase64: string): Promise<string> => {
     return new Promise((resolve, reject) => {
         const image = new Image();
@@ -952,10 +1106,17 @@ export const exportTableToPdf = async (
     jsonData: any,
     appMetadata: any,
     allData: any[],
-    pageData: any
+    pageData: any,
+    filters: any,
+    mode: 'download' | 'email',
 ) => {
     if (!allData || allData.length === 0) return;
 
+    if (mode === 'email') {
+        const confirmSend = window.confirm('Do you want to send mail?');
+        if (!confirmSend) return;
+    }
+    
     const decimalSettings = pageData[0]?.levels?.[0]?.settings?.decimalColumns || [];
     const columnsToHide = pageData[0]?.levels?.[0]?.settings?.hideEntireColumn?.split(',') || [];
     const totalColumns = pageData[0]?.levels?.[0]?.summary?.columnsToShowTotal || [];
@@ -1130,6 +1291,77 @@ export const exportTableToPdf = async (
 
     };
 
-    pdfMake.createPdf(docDefinition).download(`${fileTitle}.pdf`);
+    if (mode === 'download') {
+        pdfMake.createPdf(docDefinition).download(`${fileTitle}.pdf`);
+
+    } else if (mode === 'email') {
+        pdfMake.createPdf(docDefinition).getBase64(async (base64Data: string) => {
+            try {
+                const userId = localStorage.getItem('userId') || '';
+                const authToken = document.cookie.split('auth_token=')[1]?.split(';')[0] || '';
+
+                let filterXml;
+
+                if (filters && Object.keys(filters).length > 0) {
+                    filterXml = Object.entries(filters).map(([key, value]) => {
+                        if ((key === 'FromDate' || key === 'ToDate') && value) {
+                            const date = new Date(String(value));
+                            if (!isNaN(date.getTime())) {
+                                // Format as YYYYMMDD in local timezone
+                                const year = date.getFullYear();
+                                const month = String(date.getMonth() + 1).padStart(2, '0');
+                                const day = String(date.getDate()).padStart(2, '0');
+                                const formatted = `${year}${month}${day}`;
+                                return `<${key}>${formatted}</${key}>`;
+                            }
+                        }
+                        return `<${key}>${value}</${key}>`;
+                    }).join('\n');
+                }
+                else {
+                    filterXml = `<ClientCode>${userId}</ClientCode>`;
+                }
+                const xmlData1 = `
+                    <dsXml>
+                    <J_Ui>"ActionName":"TradeWeb", "Option":"EmailSend","RequestFrom":"W"</J_Ui>
+                    <Sql></Sql>
+                    <X_Filter>
+                    ${filterXml}
+                        <ReportName>${fileTitle}</ReportName>
+                        <FileName>${fileTitle}.PDF</FileName>
+                        <Base64>${base64Data}</Base64>
+                    </X_Filter>
+                    <J_Api>"UserId":"${userId}","UserType":"Client","AccYear":24,"MyDbPrefix":"SVVS","MemberCode":"undefined","SecretKey":"undefined"</J_Api>
+                    </dsXml>`;
+
+                console.log('Payload:', xmlData1);
+
+                const response = await axios.post(BASE_URL + PATH_URL, xmlData1, {
+                    headers: {
+                        'Content-Type': 'application/xml',
+                        Authorization: `Bearer ${authToken}`,
+                    },
+                    timeout: 300000,
+                });
+                // Handle based on success and specific message content
+                const result = response?.data;
+                // Get Column1 message if present
+                const columnMsg = result?.data?.rs0?.[0]?.Column1 || '';
+                if (result?.success) {
+                    if (columnMsg.toLowerCase().includes('mail template not define')) {
+                        alert('Mail Template Not Defined');
+                    } else {
+                        alert(columnMsg);
+                    }
+                } else {
+                    // Show error message if available, fallback to default
+                    alert(columnMsg || result?.message);
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Failed to send email.');
+            }
+        });
+    }
 };
 export default DataTable;
