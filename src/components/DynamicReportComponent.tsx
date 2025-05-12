@@ -6,20 +6,24 @@ import axios from 'axios';
 import { BASE_URL, PATH_URL } from '@/utils/constants';
 import moment from 'moment';
 import FilterModal from './FilterModal';
-import { FaSync, FaFilter, FaDownload, FaFileCsv, FaFilePdf } from 'react-icons/fa';
+import { FaSync, FaFilter, FaDownload, FaFileCsv, FaFilePdf, FaPlus } from 'react-icons/fa';
 import { useTheme } from '@/context/ThemeContext';
 import DataTable, { exportTableToCsv, exportTableToPdf } from './DataTable';
 import { store } from "@/redux/store";
 import { APP_METADATA_KEY } from "@/utils/constants";
 import { useSearchParams } from 'next/navigation';
+import EntryFormModal from './EntryFormModal';
+import ConfirmationModal from './Modals/ConfirmationModal';
+import { parseStringPromise } from 'xml2js';
 
 // const { companyLogo, companyName } = useAppSelector((state) => state.common);
 
 interface DynamicReportComponentProps {
     componentName: string;
+    componentType: string;
 }
 
-const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ componentName }) => {
+const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ componentName, componentType }) => {
     const menuItems = useAppSelector(selectAllMenuItems);
     const searchParams = useSearchParams();
     const clientCode = searchParams.get('clientCode');
@@ -30,6 +34,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
     const [primaryKeyFilters, setPrimaryKeyFilters] = useState<Record<string, any>>({});
     const [rs1Settings, setRs1Settings] = useState<any>(null);
     const [jsonData, setJsonData] = useState<any>(null);
+    const [jsonDataUpdated, setJsonDataUpdated] = useState<any>(null);
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
     const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
     const [sortConfig, setSortConfig] = useState<{ field: string; direction: string }>({
@@ -41,6 +46,12 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
     const [areFiltersInitialized, setAreFiltersInitialized] = useState(false);
     const [apiResponseTime, setApiResponseTime] = useState<number | undefined>(undefined);
     const [autoFetch, setAutoFetch] = useState<boolean>(true);
+    const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
+
+    const [entryFormData, setEntryFormData] = useState<any>(null);
+    const [entryAction, setEntryAction] = useState<'edit' | 'delete' | null>(null);
+     const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
+    
 
     const tableRef = useRef<HTMLDivElement>(null);
     const { colors, fonts } = useTheme();
@@ -52,7 +63,6 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
             return store.getState().common
         }
     })();
-
 
     const findPageData = () => {
         const searchInItems = (items: any[]): any => {
@@ -96,12 +106,34 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
         return {};
     };
 
+
+
+
     function convertXmlToJson(xmlString) {
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
         const root = xmlDoc.documentElement;
         return xmlToJson(root);
     }
+
+    async function convertXmlToJsonUpdated(rawXml: string): Promise<any> {
+        try {
+            // Sanitize common unescaped characters (only & in this case)
+            const sanitizedXml = rawXml.replace(/&(?!amp;|lt;|gt;|quot;|apos;|#\d+;|#x[a-fA-F0-9]+;)/g, '&amp;');
+
+            const result = await parseStringPromise(sanitizedXml, {
+                explicitArray: false,
+                trim: true,
+                mergeAttrs: true,
+            });
+
+            return result;
+        } catch (error) {
+            console.error('Error parsing XML:', error);
+            throw error;
+        }
+    }
+
 
     function xmlToJson(xml) {
         if (xml.nodeType !== 1) return null; // Only process element nodes
@@ -314,7 +346,11 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                 };
 
                 const json = convertXmlToJson(xmlString);
+                const jsonUpdated = await convertXmlToJsonUpdated(xmlString);
+
+                // console.log('JSON UPDATED', jsonUpdated);
                 setJsonData(json);
+                setJsonDataUpdated(jsonUpdated);
                 setRs1Settings(settingsJson);
             }
 
@@ -398,6 +434,92 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
         }
     };
 
+
+
+    const deleteMasterRecord = async () => {
+        try {
+
+            const entry = pageData[0].Entry;
+            const masterEntry = entry.MasterEntry;
+            const pageName = pageData[0]?.wPage || "";
+
+            const sql = Object.keys(masterEntry?.sql || {}).length ? masterEntry.sql : "";
+            let X_Data = "";
+
+            const jUi = Object.entries(masterEntry.J_Ui)
+                .map(([key, value]) => {
+                    if (key === 'Option') {
+                        return `"${key}":"delete"`;
+                    }
+                    if( key === 'ActionName'){
+                        return `"${key}":"${pageName}"`;
+                    }
+                    return `"${key}":"${value}"`
+
+                })
+                .join(',');
+
+            const jApi = Object.entries(masterEntry.J_Api)
+                .map(([key, value]) => `"${key}":"${value}"`)
+                .join(',');
+
+            Object.entries(entryFormData).forEach(([key, value]) => {
+                if (
+                    value !== undefined &&
+                    value !== null &&
+                    !key.startsWith('_') // Skip internal fields
+                ) {
+                    X_Data += `<${key}>${value}</${key}>`;
+                }
+            });
+            const xmlData = `<dsXml>
+                <J_Ui>${jUi}</J_Ui>
+                <Sql>${sql}</Sql>
+                <X_Filter></X_Filter>
+                <X_Data>${X_Data}</X_Data>
+                <J_Api>${jApi}</J_Api>
+            </dsXml>`;
+
+            const response = await axios.post(BASE_URL + PATH_URL, xmlData, {
+                headers: {
+                    'Content-Type': 'application/xml',
+                    'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]}`
+                }
+            });
+            if (response?.data?.success) {
+                fetchData();
+            }
+            console.log("response of delete api", response)
+
+        } catch (error) {
+            console.error(`Error fetching options for   `);
+        } finally {
+            console.log("check delete record");
+        }
+    }
+
+    // function to handle table actions
+    const handleTableAction = (action: string, record: any) => {
+        setEntryFormData(record);
+        setEntryAction(action as 'edit' | 'delete');
+        if (action === "edit") {
+            setIsEntryModalOpen(true);
+        }else{
+            setIsConfirmationModalOpen(true);
+        }
+    }
+
+    const handleConfirmDelete = () => {
+        deleteMasterRecord();
+        setIsConfirmationModalOpen(false);
+    };
+
+    const handleCancelDelete = () => {
+        setIsConfirmationModalOpen(false);
+    };
+
+    console.log("check page data", pageData,rs1Settings);
+
     if (!pageData) {
         return <div>Loading report data...</div>;
     }
@@ -430,6 +552,15 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                         ))}
                     </div>
                     <div className="flex gap-2">
+                        {componentType === 'entry' && (
+                            <button
+                                className="p-2 rounded"
+                                onClick={() => setIsEntryModalOpen(true)}
+                                style={{ color: colors.text }}
+                            >
+                                <FaPlus size={20} />
+                            </button>
+                        )}
                         <button
                             className="p-2 rounded"
                             onClick={() => exportTableToCsv(tableRef.current, jsonData, apiData, pageData)}
@@ -482,6 +613,11 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                 isSortingAllowed={pageData[0].isShortAble !== "false"}
                 onApply={() => { }}
             />
+            <ConfirmationModal
+                isOpen={isConfirmationModalOpen}
+                onConfirm={handleConfirmDelete}
+                onCancel={handleCancelDelete}
+            />
 
             {/* Download Modal */}
             <FilterModal
@@ -498,28 +634,49 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
             {/* Loading State */}
             {isLoading && <div>Loading...</div>}
 
+            {!apiData && !isLoading && <div>No Data Found</div>}
             {/* Data Display */}
             {!isLoading && apiData && (
                 <div className="space-y-0">
                     <div className="text-sm text-gray-500">
                         <div className="flex flex-col sm:flex-row justify-between">
-                            <div className="flex flex-wrap gap-2 my-1">
-                                {jsonData?.Headings?.map((headingObj, index) => (
-                                    <div key={index} className="flex flex-wrap gap-2 my-1">
-                                        {headingObj?.Heading?.map((headingText, i) => (
+                            <div className="flex flex-col gap-2 my-1">
+                                {/* Report Header */}
+                                {/* {jsonDataUpdated?.XmlData?.ReportHeader && (
+                                    <div className="text-lg font-bold mb-2" style={{ color: colors.text }}>
+                                        {jsonDataUpdated.XmlData.ReportHeader}
+                                    </div>
+                                )} */}
+
+                                {/* Headings */}
+                                <div className="flex flex-wrap gap-2">
+                                    {jsonDataUpdated?.XmlData?.Headings?.Heading ? (
+                                        Array.isArray(jsonDataUpdated.XmlData.Headings.Heading) ? (
+                                            jsonDataUpdated.XmlData.Headings.Heading.map((headingText, index) => (
+                                                <span
+                                                    key={index}
+                                                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                                                    style={{
+                                                        backgroundColor: colors.cardBackground,
+                                                        color: colors.text
+                                                    }}
+                                                >
+                                                    {headingText}
+                                                </span>
+                                            ))
+                                        ) : (
                                             <span
-                                                key={i}
                                                 className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
                                                 style={{
                                                     backgroundColor: colors.cardBackground,
                                                     color: colors.text
                                                 }}
                                             >
-                                                {headingText}
+                                                {jsonDataUpdated.XmlData.Headings.Heading}
                                             </span>
-                                        ))}
-                                    </div>
-                                ))}
+                                        )
+                                    ) : null}
+                                </div>
                             </div>
                             <div className="text-xs">Total Records: {apiData.length} | Response Time: {(apiResponseTime / 1000).toFixed(2)}s</div>
                         </div>
@@ -542,8 +699,21 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                         summary={pageData[0].levels[currentLevel].summary}
                         onRowClick={handleRecordClick}
                         tableRef={tableRef}
+                        isEntryForm={componentType === "entry" ? true : false}
+                        handleAction={handleTableAction}
                     />
                 </div>
+            )}
+            
+            {componentType === 'entry' && (
+                <EntryFormModal
+                    isOpen={isEntryModalOpen}
+                    onClose={() => setIsEntryModalOpen(false)}
+                    pageData={pageData}
+                    editData={entryFormData}
+                    action={entryAction}
+                    setEntryEditData={setEntryFormData}
+                />
             )}
         </div>
     );
