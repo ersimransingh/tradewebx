@@ -24,6 +24,8 @@ interface DataTableProps {
     onRowClick?: (record: any) => void;
     tableRef?: React.RefObject<HTMLDivElement>;
     summary?: any;
+    isEntryForm?: boolean;
+    handleAction?: (action: string, record: any) => void;
 }
 
 interface DecimalColumn {
@@ -121,10 +123,11 @@ const useScreenSize = () => {
     return screenSize;
 };
 
-const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, tableRef, summary }) => {
-    console.log(JSON.stringify(settings, null, 2), 'settings');
+const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, tableRef, summary, isEntryForm = false, handleAction = () => { } }) => {
+    console.log(JSON.stringify(settings, null, 2), 'settings', isEntryForm);
     const { colors, fonts } = useTheme();
     const [sortColumns, setSortColumns] = useState<any[]>([]);
+    console.log({ colors })
     const { tableStyle } = useAppSelector((state: RootState) => state.common);
     console.log(tableStyle);
     const rowHeight = tableStyle === 'small' ? 30 : tableStyle === 'medium' ? 40 : 50;
@@ -279,6 +282,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
 
         // Get columns to show based on screen size
         let columnsToShow: string[] = [];
+        console.log('Columns to show:', columnsToShow);
         if (settings?.mobileColumns && screenSize === 'mobile') {
             columnsToShow = settings.mobileColumns;
             console.log('Using mobile columns:', columnsToShow);
@@ -300,7 +304,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
         columnsToShow = columnsToShow.filter(key => !columnsToHide.includes(key));
         console.log('Final columns to show:', columnsToShow);
 
-        return [
+        const baseColumns: any = [
             {
                 key: '_expanded',
                 name: '',
@@ -376,6 +380,24 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
                                                 </div>
                                             );
                                         })}
+                                    {isEntryForm && (
+                                        <div className="action-buttons">
+                                            <button
+                                                className="edit-button"
+                                                onClick={() => handleAction('edit', row)}
+                                                disabled={row?.isUpdated === "true" ? true : false}
+                                            >
+                                                Edit
+                                            </button>
+                                            <button
+                                                className="delete-button"
+                                                onClick={() => handleAction('delete', row)}
+                                                disabled={row?.isDeleted === "true" ? true : false}
+                                            >
+                                                Delete
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         );
@@ -397,7 +419,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
                             {row._expanded ? '▼' : '▶'}
                         </div>
                     );
-                }
+                },
             },
             ...columnsToShow.map((key: any) => {
                 const isLeftAligned = leftAlignedColumns.includes(key);
@@ -460,8 +482,41 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
                         return value;
                     }
                 };
-            })
+            }),
         ];
+        if (isEntryForm) {
+            baseColumns.push(
+                {
+                    key: 'actions',
+                    name: 'Actions',
+                    minWidth: 120,
+                    maxWidth: 350,
+                    renderCell: ({ row }: any) => (
+                        isEntryForm && (
+                            <div className="action-buttons">
+                                <button
+                                    className="edit-button"
+                                    style={{}}
+                                    onClick={() => handleAction('edit', row)}
+                                    disabled={row?.isUpdated === "true" ? true : false}
+                                >
+                                    Edit
+                                </button>
+                                <button
+                                    className="delete-button"
+                                    style={{}}
+                                    onClick={() => handleAction('delete', row)}
+                                    disabled={row?.isDeleted === "true" ? true : false}
+                                >
+                                    Delete
+                                </button>
+                            </div>
+                        )
+                    ),
+                }
+            )
+        }
+        return baseColumns;
     }, [formattedData, colors.text, settings?.hideEntireColumn, settings?.leftAlignedColumns, settings?.leftAlignedColums, summary?.columnsToShowTotal, screenSize, settings?.mobileColumns, settings?.tabletColumns, settings?.webColumns, expandedRows]);
 
     // Sort function
@@ -715,6 +770,37 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
 
                 .expand-button:hover {
                     background-color: ${colors.color1};
+                }
+
+                .action-buttons {
+                    display: flex;
+                    gap: 8px;
+                }
+
+                .edit-button, .delete-button {
+                    padding: 4px 8px;
+                    border: none;
+                    cursor: pointer;
+                    font-size: 12px;
+                    border-radius: 4px;
+                    transition: background-color 0.2s ease; 
+                }
+                
+                .edit-button:disabled, 
+                .delete-button:disabled {
+                    background-color: #e0e0e0;
+                    color: #a0a0a0;
+                    cursor: not-allowed;
+                }
+
+                .edit-button {
+                    background-color: ${colors.buttonBackground};
+                    color: ${colors.buttonText};
+                }
+
+                .delete-button {
+                    background-color: ${colors.errorText};
+                    color: ${colors.buttonText};
                 }
             `}</style>
         </div>
@@ -1046,4 +1132,4 @@ export const exportTableToPdf = async (
 
     pdfMake.createPdf(docDefinition).download(`${fileTitle}.pdf`);
 };
-export default DataTable; 
+export default DataTable;

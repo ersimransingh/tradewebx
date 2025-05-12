@@ -8,3 +8,4 @@ export const ACTION_NAME = process.env.NEXT_PUBLIC_ACTION_NAME
 export const LOGIN_AS_OPTIONS = process.env.NEXT_PUBLIC_LOGIN_AS_OPTIONS
 export const LOGIN_KEY = process.env.NEXT_PUBLIC_LOGIN_KEY
 export const LOGIN_AS = process.env.NEXT_PUBLIC_LOGIN_AS
+export const BASE_PATH_FRONT_END = process.env.NEXT_PUBLIC_BASE_PATH || ''

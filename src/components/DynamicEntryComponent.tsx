@@ -311,6 +311,12 @@ const DynamicEntryComponent: React.FC<DynamicEntryComponentProps> = ({ component
         }
     };
 
+    // function to handle table actions
+    const handleTableAction = (action: string, record: any) => {
+        console.log('Table action:', action, 'Record:', record);
+        // Implement your action handling logic here
+    }
+
     // Modified filter initialization useEffect
     useEffect(() => {
         if (pageData?.[0]?.filters?.length > 0) {
@@ -507,6 +513,8 @@ const DynamicEntryComponent: React.FC<DynamicEntryComponentProps> = ({ component
                         summary={pageData[0].levels[currentLevel].summary}
                         onRowClick={handleRecordClick}
                         tableRef={tableRef}
+                        isEntryForm={true}
+                        handleAction={handleTableAction}
                     />
                 </div>
             )}

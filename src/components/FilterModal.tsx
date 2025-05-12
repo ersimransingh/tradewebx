@@ -38,6 +38,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
     const { colors } = useTheme();
     // Add local state to store filter values
     const [localFilterValues, setLocalFilterValues] = useState(initialValues);
+    const [resetKey, setResetKey] = useState<number>(Date.now());
 
     // Reset local values when modal opens with new initial values
     useEffect(() => {
@@ -54,6 +55,20 @@ const FilterModal: React.FC<FilterModalProps> = ({
     const handleApply = () => {
         onFilterChange(localFilterValues); // Send final values to parent
         onClose(); // Close the modal
+    };
+
+    // Handle clear button click
+    const handleClear = () => {
+        // Create a new empty object to force a complete reset
+        const emptyValues = {};
+        setLocalFilterValues(emptyValues);
+
+        // Force FormCreator to reset by passing a new key
+        const resetKey = Date.now();
+        setResetKey(resetKey);
+
+        // Notify parent of the reset
+        onFilterChange(emptyValues);
     };
 
     return (
@@ -79,6 +94,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
                         <div className='h-20'></div>
                         <div>{title}</div>
                         <FormCreator
+                            key={resetKey}
                             formData={filters || [[]]}
                             onFilterChange={handleLocalFilterChange}
                             initialValues={localFilterValues}
@@ -107,13 +123,22 @@ const FilterModal: React.FC<FilterModalProps> = ({
                     {/* Action Buttons */}
                     {!isDownload && (
                         <div className="mt-4 flex justify-between">
-                            <button
-                                className="px-4 py-2 rounded"
-                                style={{ backgroundColor: colors.buttonBackground }}
-                                onClick={onClose}
-                            >
-                                <span style={{ color: colors.buttonText }}>Cancel</span>
-                            </button>
+                            <div>
+                                <button
+                                    className="px-4 py-2 rounded"
+                                    style={{ backgroundColor: colors.buttonBackground }}
+                                    onClick={onClose}
+                                >
+                                    <span style={{ color: colors.buttonText }}>Cancel</span>
+                                </button>&nbsp;&nbsp;
+                                <button
+                                    className="px-4 py-2 rounded"
+                                    style={{ backgroundColor: colors.buttonBackground }}
+                                    onClick={handleClear}
+                                >
+                                    <span style={{ color: colors.buttonText }}>Clear</span>
+                                </button>
+                            </div>
                             <button
                                 className="px-4 py-2 rounded"
                                 style={{ backgroundColor: colors.buttonBackground }}

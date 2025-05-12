@@ -8,9 +8,10 @@ import { useRouter } from "next/navigation";
 import axios from 'axios';
 import { useDispatch, useSelector } from 'react-redux';
 import { setAuthData, setError as setAuthError, setLoading } from '@/redux/features/authSlice';
-import { BASE_URL, LOGIN_AS, PRODUCT, LOGIN_KEY, LOGIN_URL } from "@/utils/constants";
+import { BASE_URL, LOGIN_AS, PRODUCT, LOGIN_KEY, LOGIN_URL, BASE_PATH_FRONT_END } from "@/utils/constants";
 import Image from "next/image";
 import { RootState } from "@/redux/store";
+import Link from "next/link";
 
 // Default options to use if JSON file is not available
 const DEFAULT_LOGIN_OPTIONS = [];
@@ -115,7 +116,15 @@ export default function SignInForm() {
         localStorage.setItem('userType', data.data[0].UserType);
         localStorage.setItem('loginType', data.data[0].LoginType);
 
-        router.push('/otp-verification');
+        if (data.data[0].LoginType === "2FA") {
+
+          router.push('/otp-verification');
+        } else {
+          // Set cookie
+          document.cookie = `auth_token=${data.token}; path=/; expires=${new Date(data.tokenExpireTime).toUTCString()}`;
+          localStorage.removeItem('temp_token');
+          router.push('/dashboard');
+        }
       } else {
         dispatch(setAuthError(data.message || 'Login failed'));
         setError(data.message || 'Login failed');
@@ -246,13 +255,16 @@ export default function SignInForm() {
               ) : 'Sign in'}
             </Button>
           </form>
+          <div className="flex justify-center items-center mt-2">
+            <Link href="/forgot-password">Forgot Password?</Link>
+          </div>
         </div>
       </div>
       <div className="flex justify-end items-center p-4">
         <div className="flex items-center gap-2 bg-white/80 dark:bg-gray-800/80 px-3 py-1.5 rounded-full shadow-sm">
           <span className="text-gray-500 dark:text-gray-400" style={{ fontSize: '11px' }}>Powered By:</span>
           <a href="https://www.secmark.in" target="_blank" rel="noopener noreferrer" className="transition hover:opacity-80">
-            <Image src="/images/secmarklogo.png" alt="Tradesoft" width={90} height={90} />
+            <Image src={BASE_PATH_FRONT_END + "/images/secmarklogo.png"} alt="Tradesoft" width={90} height={90} />
           </a>
         </div>
       </div>

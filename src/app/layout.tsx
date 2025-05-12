@@ -6,9 +6,11 @@ import { SidebarProvider } from "@/context/SidebarContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { Provider } from 'react-redux';
 import { store } from "@/redux/store";
-import { APP_METADATA_KEY } from "@/utils/constants";
+import { APP_METADATA_KEY, BASE_PATH_FRONT_END } from "@/utils/constants";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 const appMetadata = (() => {
   try {
@@ -28,6 +30,16 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+
+  const router = useRouter();
+
+  useEffect(() => {
+    // Redirect if the initial path is "/"
+    if (window.location.pathname === "/") {
+      router.replace(`${BASE_PATH_FRONT_END}/signin`);
+    }
+  }, [router]);
+  
   return (
     <html lang="en">
           <head>

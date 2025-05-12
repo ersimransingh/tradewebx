@@ -2,7 +2,7 @@ import OTPVerificationForm from "@/components/auth/OTPVerificationForm";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "OTP Verification | TailAdmin",
+  title: "OTP Verification | Tradeweb",
   description: "Verify your login with OTP",
 };
 
