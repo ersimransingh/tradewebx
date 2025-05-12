@@ -9,6 +9,7 @@ import ThemePage from "@/apppages/ThemePage";
 import Downloads from "@/apppages/Downloads";
 import { useAppSelector } from "@/redux/hooks";
 import { selectAllMenuItems } from "@/redux/features/menuSlice";
+import Ipo from "@/apppages/Ipo";
 
 // Define static route components
 const staticRoutes: Record<string, React.ReactNode> = {
@@ -17,6 +18,7 @@ const staticRoutes: Record<string, React.ReactNode> = {
   changepassword: <ChangePassword />,
   theme: <ThemePage />,
   downloads: <Downloads />,
+  ipo:<Ipo/>
 };
 
 // Define the type for params explicitly
@@ -31,13 +33,16 @@ export default function DynamicPage({ params }: { params: any | Promise<any> }) 
   const subRoute = unwrappedParams.slug[1];
   const subSubRoute = unwrappedParams.slug[2];
 
+
+  const componentName = subSubRoute || subRoute || route;
+
   // Handle static routes
-  if (staticRoutes[route]) {
-    return staticRoutes[route];
+  if (staticRoutes[componentName]) {
+    return staticRoutes[componentName];
   }
 
   // For dynamic routes, determine the actual componentName
-  const componentName = subSubRoute || subRoute || route;
+  // const componentName = subSubRoute || subRoute || route;
   console.log('componentName_', componentName);
   console.log('route_', route);
   console.log('subRoute_', subRoute);

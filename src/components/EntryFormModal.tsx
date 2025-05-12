@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { BASE_URL, PATH_URL } from '@/utils/constants';
 import DatePicker from 'react-datepicker';
@@ -438,11 +438,27 @@ const EntryForm: React.FC<EntryFormProps> = ({
         }
       };
 
+
+      
+
     const renderFormField = (field: FormField) => {
         const isEnabled = field.FieldEnabledTag === 'Y';
 
         switch (field.type) {
             case 'WDropDownBox':
+                const options = dropdownOptions[field.wKey] || [];
+                const [visibleOptions, setVisibleOptions] = useState(options.slice(0, 50));
+                const [searchText, setSearchText] = useState('');
+
+                useEffect(() => {
+                    const filtered = options.filter(opt =>
+                        opt.label.toLowerCase().includes(searchText.toLowerCase()) ||
+                        opt.value.toLowerCase().includes(searchText.toLowerCase())
+                    );
+
+                    setVisibleOptions(filtered.slice(0, 50));
+                }, [searchText,options]);
+
                 return (
                     <DropdownField
                         key={`dropdown-${field.Srno}-${field.wKey}`}
@@ -459,6 +475,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
                         handleDropDownChange={onDropdownChange}
                     />
                 );
+
 
             case 'WDateBox':
                 return (
