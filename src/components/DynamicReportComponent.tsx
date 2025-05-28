@@ -6,7 +6,7 @@ import axios from 'axios';
 import { BASE_URL, PATH_URL } from '@/utils/constants';
 import moment from 'moment';
 import FilterModal from './FilterModal';
-import { FaSync, FaFilter, FaDownload, FaFileCsv, FaFilePdf, FaPlus, FaFileExcel, FaEnvelope } from 'react-icons/fa';
+import { FaSync, FaFilter, FaDownload, FaFileCsv, FaFilePdf, FaPlus, FaFileExcel, FaEnvelope, FaEdit } from 'react-icons/fa';
 import { useTheme } from '@/context/ThemeContext';
 import DataTable, { exportTableToCsv, exportTableToPdf, exportTableToExcel,downloadOption } from './DataTable';
 import { store } from "@/redux/store";
@@ -52,6 +52,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
     const [entryFormData, setEntryFormData] = useState<any>(null);
     const [entryAction, setEntryAction] = useState<'edit' | 'delete' | 'view' | null>(null);
     const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
+    const [isTableEditable, setIsTableEditable] = useState(false)
 
 
     const tableRef = useRef<HTMLDivElement>(null);
@@ -573,6 +574,13 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                         )}
                         <button
                             className="p-2 rounded"
+                            style={{color: colors.text}}
+                            onClick={()=> setIsTableEditable(true)}
+                        >
+                            <FaEdit size={20}/> 
+                        </button>
+                        <button
+                            className="p-2 rounded"
                             onClick={() => exportTableToExcel(tableRef.current, jsonData, apiData, pageData, appMetadata)}
                             style={{ color: colors.text }}
                         >
@@ -736,8 +744,13 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                         onRowClick={handleRecordClick}
                         tableRef={tableRef}
                         isEntryForm={componentType === "entry"}
+                        isTableEditable={isTableEditable}
                         handleAction={handleTableAction}
                         fullHeight={Object.keys(additionalTables).length > 0 ? false : true}
+                        onCellEdit={(rowId, columnKey, value) => {
+                            console.log(`Row ${rowId}, Column ${columnKey} updated to ${value}`);
+                        }}
+
                     />
                     {Object.keys(additionalTables).length > 0 && (
                         <div>

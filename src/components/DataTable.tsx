@@ -15,6 +15,15 @@ import dayjs from 'dayjs';
 import axios from 'axios';
 import { BASE_URL } from '@/utils/constants';
 
+interface EditableColumn {
+    Srno: number;
+    type: 'WTextBox' | 'WDropdown';
+    label: string;
+    wKey: string;
+    showLabel: boolean;
+    options?: { value: any; label: string }[];
+}
+
 interface DataTableProps {
     data: any[];
     settings?: {
@@ -24,6 +33,7 @@ interface DataTableProps {
         mobileColumns?: string[];
         tabletColumns?: string[];
         webColumns?: string[];
+        EditableColumn?: EditableColumn[];
         [key: string]: any;
     };
     onRowClick?: (record: any) => void;
@@ -32,6 +42,8 @@ interface DataTableProps {
     isEntryForm?: boolean;
     handleAction?: (action: string, record: any) => void;
     fullHeight?: boolean;
+    isTableEditable?: boolean;
+    onCellEdit?: (rowId: string | number, columnKey: string, value: any) => void;
 }
 
 interface DecimalColumn {
@@ -103,26 +115,21 @@ function downloadFile(fileName: string, data: Blob) {
     URL.revokeObjectURL(url);
 }
 
-export function downloadPdf(fileName, base64Data) {
-    console.log(fileName)
-    // Decode Base64 into raw binary data held in a string
+export function downloadPdf(fileName: string, base64Data: string) {
+    console.log(fileName);
     const byteCharacters = atob(base64Data);
     const byteNumbers = new Array(byteCharacters.length);
     for (let i = 0; i < byteCharacters.length; i++) {
         byteNumbers[i] = byteCharacters.charCodeAt(i);
     }
-    // Convert to Uint8Array
     const byteArray = new Uint8Array(byteNumbers);
-    // Create a blob from the PDF bytes
     const blob = new Blob([byteArray], { type: 'application/pdf' });
-    // Create a link element, set URL and trigger download
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.href = url;
     link.download = fileName;
     document.body.appendChild(link);
     link.click();
-    // Cleanup
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 }
@@ -152,31 +159,39 @@ const useScreenSize = () => {
     return screenSize;
 };
 
-const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, tableRef, summary, isEntryForm = false, handleAction = () => { }, fullHeight = true }) => {
+const DataTable: React.FC<DataTableProps> = ({
+    data,
+    settings,
+    onRowClick,
+    tableRef,
+    summary,
+    isEntryForm = false,
+    handleAction = () => {},
+    fullHeight = true,
+    isTableEditable = false,
+    onCellEdit = () => {}
+}) => {
     const { colors, fonts } = useTheme();
     const [sortColumns, setSortColumns] = useState<any[]>([]);
+    const [selectedRows, setSelectedRows] = useState<Set<string | number>>(new Set());
+    const [editableRows, setEditableRows] = useState<any[]>([]);
+    const [editingRow, setEditingRow] = useState<string | number | null>(null);
 
+    console.log("check selected row", selectedRows,editingRow)
     const { tableStyle } = useAppSelector((state: RootState) => state.common);
 
     const rowHeight = tableStyle === 'small' ? 30 : tableStyle === 'medium' ? 40 : 50;
     const screenSize = useScreenSize();
     const [expandedRows, setExpandedRows] = useState<Set<string | number>>(new Set());
 
-    // Format date function
     const formatDateValue = (value: string | number | Date, format: string = 'DD-MM-YYYY'): string => {
         if (!value) return '';
-
         try {
-            // Parse the YYYYMMDD format
             const momentDate = moment(value.toString(), 'YYYYMMDD');
-
-            // Check if the date is valid
             if (!momentDate.isValid()) {
-                // Try parsing as a regular date string
                 const fallbackDate = moment(value);
                 return fallbackDate.isValid() ? fallbackDate.format(format) : '';
             }
-
             return momentDate.format(format);
         } catch (error) {
             console.error('Error formatting date:', error);
@@ -184,12 +199,8 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
         }
     };
 
-    // New decimal formatting function
     const formatDecimalValue = (value: number | string, decimalPlaces: number): string => {
-        if (value === null || value === undefined || value === '') {
-            return '';
-        }
-
+        if (value === null || value === undefined || value === '') return '';
         try {
             const numValue = typeof value === 'string' ? parseFloat(value) : value;
             return numValue.toFixed(decimalPlaces);
@@ -199,50 +210,32 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
         }
     };
 
-    // New function to get color based on value comparison
     const getValueBasedColor = (
         value: number | string,
         colorRule: ValueBasedColor
     ): string => {
-        if (value === null || value === undefined || value === '') {
-            return ''; // Default color
-        }
-
+        if (value === null || value === undefined || value === '') return '';
         try {
             const numValue = typeof value === 'string' ? parseFloat(value) : value;
-
-            if (isNaN(numValue)) {
-                return ''; // Default color for non-numeric values
-            }
-
-            if (numValue < colorRule.checkNumber) {
-                return colorRule.lessThanColor;
-            } else if (numValue > colorRule.checkNumber) {
-                return colorRule.greaterThanColor;
-            } else {
-                return colorRule.equalToColor;
-            }
+            if (isNaN(numValue)) return '';
+            if (numValue < colorRule.checkNumber) return colorRule.lessThanColor;
+            if (numValue > colorRule.checkNumber) return colorRule.greaterThanColor;
+            return colorRule.equalToColor;
         } catch (error) {
             console.error('Error determining value-based color:', error);
-            return ''; // Default color on error
+            return '';
         }
     };
 
-    // Process and format the data
     const formattedData = useMemo(() => {
-        if (!data || !Array.isArray(data)) {
-            return data;
-        }
-
+        if (!data || !Array.isArray(data)) return data;
         return data.map((row, index) => {
             const newRow = { ...row };
             const rowId = row.id || index;
 
-            // Handle date formatting
             if (settings?.dateFormat?.key) {
                 const dateColumns = settings.dateFormat.key.split(',').map((key: any) => key.trim());
                 const dateFormat = settings.dateFormat.format;
-
                 dateColumns.forEach((column: any) => {
                     if (newRow.hasOwnProperty(column)) {
                         newRow[column] = formatDateValue(newRow[column], dateFormat);
@@ -250,12 +243,10 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
                 });
             }
 
-            // Handle decimal formatting
             if (settings?.decimalColumns && Array.isArray(settings.decimalColumns)) {
                 settings.decimalColumns.forEach((decimalSetting: DecimalColumn) => {
                     if (decimalSetting.key) {
                         const decimalColumns = decimalSetting.key.split(',').map((key: any) => key.trim());
-
                         decimalColumns.forEach((column: any) => {
                             if (newRow.hasOwnProperty(column)) {
                                 newRow[column] = formatDecimalValue(newRow[column], decimalSetting.decimalPlaces);
@@ -265,7 +256,6 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
                 });
             }
 
-            // Handle value-based text colors
             if (settings?.valueBasedTextColor) {
                 settings.valueBasedTextColor.forEach((colorRule: any) => {
                     const columns = colorRule.key.split(',').map((key: any) => key.trim());
@@ -283,49 +273,73 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
             return {
                 ...newRow,
                 _expanded: expandedRows.has(rowId),
-                _id: rowId
+                _id: rowId,
+                _editing: editingRow === rowId
             };
         });
-    }, [data, settings?.dateFormat, settings?.decimalColumns, settings?.valueBasedTextColor, expandedRows]);
+    }, [data, settings?.dateFormat, settings?.decimalColumns, settings?.valueBasedTextColor, expandedRows, editingRow]);
 
-    // Dynamically create columns from the first data item
+    useEffect(() => {
+        if (isTableEditable) {
+            setEditableRows(formattedData);
+        }
+    }, [isTableEditable, formattedData]);
+
     const columns = useMemo(() => {
         if (!formattedData || formattedData.length === 0) return [];
 
-        // Get columns to hide (if specified in settings)
         const columnsToHide = settings?.hideEntireColumn
             ? settings.hideEntireColumn.split(',').map((col: string) => col.trim())
             : [];
 
-        // Get columns that should be left-aligned even if they contain numbers
         const leftAlignedColumns = settings?.leftAlignedColumns || settings?.leftAlignedColums
             ? (settings?.leftAlignedColumns || settings?.leftAlignedColums).split(',').map((col: string) => col.trim())
             : [];
 
-        // Get columns to show based on screen size
         let columnsToShow: string[] = [];
-
         if (settings?.mobileColumns && screenSize === 'mobile') {
             columnsToShow = settings.mobileColumns;
-            console.log('Using mobile columns:', columnsToShow);
         } else if (settings?.tabletColumns && screenSize === 'tablet') {
             columnsToShow = settings.tabletColumns;
-            console.log('Using tablet columns:', columnsToShow);
         } else if (settings?.webColumns) {
             columnsToShow = settings.webColumns;
-            console.log('Using web columns:', columnsToShow);
         }
 
-        // If no responsive columns are defined, show all columns
         if (columnsToShow.length === 0) {
             columnsToShow = Object.keys(formattedData[0]).filter(key => !key.startsWith('_'));
-            console.log('No responsive columns defined, using all columns:', columnsToShow);
         }
 
-        // Filter out hidden columns
         columnsToShow = columnsToShow.filter(key => !columnsToHide.includes(key));
 
+        const editableColumns = isTableEditable && settings?.EditableColumn ? settings.EditableColumn : [];
+
+        const checkboxColumn = isTableEditable ? [{
+            key: '_checkbox',
+            name: '',
+            width: 40,
+            minWidth: 40,
+            maxWidth: 40,
+            frozen: true,
+            renderCell: ({ row }: any) => (
+                <input
+                    type="checkbox"
+                    checked={selectedRows.has(row._id)}
+                    onChange={e => {
+                        const newSelected = new Set(selectedRows);
+                        if (e.target.checked) {
+                            newSelected.add(row._id);
+                        } else {
+                            newSelected.delete(row._id);
+                        }
+                        setSelectedRows(newSelected);
+                    }}
+                    style={{ cursor: 'pointer' }}
+                />
+            )
+        }] : [];
+
         const baseColumns: any = [
+            ...checkboxColumn,
             {
                 key: '_expanded',
                 name: '',
@@ -333,17 +347,11 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
                 width: 30,
                 colSpan: (props: any) => {
                     if (props.type === 'ROW' && props.row._expanded) {
-                        return columnsToShow.length + 1;
+                        return columnsToShow.length + 1 + (isTableEditable ? 1 : 0);
                     }
                     return undefined;
                 },
-                // cellClass: (row: any) => {
-                //     if (row._expanded) {
-                //         return 'expanded-row';
-                //     }
-                //     return undefined;
-                // },
-                renderCell: ({ row, tabIndex, onRowChange }: any) => {
+                renderCell: ({ row }: any) => {
                     if (row._expanded) {
                         return (
                             <div className="expanded-content" style={{ height: '100%', overflow: 'auto' }}>
@@ -363,7 +371,6 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
                                     {Object.entries(row)
                                         .filter(([key]) => !key.startsWith('_'))
                                         .map(([key, value]) => {
-                                            // Use the same formatter logic as the main table
                                             const isLeftAligned = leftAlignedColumns.includes(key);
                                             const isNumericColumn = !isLeftAligned && ['Balance', 'Credit', 'Debit'].includes(key);
 
@@ -406,14 +413,14 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
                                             <button
                                                 className="edit-button"
                                                 onClick={() => handleAction('edit', row)}
-                                                disabled={row?.isUpdated === "true" ? true : false}
+                                                disabled={row?.isUpdated === "true"}
                                             >
                                                 Edit
                                             </button>
                                             <button
                                                 className="delete-button"
                                                 onClick={() => handleAction('delete', row)}
-                                                disabled={row?.isDeleted === "true" ? true : false}
+                                                disabled={row?.isDeleted === "true"}
                                             >
                                                 Delete
                                             </button>
@@ -454,6 +461,9 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
                     (col: any) => col.key === key
                 );
 
+                const editableConfig = editableColumns.find((col: any) => col.wKey === key);
+                const isEditable = isTableEditable && editableConfig;
+
                 return {
                     key,
                     name: key,
@@ -469,19 +479,73 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
                         }
                         return <div></div>;
                     },
+                    renderEditCell: isEditable ? ({ row, onRowChange }: any) => {
+                        const value = row[key];
+                        const rawValue = React.isValidElement(value) ? (value as StyledValue).props.children : value;
+
+                        switch (editableConfig?.type) {
+                            case 'WTextBox':
+                                return (
+                                    <input
+                                        type="text"
+                                        value={rawValue ?? ''}
+                                        onChange={(e) => {
+                                            const newValue = e.target.value;
+                                            onRowChange({ ...row, [key]: newValue });
+                                            onCellEdit(row._id, key, newValue);
+                                        }}
+                                        style={{
+                                            width: '100%',
+                                            border: `1px solid ${colors.textInputBorder}`,
+                                            background: colors.background,
+                                            color: colors.text,
+                                            padding: '4px'
+                                        }}
+                                    />
+                                );
+                            case 'WDropdown':
+                                return (
+                                    <select
+                                        value={rawValue ?? ''}
+                                        onChange={(e) => {
+                                            const newValue = e.target.value;
+                                            onRowChange({ ...row, [key]: newValue });
+                                            onCellEdit(row._id, key, newValue);
+                                        }}
+                                        style={{
+                                            width: '100%',
+                                            border: `1px solid ${colors.textInputBorder}`,
+                                            background: colors.background,
+                                            color: colors.text,
+                                            padding: '4px'
+                                        }}
+                                    >
+                                        <option value="">Select...</option>
+                                        {editableConfig.options?.map((opt: any) => (
+                                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                        ))}
+                                    </select>
+                                );
+                            default:
+                                return <div>{rawValue}</div>;
+                        }
+                    } : undefined,
                     formatter: (props: any) => {
                         const value = props.row[key];
                         const rawValue = React.isValidElement(value) ? (value as StyledValue).props.children : value;
-                        const numValue = parseFloat(rawValue);
 
-                        if (!isNaN(numValue) && !isLeftAligned) {
+                        if (isEditable && props.row._editing) {
+                            return rawValue;
+                        }
+
+                        if (!isNaN(parseFloat(rawValue)) && !isLeftAligned) {
                             const formattedValue = new Intl.NumberFormat('en-IN', {
                                 minimumFractionDigits: 2,
                                 maximumFractionDigits: 2
-                            }).format(numValue);
+                            }).format(parseFloat(rawValue));
 
-                            const textColor = numValue < 0 ? '#dc2626' :
-                                numValue > 0 ? '#16a34a' :
+                            const textColor = parseFloat(rawValue) < 0 ? '#dc2626' :
+                                parseFloat(rawValue) > 0 ? '#16a34a' :
                                     colors.text;
 
                             return <div className="numeric-value" style={{ color: textColor }}>{formattedValue}</div>;
@@ -501,68 +565,63 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
                         }
 
                         return value;
-                    }
+                    },
+                    editorOptions: isEditable ? {
+                        renderFormatter: true,
+                        editOnClick: true
+                    } : undefined
                 };
             }),
         ];
+
         if (isEntryForm) {
-            baseColumns.push(
-                {
-                    key: 'actions',
-                    name: 'Actions',
-                    minWidth: 170,
-                    maxWidth: 350,
-                    renderCell: ({ row }: any) => (
-                        isEntryForm && (
-                            <div className="action-buttons">
-                                <button
-                                    className="view-button"
-                                    style={{}}
-                                    onClick={() => handleAction('view', row)}
-                                >
-                                    view
-                                </button>
-                                <button
-                                    className="edit-button"
-                                    style={{}}
-                                    onClick={() => handleAction('edit', row)}
-                                    disabled={row?.isUpdated === "true" ? true : false}
-                                >
-                                    Edit
-                                </button>
-                                <button
-                                    className="delete-button"
-                                    style={{}}
-                                    onClick={() => handleAction('delete', row)}
-                                    disabled={row?.isDeleted === "true" ? true : false}
-                                >
-                                    Delete
-                                </button>
-                            </div>
-                        )
-                    ),
-                }
-            )
+            baseColumns.push({
+                key: 'actions',
+                name: 'Actions',
+                minWidth: 170,
+                maxWidth: 350,
+                renderCell: ({ row }: any) => (
+                    <div className="action-buttons">
+                        <button
+                            className="view-button"
+                            onClick={() => handleAction('view', row)}
+                        >
+                            View
+                        </button>
+                        <button
+                            className="edit-button"
+                            onClick={() => handleAction('edit', row)}
+                            disabled={row?.isUpdated === "true"}
+                        >
+                            Edit
+                        </button>
+                        <button
+                            className="delete-button"
+                            onClick={() => handleAction('delete', row)}
+                            disabled={row?.isDeleted === "true"}
+                        >
+                            Delete
+                        </button>
+                    </div>
+                ),
+            });
         }
         return baseColumns;
-    }, [formattedData, colors.text, settings?.hideEntireColumn, settings?.leftAlignedColumns, settings?.leftAlignedColums, summary?.columnsToShowTotal, screenSize, settings?.mobileColumns, settings?.tabletColumns, settings?.webColumns, expandedRows]);
+    }, [
+        formattedData, colors, settings, screenSize, summary, expandedRows, 
+        isTableEditable, selectedRows, editingRow, isEntryForm, fonts.content
+    ]);
 
-    // Sort function
     const sortRows = (initialRows: any[], sortColumns: any[]) => {
         if (sortColumns.length === 0) return initialRows;
-
         return [...initialRows].sort((a, b) => {
             for (const sort of sortColumns) {
                 const { columnKey, direction } = sort;
-                if (columnKey.startsWith('_')) continue; // Skip internal columns
+                if (columnKey.startsWith('_')) continue;
                 const aValue = a[columnKey];
                 const bValue = b[columnKey];
-
-                // Handle React elements (from value-based text color formatting)
                 const aActual = React.isValidElement(aValue) ? (aValue as StyledValue).props.children : aValue;
                 const bActual = React.isValidElement(bValue) ? (bValue as StyledValue).props.children : bValue;
-
-                // Convert to numbers if possible for comparison
                 const aNum = parseFloat(aActual);
                 const bNum = parseFloat(bActual);
 
@@ -571,9 +630,8 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
                         return direction === 'ASC' ? aNum - bNum : bNum - aNum;
                     }
                 } else {
-                    // Make sure we're comparing strings
-                    const aStr = String(aActual ?? '');  // Convert to string explicitly
-                    const bStr = String(bActual ?? '');  // Convert to string explicitly
+                    const aStr = String(aActual ?? '');
+                    const bStr = String(bActual ?? '');
                     const comparison = aStr.localeCompare(bStr);
                     if (comparison !== 0) {
                         return direction === 'ASC' ? comparison : -comparison;
@@ -585,8 +643,11 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
     };
 
     const rows = useMemo(() => {
+        if (isTableEditable) {
+            return editableRows;
+        }
         return sortRows(formattedData, sortColumns);
-    }, [formattedData, sortColumns]);
+    }, [isTableEditable, editableRows, formattedData, sortColumns]);
 
     const summmaryRows = useMemo(() => {
         const totals: Record<string, any> = {
@@ -594,25 +655,19 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
             totalCount: rows.length
         };
 
-        // Only calculate totals for columns specified in summary.columnsToShowTotal
         if (summary?.columnsToShowTotal && Array.isArray(summary.columnsToShowTotal)) {
             summary.columnsToShowTotal.forEach(column => {
                 if (column.key) {
-                    // Calculate the sum for this column
                     const sum = rows.reduce((total, row) => {
                         const value = row[column.key];
-                        // Handle React elements (from value-based text color formatting)
                         const actualValue = React.isValidElement(value)
                             ? parseFloat((value as StyledValue).props.children.toString())
                             : parseFloat(value);
-
                         return !isNaN(actualValue) ? total + actualValue : total;
                     }, 0);
 
-                    // Format the sum with 2 decimal places
                     const formattedSum = sum.toFixed(2);
 
-                    // Apply value-based text color if configured for this column
                     if (settings?.valueBasedTextColor) {
                         const colorRule = settings.valueBasedTextColor.find((rule: ValueBasedColor) => {
                             const columns = rule.key.split(',').map((key: string) => key.trim());
@@ -628,7 +683,6 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
                         }
                     }
 
-                    // Default formatting if no color rule applies
                     totals[column.key] = formattedSum;
                 }
             });
@@ -657,7 +711,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
                 }}
                 bottomSummaryRows={summmaryRows}
                 onCellClick={(props: any) => {
-                    if (onRowClick && !props.column.key.startsWith('_') && !isEntryForm) {
+                    if (onRowClick && !props.column.key.startsWith('_') && !isEntryForm && !isTableEditable) {
                         const { _id, _expanded, ...rowData } = rows[props.rowIdx];
                         onRowClick(rowData);
                     }
@@ -687,6 +741,20 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
                     overflow: hidden;
                     text-overflow: ellipsis;
                     color: ${colors.text};
+                }
+
+                .rdg-cell input,
+                .rdg-cell select {
+                    width: 100%;
+                    height: 100%;
+                    border: none;
+                    background: transparent;
+                    color: ${colors.text};
+                }
+
+                .rdg-cell input:focus,
+                .rdg-cell select:focus {
+                    outline: none;
                 }
 
                 .numeric-column-header, .numeric-column-cell {
@@ -795,12 +863,13 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
                     background-color: ${colors.color1};
                 }
 
-                .action-buttons {
+                .action-buttons, .edit-action-buttons {
                     display: flex;
                     gap: 8px;
                 }
 
-                .edit-button, .delete-button, .view-button {
+                .edit-button, .delete-button, .view-button,
+                .save-button, .cancel-button, .edit-row-button {
                     padding: 4px 10px;
                     border: none;
                     cursor: pointer;
@@ -815,10 +884,12 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
                     color: #a0a0a0;
                     cursor: not-allowed;
                 }
+                
                 .view-button {
                     background-color: ${colors.primary};
                     color: ${colors.buttonText};
                 }
+                
                 .edit-button {
                     background-color: ${colors.buttonBackground};
                     color: ${colors.buttonText};
@@ -826,6 +897,21 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
 
                 .delete-button {
                     background-color: ${colors.errorText};
+                    color: ${colors.buttonText};
+                }
+                
+                .save-button {
+                    background-color: ${colors.success};
+                    color: ${colors.buttonText};
+                }
+                
+                .cancel-button {
+                    background-color: ${colors.warning};
+                    color: ${colors.buttonText};
+                }
+                
+                .edit-row-button {
+                    background-color: ${colors.info};
                     color: ${colors.buttonText};
                 }
             `}</style>
