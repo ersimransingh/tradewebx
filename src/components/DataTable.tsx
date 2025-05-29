@@ -245,6 +245,20 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
         setSelectedRows(new Set()); // Reset selections when data changes
     }, [data]);
 
+    useEffect(() => {
+        const preloadDropdowns = () => {
+            settings?.EditableColumn?.forEach((field) => {
+                if (field.type === 'WDropDownBox' && !field.dependsOn) {
+                    setDropdownOptions(prev => ({
+                        ...prev,
+                        [field.wKey]: field.options || []
+                    }));
+                }
+            });
+        };
+        preloadDropdowns();
+    }, []);
+
     // Handle save changes
     const handleSaveChanges = () => {
         // Only save selected rows
@@ -915,7 +929,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
                 }
                 return r;
             });
-            setEditedData(newData);
+            // setEditedData(newData);
             setDropdownOptions(prev => ({ ...prev, [depField.wKey]: [] }));
         });
 

@@ -318,7 +318,11 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
             const endTime = performance.now();
             setApiResponseTime(Math.round(endTime - startTime));
 
-            setApiData(response.data.data.rs0);
+            const data = response.data.data.rs0.map((record: any, index: number) => ({
+                _id: index + 1, 
+                ...record,
+            }));
+            setApiData(data);
 
             // Handle additional tables (rs3, rs4, etc.)
             const additionalTablesData: Record<string, any[]> = {};
