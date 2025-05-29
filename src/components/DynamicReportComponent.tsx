@@ -8,7 +8,7 @@ import moment from 'moment';
 import FilterModal from './FilterModal';
 import { FaSync, FaFilter, FaDownload, FaFileCsv, FaFilePdf, FaPlus, FaFileExcel, FaEnvelope } from 'react-icons/fa';
 import { useTheme } from '@/context/ThemeContext';
-import DataTable, { exportTableToCsv, exportTableToPdf, exportTableToExcel,downloadOption } from './DataTable';
+import DataTable, { exportTableToCsv, exportTableToPdf, exportTableToExcel, downloadOption } from './DataTable';
 import { store } from "@/redux/store";
 import { APP_METADATA_KEY } from "@/utils/constants";
 import { useSearchParams } from 'next/navigation';
@@ -87,7 +87,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
     };
 
     const pageData: any = findPageData();
-
+    console.log('pageData', pageData);
     // Helper functions for parsing XML settings
     const parseXmlList = (xmlString: string, tag: string): string[] => {
         const regex = new RegExp(`<${tag}>(.*?)</${tag}>`, 'g');
@@ -318,7 +318,11 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
             const endTime = performance.now();
             setApiResponseTime(Math.round(endTime - startTime));
 
-            setApiData(response.data.data.rs0);
+            const data = response.data.data.rs0.map((record: any, index: number) => ({
+                _id: index + 1, 
+                ...record,
+            }));
+            setApiData(data);
 
             // Handle additional tables (rs3, rs4, etc.)
             const additionalTablesData: Record<string, any[]> = {};
@@ -587,12 +591,12 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                         </button>
                         <button
                             className="p-2 rounded"
-                            onClick={() => downloadOption( jsonData, appMetadata, apiData, pageData, filters, currentLevel)}
+                            onClick={() => downloadOption(jsonData, appMetadata, apiData, pageData, filters, currentLevel)}
                             style={{ color: colors.text }}
                         >
                             <FaDownload size={20} />
                         </button>
-                        
+
                         {Object.keys(additionalTables).length == 0 && (
                             <>
                                 <button
@@ -605,7 +609,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
 
                                 <button
                                     className="p-2 rounded"
-                                    onClick={() => exportTableToPdf(tableRef.current, jsonData, appMetadata, apiData, pageData, filters,currentLevel, 'download')}
+                                    onClick={() => exportTableToPdf(tableRef.current, jsonData, appMetadata, apiData, pageData, filters, currentLevel, 'download')}
                                     style={{ color: colors.text }}
                                 >
                                     <FaFilePdf size={20} />

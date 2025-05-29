@@ -14,6 +14,7 @@ import { saveAs } from 'file-saver';
 import dayjs from 'dayjs';
 import axios from 'axios';
 import { BASE_URL } from '@/utils/constants';
+import DatePicker from 'react-datepicker';
 
 interface DataTableProps {
     data: any[];
@@ -24,6 +25,41 @@ interface DataTableProps {
         mobileColumns?: string[];
         tabletColumns?: string[];
         webColumns?: string[];
+        EditableColumn?: Array<{
+            Srno: number;
+            type: string;
+            label: string;
+            wKey: string;
+            showLabel: boolean;
+            wPlaceholder?: string;
+            options?: Array<{
+                label: string;
+                Value: string;
+            }>;
+            wQuery?: {
+                J_Ui: any;
+                Sql: string;
+                X_Filter: string;
+                X_Filter_Multiple?: string;
+                J_Api: any;
+            };
+            dependsOn?: {
+                field: string | string[];
+                wQuery: {
+                    J_Ui: any;
+                    Sql: string;
+                    X_Filter: string;
+                    X_Filter_Multiple?: string;
+                    J_Api: any;
+                };
+            };
+            wDropDownKey?: {
+                key: string;
+                value: string;
+            };
+            wValue?: string;
+            isMultiple?: boolean;
+        }>;
         [key: string]: any;
     };
     onRowClick?: (record: any) => void;
@@ -68,6 +104,42 @@ interface RowData {
     id: string | number;
     expanded: boolean;
     data: any;
+}
+
+interface EditableColumn {
+    Srno: number;
+    type: string;
+    label: string;
+    wKey: string;
+    showLabel: boolean;
+    wPlaceholder?: string;
+    options?: Array<{
+        label: string;
+        Value: string;
+    }>;
+    wQuery?: {
+        J_Ui: any;
+        Sql: string;
+        X_Filter: string;
+        X_Filter_Multiple?: string;
+        J_Api: any;
+    };
+    dependsOn?: {
+        field: string | string[];
+        wQuery: {
+            J_Ui: any;
+            Sql: string;
+            X_Filter: string;
+            X_Filter_Multiple?: string;
+            J_Api: any;
+        };
+    };
+    wDropDownKey?: {
+        key: string;
+        value: string;
+    };
+    wValue?: string;
+    isMultiple?: boolean;
 }
 
 function getGridContent(gridEl: HTMLDivElement) {
@@ -154,13 +226,80 @@ const useScreenSize = () => {
 
 const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, tableRef, summary, isEntryForm = false, handleAction = () => { }, fullHeight = true }) => {
     const { colors, fonts } = useTheme();
-    const [sortColumns, setSortColumns] = useState<any[]>([]);
-
+    const [isEditMode, setIsEditMode] = useState(false);
+    const [editingRowId, setEditingRowId] = useState<string | null>(null);
+    const [editedData, setEditedData] = useState<any[]>([]);
+    const [selectedRows, setSelectedRows] = useState<Set<string | number>>(new Set());
+    const [dropdownOptions, setDropdownOptions] = useState<Record<string, any[]>>({});
+    const [loadingDropdowns, setLoadingDropdowns] = useState<Record<string, boolean>>({});
     const { tableStyle } = useAppSelector((state: RootState) => state.common);
+    const [sortColumns, setSortColumns] = useState<any[]>([]);
 
     const rowHeight = tableStyle === 'small' ? 30 : tableStyle === 'medium' ? 40 : 50;
     const screenSize = useScreenSize();
     const [expandedRows, setExpandedRows] = useState<Set<string | number>>(new Set());
+
+    // Initialize editedData when data changes
+    useEffect(() => {
+        setEditedData(data);
+        setSelectedRows(new Set()); // Reset selections when data changes
+    }, [data]);
+
+    useEffect(() => {
+        const preloadDropdowns = () => {
+            settings?.EditableColumn?.forEach((field) => {
+                if (field.type === 'WDropDownBox' && !field.dependsOn) {
+                    setDropdownOptions(prev => ({
+                        ...prev,
+                        [field.wKey]: field.options || []
+                    }));
+                }
+            });
+        };
+        preloadDropdowns();
+    }, []);
+
+    // Handle save changes
+    const handleSaveChanges = () => {
+        // Only save selected rows
+        const selectedData = editedData.filter((row) => selectedRows.has(row._id));
+        console.log('Saving selected changes:', selectedData);
+        setIsEditMode(false);
+        setSelectedRows(new Set());
+    };
+
+    // Handle row selection
+    const handleRowSelect = (rowId: string | number) => {
+        setSelectedRows(prev => {
+            const newSelectedRows = new Set(prev);
+            if (newSelectedRows.has(rowId)) {
+                newSelectedRows.delete(rowId);
+            } else {
+                newSelectedRows.add(rowId);
+            }
+            return newSelectedRows;
+        });
+    };
+
+    // Handle select all
+    const handleSelectAll = () => {
+        setSelectedRows(prev => {
+            if (prev.size === editedData.length) {
+                return new Set();
+            }
+            return new Set(editedData.map(row => row._id));
+        });
+    };
+
+    // Handle cell edit
+    const handleCellEdit = (rowIndex: number, key: string, value: any) => {
+        const newData = [...editedData];
+        newData[rowIndex] = {
+            ...newData[rowIndex],
+            [key]: value
+        };
+        setEditedData(newData);
+    };
 
     // Format date function
     const formatDateValue = (value: string | number | Date, format: string = 'DD-MM-YYYY'): string => {
@@ -307,23 +446,22 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
 
         if (settings?.mobileColumns && screenSize === 'mobile') {
             columnsToShow = settings.mobileColumns;
-            console.log('Using mobile columns:', columnsToShow);
         } else if (settings?.tabletColumns && screenSize === 'tablet') {
             columnsToShow = settings.tabletColumns;
-            console.log('Using tablet columns:', columnsToShow);
         } else if (settings?.webColumns) {
             columnsToShow = settings.webColumns;
-            console.log('Using web columns:', columnsToShow);
         }
 
         // If no responsive columns are defined, show all columns
         if (columnsToShow.length === 0) {
             columnsToShow = Object.keys(formattedData[0]).filter(key => !key.startsWith('_'));
-            console.log('No responsive columns defined, using all columns:', columnsToShow);
         }
 
         // Filter out hidden columns
         columnsToShow = columnsToShow.filter(key => !columnsToHide.includes(key));
+
+        const editableColumns = settings?.EditableColumn || [];
+        const editableColumnKeys = editableColumns.map(col => col.wKey);
 
         const baseColumns: any = [
             {
@@ -337,12 +475,6 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
                     }
                     return undefined;
                 },
-                // cellClass: (row: any) => {
-                //     if (row._expanded) {
-                //         return 'expanded-row';
-                //     }
-                //     return undefined;
-                // },
                 renderCell: ({ row, tabIndex, onRowChange }: any) => {
                     if (row._expanded) {
                         return (
@@ -363,7 +495,6 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
                                     {Object.entries(row)
                                         .filter(([key]) => !key.startsWith('_'))
                                         .map(([key, value]) => {
-                                            // Use the same formatter logic as the main table
                                             const isLeftAligned = leftAlignedColumns.includes(key);
                                             const isNumericColumn = !isLeftAligned && ['Balance', 'Credit', 'Debit'].includes(key);
 
@@ -454,6 +585,106 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
                     (col: any) => col.key === key
                 );
 
+                const isEditable = editableColumnKeys.includes(key);
+                const editableColumn = editableColumns.find(col => col.wKey === key);
+
+                const renderEditCell = isEditable && isEditMode ? ({ row, onRowChange }) => {
+                    const value = editedData.find(r => r._id === row._id)?.[key] || row[key] || '';
+
+                    if (editableColumn?.type === 'WDropDownBox') {
+                        const options = dropdownOptions[key] || [];
+                        const isLoading = loadingDropdowns[key];
+
+                        if (editableColumn.isMultiple) {
+                            const selectedValues = Array.isArray(value) ? value : value ? [value] : [];
+                            return (
+                                <div className="relative">
+                                    <select
+                                        value={selectedValues}
+                                        onChange={(e) => {
+                                            const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
+                                            onRowChange({ ...row, [key]: selectedOptions }, true);
+                                            handleDropdownChange(editableColumn, selectedOptions, row);
+                                        }}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                                        disabled={isLoading}
+                                        multiple
+                                        autoFocus
+                                    >
+                                        {options.map((option: any) => (
+                                            <option key={option.value} value={option.value}>
+                                                {option.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {isLoading && (
+                                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        }
+
+                        return (
+                            <div className="relative">
+                                <select
+                                    value={value}
+                                    onChange={(e) => {
+                                        const newValue = e.target.value;
+                                        onRowChange({ ...row, [key]: newValue }, true);
+                                        handleDropdownChange(editableColumn, newValue, row);
+                                    }}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                                    disabled={isLoading}
+                                    autoFocus
+                                >
+                                    <option value="">Select...</option>
+                                    {options.map((option: any) => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                                {isLoading && (
+                                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    }
+
+                    if (editableColumn?.type === 'WDateBox') {
+                        return (
+                            <DatePicker
+                                selected={value ? new Date(value) : null}
+                                onChange={(date: Date) => {
+                                    onRowChange({ ...row, [key]: date }, true);
+                                }}
+                                dateFormat="dd/MM/yyyy"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                placeholderText="Select Date"
+                                autoFocus
+                            />
+                        );
+                    }
+
+                    return (
+                        <input
+                            type={editableColumn?.type === 'WTextBox' ? 'text' : 'number'}
+                            value={value}
+                            onChange={(e) => {
+                                const newValue = e.target.value;
+                                onRowChange({ ...row, [key]: newValue }, true);
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder={editableColumn?.wPlaceholder || ''}
+                            autoFocus
+                        />
+                    );
+                } : undefined;
+
                 return {
                     key,
                     name: key,
@@ -462,13 +693,20 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
                     maxWidth: 400,
                     resizable: true,
                     headerCellClass: isNumericColumn ? 'numeric-column-header' : '',
-                    cellClass: isNumericColumn ? 'numeric-column-cell' : '',
+                    cellClass: (props: any) => {
+                        const classes = [isNumericColumn ? 'numeric-column-cell' : ''];
+                        if (isEditable && isEditMode) {
+                            classes.push('editable');
+                        }
+                        return classes.join(' ');
+                    },
                     renderSummaryCell: (props: any) => {
                         if (key === 'totalCount' || shouldShowTotal) {
                             return <div className={isNumericColumn ? "numeric-value font-bold" : "font-bold"} style={{ color: colors.text }}>{props.row[key]}</div>;
                         }
                         return <div></div>;
                     },
+                    renderEditCell,
                     formatter: (props: any) => {
                         const value = props.row[key];
                         const rawValue = React.isValidElement(value) ? (value as StyledValue).props.children : value;
@@ -545,7 +783,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
             )
         }
         return baseColumns;
-    }, [formattedData, colors.text, settings?.hideEntireColumn, settings?.leftAlignedColumns, settings?.leftAlignedColums, summary?.columnsToShowTotal, screenSize, settings?.mobileColumns, settings?.tabletColumns, settings?.webColumns, expandedRows]);
+    }, [formattedData, colors.text, settings?.hideEntireColumn, settings?.leftAlignedColumns, settings?.leftAlignedColums, summary?.columnsToShowTotal, screenSize, settings?.mobileColumns, settings?.tabletColumns, settings?.webColumns, expandedRows, settings?.EditableColumn, isEditMode]);
 
     // Sort function
     const sortRows = (initialRows: any[], sortColumns: any[]) => {
@@ -637,14 +875,320 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
         return [totals];
     }, [rows, summary?.columnsToShowTotal, settings?.valueBasedTextColor]);
 
+    const handleEditClick = (row: any) => {
+        setIsEditMode(true);
+        setEditingRowId(row._id);
+
+        // Only set the edited data for the specific row
+        const newEditedData = data.map(r => {
+            if (r._id === row._id) {
+                return { ...r };
+            }
+            return r;
+        });
+        setEditedData(newEditedData);
+
+        // Fetch dropdown options only for the row being edited and only if they're not already loaded
+        if (settings?.EditableColumn) {
+            settings.EditableColumn.forEach(async (field) => {
+                if (field.type === 'WDropDownBox' && field.wQuery) {
+                    // Only fetch if options are not already loaded
+                    if (!dropdownOptions[field.wKey]) {
+                        await fetchDropdownOptions(field, row);
+                    }
+                }
+            });
+        }
+    };
+
+    const handleCancelEdit = () => {
+        setIsEditMode(false);
+        setEditingRowId(null);
+        setEditedData([]);
+    };
+
+    const handleSaveEdit = () => {
+        // Save logic here
+        setIsEditMode(false);
+        setEditingRowId(null);
+        setEditedData([]);
+    };
+
+    const handleDropdownChange = async (field: any, value: any, row: any) => {
+        // Find dependent fields and update them
+        const editableColumns = settings?.EditableColumn || [];
+        const dependentFields = editableColumns.filter(col =>
+            col.dependsOn?.field?.includes(field.wKey)
+        );
+
+        // Clear dependent field values
+        dependentFields.forEach(depField => {
+            const newData = editedData.map(r => {
+                if (r._id === row._id) {
+                    return { ...r, [depField.wKey]: depField.isMultiple ? [] : '' };
+                }
+                return r;
+            });
+            // setEditedData(newData);
+            setDropdownOptions(prev => ({ ...prev, [depField.wKey]: [] }));
+        });
+
+        // Fetch new options for dependent fields
+        for (const depField of dependentFields) {
+            const dependencyValues = { ...row, [field.wKey]: value };
+            if (field.isMultiple && Array.isArray(value)) {
+                dependencyValues[field.wKey] = value.join('|');
+            }
+            await fetchDependentOptions(depField, dependencyValues);
+        }
+    };
+
+    const fetchDependentOptions = async (field: any, parentValue: string | Record<string, any>) => {
+        if (!field.dependsOn) return;
+
+        try {
+            setLoadingDropdowns(prev => ({ ...prev, [field.wKey]: true }));
+
+            let jUi, jApi;
+
+            if (typeof field.dependsOn.wQuery.J_Ui === 'object') {
+                const uiObj = field.dependsOn.wQuery.J_Ui;
+                jUi = Object.keys(uiObj)
+                    .map(key => `"${key}":"${uiObj[key]}"`)
+                    .join(',');
+            } else {
+                jUi = field.dependsOn.wQuery.J_Ui;
+            }
+
+            if (typeof field.dependsOn.wQuery.J_Api === 'object') {
+                const apiObj = field.dependsOn.wQuery.J_Api;
+                jApi = Object.keys(apiObj)
+                    .map(key => `"${key}":"${apiObj[key]}"`)
+                    .join(',');
+            } else {
+                jApi = field.dependsOn.wQuery.J_Api;
+            }
+
+            let xmlFilterContent = '';
+
+            if (Array.isArray(field.dependsOn.field)) {
+                if (field.dependsOn.wQuery.X_Filter_Multiple) {
+                    xmlFilterContent = field.dependsOn.wQuery.X_Filter_Multiple;
+                    field.dependsOn.field.forEach(fieldName => {
+                        const value = typeof parentValue === 'object' ? parentValue[fieldName] : '';
+                        xmlFilterContent = xmlFilterContent.replace(`\${${fieldName}}`, value);
+                    });
+                } else {
+                    xmlFilterContent = field.dependsOn.wQuery.X_Filter || '';
+                    field.dependsOn.field.forEach(fieldName => {
+                        const value = typeof parentValue === 'object' ? parentValue[fieldName] : '';
+                        xmlFilterContent = xmlFilterContent.replace(`\${${fieldName}}`, value);
+                    });
+                }
+            } else {
+                xmlFilterContent = typeof parentValue === 'string' ? parentValue : '';
+            }
+
+            const xmlData = `<dsXml>
+                <J_Ui>${jUi}</J_Ui>
+                <Sql>${field.dependsOn.wQuery.Sql || ''}</Sql>
+                ${Array.isArray(field.dependsOn.field) && field.dependsOn.wQuery.X_Filter_Multiple
+                    ? `<X_Filter_Multiple>${xmlFilterContent}</X_Filter_Multiple><X_Filter></X_Filter>`
+                    : `<X_Filter>${xmlFilterContent}</X_Filter>`
+                }
+                <J_Api>${jApi}</J_Api>
+            </dsXml>`;
+
+            const response = await axios.post(BASE_URL + PATH_URL, xmlData, {
+                headers: {
+                    'Content-Type': 'application/xml',
+                    'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]}`
+                }
+            });
+
+            const rs0Data = response.data?.data?.rs0;
+            if (!Array.isArray(rs0Data)) {
+                console.error('Unexpected data format:', response.data);
+                return [];
+            }
+
+            const keyField = field.wDropDownKey?.key || 'DisplayName';
+            const valueField = field.wDropDownKey?.value || 'Value';
+
+            const options = rs0Data.map(dataItem => ({
+                label: dataItem[keyField],
+                value: dataItem[valueField]
+            }));
+
+            setDropdownOptions(prev => ({ ...prev, [field.wKey]: options }));
+            return options;
+        } catch (error) {
+            console.error('Error fetching dependent options:', error);
+            return [];
+        } finally {
+            setLoadingDropdowns(prev => ({ ...prev, [field.wKey]: false }));
+        }
+    };
+
+    // Update fetchDropdownOptions to handle existing options
+    const fetchDropdownOptions = async (field: any, row: any) => {
+        // If options are already loaded, return them
+        if (dropdownOptions[field.wKey]) {
+            return dropdownOptions[field.wKey];
+        }
+
+        try {
+            setLoadingDropdowns(prev => ({ ...prev, [field.wKey]: true }));
+
+            let jUi, jApi;
+
+            if (typeof field.wQuery.J_Ui === 'object') {
+                const uiObj = field.wQuery.J_Ui;
+                jUi = Object.keys(uiObj)
+                    .map(key => `"${key}":"${uiObj[key]}"`)
+                    .join(',');
+            } else {
+                jUi = field.wQuery.J_Ui;
+            }
+
+            if (typeof field.wQuery.J_Api === 'object') {
+                const apiObj = field.wQuery.J_Api;
+                jApi = Object.keys(apiObj)
+                    .map(key => `"${key}":"${apiObj[key]}"`)
+                    .join(',');
+            } else {
+                jApi = field.wQuery.J_Api;
+            }
+
+            let xmlFilterContent = '';
+
+            if (Array.isArray(field.dependsOn?.field)) {
+                if (field.dependsOn.wQuery.X_Filter_Multiple) {
+                    xmlFilterContent = field.dependsOn.wQuery.X_Filter_Multiple;
+                    field.dependsOn.field.forEach(fieldName => {
+                        const value = row[fieldName] || '';
+                        xmlFilterContent = xmlFilterContent.replace(`\${${fieldName}}`, value);
+                    });
+                } else {
+                    xmlFilterContent = field.dependsOn.wQuery.X_Filter || '';
+                    field.dependsOn.field.forEach(fieldName => {
+                        const value = row[fieldName] || '';
+                        xmlFilterContent = xmlFilterContent.replace(`\${${fieldName}}`, value);
+                    });
+                }
+            } else {
+                xmlFilterContent = field.wQuery.X_Filter || '';
+            }
+
+            const xmlData = `<dsXml>
+                <J_Ui>${jUi}</J_Ui>
+                <Sql>${field.wQuery.Sql || ''}</Sql>
+                ${Array.isArray(field.dependsOn?.field) && field.dependsOn.wQuery.X_Filter_Multiple
+                    ? `<X_Filter_Multiple>${xmlFilterContent}</X_Filter_Multiple><X_Filter></X_Filter>`
+                    : `<X_Filter>${xmlFilterContent}</X_Filter>`
+                }
+                <J_Api>${jApi}</J_Api>
+            </dsXml>`;
+
+            const response = await axios.post(BASE_URL + PATH_URL, xmlData, {
+                headers: {
+                    'Content-Type': 'application/xml',
+                    'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]}`
+                }
+            });
+
+            const rs0Data = response.data?.data?.rs0;
+            if (!Array.isArray(rs0Data)) {
+                console.error('Unexpected data format:', response.data);
+                return [];
+            }
+
+            const keyField = field.wDropDownKey?.key || 'DisplayName';
+            const valueField = field.wDropDownKey?.value || 'Value';
+
+            const options = rs0Data.map(dataItem => ({
+                label: dataItem[keyField],
+                value: dataItem[valueField]
+            }));
+
+            setDropdownOptions(prev => ({ ...prev, [field.wKey]: options }));
+            return options;
+        } catch (error) {
+            console.error('Error fetching dropdown options:', error);
+            return [];
+        } finally {
+            setLoadingDropdowns(prev => ({ ...prev, [field.wKey]: false }));
+        }
+    };
+
     return (
         <div
             ref={tableRef}
             style={{ height: fullHeight ? 'calc(100vh - 170px)' : 'auto', width: '100%' }}
         >
+            {settings?.EditableColumn && settings.EditableColumn.length > 0 && (
+                <div style={{ marginBottom: '10px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                    {isEditMode && (
+                        <div style={{ marginRight: 'auto' }}>
+                            <span style={{ marginRight: '10px' }}>
+                                {selectedRows.size} rows selected
+                            </span>
+                            <button
+                                onClick={handleSelectAll}
+                                style={{
+                                    padding: '4px 8px',
+                                    backgroundColor: colors.primary,
+                                    color: colors.buttonText,
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                {selectedRows.size === editedData.length ? 'Deselect All' : 'Select All'}
+                            </button>
+                        </div>
+                    )}
+                    <button
+                        onClick={() => isEditMode ? handleSaveChanges() : setIsEditMode(true)}
+                        style={{
+                            padding: '8px 16px',
+                            backgroundColor: isEditMode ? colors.errorText : colors.primary,
+                            color: colors.buttonText,
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        {isEditMode ? 'Save' : 'Edit'}
+                    </button>
+                </div>
+            )}
             <DataGrid
-                columns={columns}
-                rows={rows}
+                columns={[
+                    {
+                        key: 'select',
+                        name: '',
+                        width: 40,
+                        frozen: true,
+                        renderCell: ({ row }) => (
+                            isEditMode ? (
+                                <input
+                                    type="checkbox"
+                                    checked={selectedRows.has(row._id)}
+                                    onChange={() => handleRowSelect(row._id)}
+                                    style={{
+                                        width: '16px',
+                                        height: '16px',
+                                        cursor: 'pointer'
+                                    }}
+                                />
+                            ) : null
+                        ),
+                        renderSummaryCell: () => null
+                    },
+                    ...columns
+                ]}
+                rows={isEditMode ? editedData : data}
                 sortColumns={sortColumns}
                 onSortColumnsChange={setSortColumns}
                 className="rdg-light"
@@ -656,8 +1200,13 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
                     fontFamily: fonts.content,
                 }}
                 bottomSummaryRows={summmaryRows}
+                onRowsChange={(newRows) => {
+                    if (isEditMode) {
+                        setEditedData(newRows);
+                    }
+                }}
                 onCellClick={(props: any) => {
-                    if (onRowClick && !props.column.key.startsWith('_') && !isEntryForm) {
+                    if (!isEditMode && onRowClick && !props.column.key.startsWith('_') && !isEntryForm) {
                         const { _id, _expanded, ...rowData } = rows[props.rowIdx];
                         onRowClick(rowData);
                     }
@@ -700,7 +1249,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
                 }
 
                 .rdg-row {
-                    cursor: ${onRowClick ? 'pointer' : 'default'};
+                    cursor: ${isEditMode ? 'default' : (onRowClick ? 'pointer' : 'default')};
                 }
 
                 .rdg-row:nth-child(even) {
@@ -827,6 +1376,27 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, table
                 .delete-button {
                     background-color: ${colors.errorText};
                     color: ${colors.buttonText};
+                }
+
+                .rdg-cell.editable {
+                    cursor: text;
+                }
+                .rdg-cell.editable:hover {
+                    background-color: ${colors.color1};
+                }
+                .rdg-cell.editing {
+                    padding: 0;
+                }
+                .rdg-cell.editing input {
+                    width: 100%;
+                    height: 100%;
+                    padding: 4px;
+                    border: 2px solid ${colors.primary};
+                    background-color: ${colors.background};
+                    color: ${colors.text};
+                }
+                .rdg-row.selected {
+                    background-color: ${colors.color1} !important;
                 }
             `}</style>
         </div>
@@ -1447,8 +2017,9 @@ export const downloadOption = async (
             console.error('Unexpected response format:', response.data);
         }
     } catch (err) {
-       alert('Not available Donwload');
+        alert('Not available Donwload');
     }
 
 }
+
 export default DataTable;
