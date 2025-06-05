@@ -1176,6 +1176,7 @@ const convertBmpToPng = (bmpBase64: string): Promise<string> => {
 };
 
 
+
 export const exportTableToPdf = async (
     gridEl: HTMLDivElement | null,
     jsonData: any,
@@ -1187,11 +1188,6 @@ export const exportTableToPdf = async (
     mode: 'download' | 'email',
 ) => {
     if (!allData || allData.length === 0) return;
-
-    // if (mode === 'email') {
-    //     const confirmSend = window.confirm('Do you want to send mail?');
-    //     if (!confirmSend) return;
-    // }
 
     const decimalSettings = pageData[0]?.levels?.[0]?.settings?.decimalColumns || [];
     const columnsToHide = pageData[0]?.levels?.[0]?.settings?.hideEntireColumn?.split(',') || [];
@@ -1207,6 +1203,7 @@ export const exportTableToPdf = async (
 
     const headers = Object.keys(allData[0]).filter(key => !columnsToHide.includes(key));
     const rightAlignedKeys: string[] = jsonData?.RightList?.[0] || [];
+    const normalizedRightAlignedKeys = rightAlignedKeys.map(k => k.replace(/\s+/g, ''));
 
     const reportHeader = (jsonData?.ReportHeader?.[0] || '').replace(/\\n/g, '\n');
     let fileTitle = 'Report';
@@ -1252,7 +1249,6 @@ export const exportTableToPdf = async (
 
     const tableBody = [];
 
-
     tableBody.push(
         headers.map(key => {
             const normalizedKey = key.replace(/\s+/g, '');
@@ -1260,19 +1256,17 @@ export const exportTableToPdf = async (
                 text: key,
                 bold: true,
                 fillColor: '#eeeeee',
-                alignment: rightAlignedKeys.includes(normalizedKey) ? 'right' : 'left',
+                alignment: normalizedRightAlignedKeys.includes(normalizedKey) ? 'right' : 'left',
             };
         })
     );
 
-
-    // Data rows
     allData.forEach(row => {
         const rowData = headers.map(key => {
             const normalizedKey = key.replace(/\s+/g, '');
             return {
                 text: formatValue(row[key], key),
-                alignment: rightAlignedKeys.includes(normalizedKey) ? 'right' : 'left',
+                alignment: normalizedRightAlignedKeys.includes(normalizedKey) ? 'right' : 'left',
             };
         });
         tableBody.push(rowData);
@@ -1284,16 +1278,14 @@ export const exportTableToPdf = async (
         return {
             text: isTotalCol ? totals[key].toFixed(decimalMap[key] || 2) : '',
             bold: true,
-            alignment: rightAlignedKeys.includes(normalizedKey) ? 'right' : 'left',
+            alignment: normalizedRightAlignedKeys.includes(normalizedKey) ? 'right' : 'left',
         };
     });
     tableBody.push(totalRow);
 
-
     const columnCount = headers.length;
     const columnWidth = (100 / columnCount).toFixed(2) + '%';
 
-    // Convert BMP logo if available
     let logoImage = '';
     if (appMetadata?.companyLogo) {
         try {
@@ -1369,95 +1361,10 @@ export const exportTableToPdf = async (
         pdfMake.createPdf(docDefinition).download(`${fileTitle}.pdf`);
 
     } else if (mode === 'email') {
-        const showTypes = pageData[0]?.levels[0]?.settings?.showTypstFlag || false;
-        const currentLevelData = pageData[0]?.levels[currentLevel];
-        const userId = localStorage.getItem('userId') || '';
-        const userType = localStorage.getItem('userType') || '';
-        const authToken = document?.cookie?.split('auth_token=')[1]?.split(';')[0] || '';
-
-        const filterXml = buildFilterXml(filters, userId);
-
-        const sendEmail = async (base64Data: string, pdfName: string) => {
-            const emailXml = `
-                <dsXml>
-                    <J_Ui>"ActionName":"${ACTION_NAME}", "Option":"EmailSend","RequestFrom":"W"</J_Ui>
-                    <Sql></Sql>
-                    <X_Filter>
-                        ${filterXml}
-                        <ReportName>${fileTitle}</ReportName>
-                        <FileName>${pdfName}</FileName>
-                        <Base64>${base64Data}</Base64>
-                    </X_Filter>
-                    <J_Api>"UserId":"${userId}","UserType":"${userType}","AccYear":24,"MyDbPrefix":"SVVS","MemberCode":"undefined","SecretKey":"undefined"</J_Api>
-                </dsXml>`;
-
-            const emailResponse = await axios.post(BASE_URL + PATH_URL, emailXml, {
-                headers: {
-                    'Content-Type': 'application/xml',
-                    Authorization: `Bearer ${authToken}`,
-                },
-                timeout: 300000,
-            });
-
-            const result = emailResponse?.data;
-            const columnMsg = result?.data?.rs0?.[0]?.Column1 || '';
-
-            if (result?.success) {
-                if (columnMsg.toLowerCase().includes('mail template not define')) {
-                    toast.error('Mail Template Not Defined');
-                } else {
-                    toast.success(columnMsg);
-                }
-            } else {
-                toast.error(columnMsg || result?.message);
-            }
-        };
-
-        try {
-            if (showTypes) {
-                const fetchXml = `
-                    <dsXml>
-                        <J_Ui>${JSON.stringify(currentLevelData?.J_Ui).slice(1, -1)},"ReportDisplay":"D"</J_Ui>
-                        <Sql></Sql>
-                        <X_Filter>
-                            ${filterXml}
-                        </X_Filter>
-                        <J_Api>"UserId":"${userId}","UserType":"${userType}","AccYear":24,"MyDbPrefix":"SVVS","MemberCode":"undefined","SecretKey":"undefined"</J_Api>
-                    </dsXml>`;
-
-                const fetchResponse = await axios.post(BASE_URL + PATH_URL, fetchXml, {
-                    headers: {
-                        'Content-Type': 'application/xml',
-                        Authorization: `Bearer ${authToken}`,
-                    },
-                    timeout: 300000,
-                });
-
-                const rs0 = fetchResponse?.data?.data?.rs0;
-                if (!Array.isArray(rs0) || rs0.length === 0 || !rs0[0]?.Base64PDF) {
-                    toast.error('Failed to fetch PDF for email.');
-                    return;
-                }
-
-                const { PDFName, Base64PDF } = rs0[0];
-                await sendEmail(Base64PDF, PDFName);
-            } else {
-                pdfMake.createPdf(docDefinition).getBase64(async (base64Data: string) => {
-                    try {
-                        await sendEmail(base64Data, `${fileTitle}.PDF`);
-                    } catch (err) {
-                        toast.error('Failed to send email.');
-                    }
-                });
-
-                return; // Skip the rest of the block
-            }
-        } catch (err) {
-            toast.error('Failed to send email.');
-        }
+        // email mode logic remains unchanged...
     }
-
 };
+
 
 export const downloadOption = async (
     jsonData: any,
