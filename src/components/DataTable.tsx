@@ -926,7 +926,7 @@ export const exportTableToExcel = async (
 
     const headers = Object.keys(apiData[0] || {});
     const hiddenColumns = settings.hideEntireColumn?.split(",") || [];
-    const filteredHeaders = headers.filter(header => !hiddenColumns.includes(header.trim()) && header !== '_id');
+    const filteredHeaders = headers.filter(header => !hiddenColumns.includes(header.trim()));
 
     const decimalColumnsMap: Record<string, number> = {};
     (settings.decimalColumns || []).forEach((col: { key: string; decimalPlaces: number }) => {
@@ -1176,6 +1176,7 @@ const convertBmpToPng = (bmpBase64: string): Promise<string> => {
 };
 
 
+
 export const exportTableToPdf = async (
     gridEl: HTMLDivElement | null,
     jsonData: any,
@@ -1187,11 +1188,6 @@ export const exportTableToPdf = async (
     mode: 'download' | 'email',
 ) => {
     if (!allData || allData.length === 0) return;
-
-    // if (mode === 'email') {
-    //     const confirmSend = window.confirm('Do you want to send mail?');
-    //     if (!confirmSend) return;
-    // }
 
     const decimalSettings = pageData[0]?.levels?.[0]?.settings?.decimalColumns || [];
     const columnsToHide = pageData[0]?.levels?.[0]?.settings?.hideEntireColumn?.split(',') || [];
@@ -1205,8 +1201,7 @@ export const exportTableToPdf = async (
         });
     });
 
-    const headers = Object.keys(allData[0])
-        .filter(key => !columnsToHide.includes(key) && key !== '_id');
+    const headers = Object.keys(allData[0]).filter(key => !columnsToHide.includes(key));
     const rightAlignedKeys: string[] = jsonData?.RightList?.[0] || [];
     const normalizedRightAlignedKeys = rightAlignedKeys.map(k => k.replace(/\s+/g, ''));
     const reportHeader = (jsonData?.ReportHeader?.[0] || '').replace(/\\n/g, '\n');
