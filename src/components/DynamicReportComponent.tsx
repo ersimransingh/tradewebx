@@ -67,6 +67,8 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
     const { colors, fonts } = useTheme();
     const hasFetchedRef = useRef(false);
 
+  
+
     const appMetadata = (() => {
         try {
             return JSON.parse(localStorage.getItem(APP_METADATA_KEY))
@@ -387,6 +389,8 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
             setIsLoading(false);
         }
     };
+
+ 
 
     // Modify handleRecordClick
     const handleRecordClick = (record: any) => {

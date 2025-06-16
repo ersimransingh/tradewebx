@@ -18,7 +18,7 @@ const staticRoutes: Record<string, React.ReactNode> = {
   theme: <ThemePage />,
   downloads: <Downloads />,
   kycpage: <KycPage />,
-  marginPledge:<MarginPledgeOnline/>
+  marginpledge:<MarginPledgeOnline/>
 };
 
 // Define the type for params explicitly
