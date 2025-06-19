@@ -109,8 +109,9 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
             const xmlData = `<dsXml>
                 <J_Ui>"ActionName":"${ACTION_NAME}","Option":"Master_Edit"</J_Ui>
                 <Sql></Sql>
-                <X_Filter>${xFilterTags}</X_Filter>
-                <J_Api>"UserId":"${localStorage.getItem('userId') || 'ADMIN'}","AccYear":"${localStorage.getItem('accYear') || '24'}","MyDbPrefix":"${localStorage.getItem('myDbPrefix') || ''}","MemberCode":"${localStorage.getItem('memberCode') || ''}","SecretKey":"${localStorage.getItem('secretKey') || ''}","MenuCode":"${localStorage.getItem('menuCode') || ''}","ModuleID":"${localStorage.getItem('moduleID') || ''}","MyDb":"${localStorage.getItem('myDb') || ''}","DenyRights":"${localStorage.getItem('denyRights') || ''}"</J_Api>
+                <X_Filter></X_Filter>
+                <X_Filter_Multiple>${xFilterTags}</X_Filter_Multiple>
+                <J_Api>"UserId":"${localStorage.getItem('userId') || 'ADMIN'}","AccYear":"${localStorage.getItem('accYear') || '24'}","MyDbPrefix":"${localStorage.getItem('myDbPrefix') || 'undefined'}","MemberCode":"${localStorage.getItem('memberCode') || ''}","SecretKey":"${localStorage.getItem('secretKey') || ''}","MenuCode":"${localStorage.getItem('menuCode') || 27}","ModuleID":"${localStorage.getItem('moduleID') || '27'}","MyDb":"${localStorage.getItem('myDb') || 'undefined'}","DenyRights":"${localStorage.getItem('denyRights') || ''}"</J_Api>
             </dsXml>`;
 
             console.log('Fetching page data for EntryFormModal:', xmlData);
@@ -122,7 +123,64 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
                 }
             });
 
-            console.log('Page data response:', response.data);
+            console.log('Page data response:', response.data.data);
+
+            let EditTablePageData = response.data.data.rs0; // Form field configuration
+            let ChildEntryData = response.data.data.rs1 || []; // Child entry data records
+
+            console.log('Master Form Configuration (rs0):', EditTablePageData);
+            console.log('Child Entry Data Records (rs1):', ChildEntryData);
+
+            // Create ChildEntry configuration structure
+            // rs0 contains form field configuration, rs1 contains actual child entry data
+            let childEntryStructure: any = {};
+
+            // Check if there are child entry form fields in rs0 or if rs1 has data
+            const hasChildEntryFields = EditTablePageData && Array.isArray(EditTablePageData) &&
+                EditTablePageData.some(field => field.wKey && typeof field.wKey === 'string');
+
+            const hasChildEntryData = ChildEntryData && Array.isArray(ChildEntryData) && ChildEntryData.length > 0;
+
+            if (hasChildEntryData || hasChildEntryFields) {
+                console.log('Child entry data/fields found, creating ChildEntry configuration');
+
+                // Create child entry configuration similar to how it's done in DynamicReportComponent
+                const baseStructure = {
+                    J_Ui: {
+                        ActionName: ACTION_NAME,
+                        Option: "ChildEntry_Edit"
+                    },
+                    J_Api: {
+                        UserId: localStorage.getItem('userId') || 'ADMIN',
+                        AccYear: localStorage.getItem('accYear') || '24',
+                        MyDbPrefix: localStorage.getItem('myDbPrefix') || '',
+                        MemberCode: localStorage.getItem('memberCode') || '',
+                        SecretKey: localStorage.getItem('secretKey') || '',
+                        MenuCode: localStorage.getItem('menuCode') || 0,
+                        ModuleID: localStorage.getItem('moduleID') || 0,
+                        MyDb: localStorage.getItem('myDb') || '',
+                        DenyRights: localStorage.getItem('denyRights') || ''
+                    },
+                    X_Filter: rowData, // Use the current row data as filter for child entries
+                    sql: {}
+                };
+
+                childEntryStructure = { ...baseStructure };
+
+                // If we have actual child entry data, include it
+                if (hasChildEntryData) {
+                    childEntryStructure.childData = ChildEntryData;
+                }
+
+                // If we have child entry form fields, include them
+                if (hasChildEntryFields) {
+                    childEntryStructure.formFields = EditTablePageData;
+                }
+
+                console.log('Created child entry structure:', childEntryStructure);
+            } else {
+                console.log('No child entry data or configuration found in API response');
+            }
 
             // Create a mock pageData structure that EntryFormModal expects
             const mockPageData = [{
@@ -130,7 +188,7 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
                 Entry: {
                     MasterEntry: {
                         J_Ui: {
-                            ActionName: wPage,
+                            ActionName: ACTION_NAME,
                             Option: "Master_Edit"
                         },
                         J_Api: {
@@ -139,17 +197,18 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
                             MyDbPrefix: localStorage.getItem('myDbPrefix') || '',
                             MemberCode: localStorage.getItem('memberCode') || '',
                             SecretKey: localStorage.getItem('secretKey') || '',
-                            MenuCode: localStorage.getItem('menuCode') || '',
-                            ModuleID: localStorage.getItem('moduleID') || '',
+                            MenuCode: localStorage.getItem('menuCode') || 0,
+                            ModuleID: localStorage.getItem('moduleID') || 0,
                             MyDb: localStorage.getItem('myDb') || '',
                             DenyRights: localStorage.getItem('denyRights') || ''
                         },
                         X_Filter: rowData,
                         sql: {}
                     },
-                    ChildEntry: {} // Empty child entry
+                    ChildEntry: childEntryStructure // Use child entry data from API response
                 }
             }];
+            console.log(mockPageData, 'mockPageData');
 
             setPageData(mockPageData);
             setEntryFormData(rowData);
@@ -721,7 +780,7 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
                                 <table className="min-w-full table-auto border text-sm">
                                     <thead>
                                         <tr>
-                                            {/* <th
+                                            <th
                                                 className="border px-2 py-2 text-left"
                                                 style={{
                                                     backgroundColor: colors.primary,
@@ -731,7 +790,7 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
                                                 }}
                                             >
                                                 Actions
-                                            </th> */}
+                                            </th>
                                             {Object.keys(localData[0]).map((key) => (
                                                 <th
                                                     key={key}
@@ -760,7 +819,7 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
                                                     fontFamily: fonts.content,
                                                 }}
                                             >
-                                                {/* <td className="border px-2 py-2">
+                                                <td className="border px-2 py-2">
                                                     <button
                                                         onClick={() => handleViewRow(row, rowIndex)}
                                                         className="bg-green-50 text-green-500 hover:bg-green-100 hover:text-green-700 px-3 py-1 rounded-md transition-colors"
@@ -770,7 +829,7 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
                                                     >
                                                         View
                                                     </button>
-                                                </td> */}
+                                                </td>
                                                 {Object.entries(row).map(([key, value]) => {
                                                     const editable = getEditableColumn(key);
                                                     const isValueNumeric = isNumeric(value);

@@ -64,6 +64,8 @@ function DynamicComponentRenderer({ componentName }: { componentName: string }) 
   const findComponentType = (items: any[]): string | undefined => {
     for (const item of items) {  
       if (item.componentName?.toLowerCase() === componentName.toLowerCase()) {
+        console.log(item.componentType,'componontType1');
+        
         return item.componentType;
       }
 

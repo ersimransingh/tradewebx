@@ -96,7 +96,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
     };
 
     const pageData: any = findPageData();
-    console.log(pageData, 'pageData')
+    console.log(pageData, 'pageData22')
     // Helper functions for parsing XML settings
     const parseXmlList = (xmlString: string, tag: string): string[] => {
         const regex = new RegExp(`<${tag}>(.*?)</${tag}>`, 'g');
@@ -453,6 +453,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
         }
     }, [pageData, pageLoaded, areFiltersInitialized, currentLevel, clientCode]);
 
+
     // Add handleTabClick function
     const handleTabClick = (level: number, index: number) => {
         const newStack = levelStack.slice(0, index + 1);
@@ -482,6 +483,9 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
     };
 
 
+    // console.log(pageData[0].levels[currentLevel].settings?.EditableColumn,'editable');
+
+    
 
     const deleteMasterRecord = async () => {
         try {
@@ -601,6 +605,8 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                     </div>
                     <div className="flex gap-2">
                         {selectedRows.length > 0 && pageData[0].levels[currentLevel].settings?.EditableColumn && (
+                           
+                            
                             <button
                                 className="p-2 rounded"
                                 onClick={() => setIsEditTableRowModalOpen(true)}
@@ -608,6 +614,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                             >
                                 <FaEdit size={20} />
                             </button>
+                           
                         )}
                         {componentType === 'entry' && (
                             <button
