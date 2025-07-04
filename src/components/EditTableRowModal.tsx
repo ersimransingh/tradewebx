@@ -142,8 +142,6 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
             const xFilterTags = Object.entries(rowData)
                 .map(([key, value]) => `<${key}>${value}</${key}>`)
                 .join('');
-
-                console.log(xFilterTags,'xFilterTags');
                 
 
             const xmlData = `<dsXml>
@@ -279,12 +277,7 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
     };
 
     const handleDocumentView = async (rowData: RowData, rowIndex: number) => {
-        console.log('document view');
-
-        // console.log(rowData.RekycDocumentType,'RekycDocumentType');
-
         if(rowData.RekycDocumentType === ''){
-            console.log('inside RekycDocumentType')
             setValidationModal({
                 isOpen: true,
                 message:'Please select a Rekyc Document Type from the dropdown to view the document.',
@@ -319,7 +312,6 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
             }
           });
       
-          console.log(response, 'response of document view');
       
           const base64 = response.data.data.rs0.Base64PDF;
           const fileType = getFileTypeFromBase64(base64); // function you defined earlier
@@ -1005,7 +997,7 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
                                                 {showViewTable === true && <td className="border px-2 py-2">
                                                     <button
                                                         onClick={() => handleViewRow(row, rowIndex)}
-                                                        className="bg-green-50 text-green-500 hover:bg-green-100 hover:text-green-700 px-3 py-1 rounded-md transition-colors"
+                                                        className="bg-green-50 text-green-500 hover:bg-green-100 hover:text-green-700 px-3 py-1 rounded-md transition-colors w-[150px] text-sm"
                                                         style={{
                                                             fontFamily: fonts.content,
                                                         }}
@@ -1015,7 +1007,7 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
                                                     {showViewDocument === true && 
                                                     <button
                                                     onClick={() => handleDocumentView(row, rowIndex)}
-                                                    className="bg-blue-50 text-blue-500 hover:bg-blue-100 hover:text-blue-700 px-3 py-1 rounded-md transition-colors mt-2"
+                                                    className="bg-blue-50 text-blue-500 hover:bg-blue-100 hover:text-blue-700 px-3 py-1 rounded-md transition-colors mt-4 w-[150px] text-sm"
                                                     style={{
                                                         fontFamily: fonts.content,
                                                     }}
