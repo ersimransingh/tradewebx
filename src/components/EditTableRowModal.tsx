@@ -10,6 +10,7 @@ import CustomDropdown from './form/CustomDropdown';
 import { useTheme } from '@/context/ThemeContext';
 import EntryFormModal from './EntryFormModal';
 import KycPage from "@/apppages/KycPage";
+import { getFileTypeFromBase64 } from "@/utils/helper";
 
 interface RowData {
     [key: string]: any;
@@ -51,6 +52,8 @@ interface EditTableRowModalProps {
     wPage: string;
     settings: {
         ShowView: boolean;
+        ShowViewDocument:boolean;
+        ShowViewDocumentAPI:any;
         EditableColumn: EditableColumn[];
         leftAlignedColumns?: string;
         leftAlignedColums?: string;
@@ -98,8 +101,11 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
     // console.log(settings.ShowView,'settings in edit');
 
     const showViewTable = settings.ShowView
+    const showViewDocument = settings.ShowViewDocument
 
-    console.log(showViewTable, 'showViewTable');
+    const showViewDocumentAPI = settings.ShowViewDocumentAPI
+
+    console.log(showViewDocumentAPI, 'showViewDocumentAPI');
 
 
 
@@ -136,6 +142,9 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
             const xFilterTags = Object.entries(rowData)
                 .map(([key, value]) => `<${key}>${value}</${key}>`)
                 .join('');
+
+                console.log(xFilterTags,'xFilterTags');
+                
 
             const xmlData = `<dsXml>
                 <J_Ui>"ActionName":"${ACTION_NAME}","Option":"Master_Edit"</J_Ui>
@@ -268,6 +277,87 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
             fetchPageDataForView(rowData);
         }
     };
+
+    const handleDocumentView = async (rowData: RowData, rowIndex: number) => {
+        console.log('document view');
+
+        // console.log(rowData.RekycDocumentType,'RekycDocumentType');
+
+        if(rowData.RekycDocumentType === ''){
+            console.log('inside RekycDocumentType')
+            setValidationModal({
+                isOpen: true,
+                message:'Please select a Rekyc Document Type from the dropdown to view the document.',
+                type: 'E'
+            });
+            return
+        }
+        
+      
+        const J_Ui = Object.entries(showViewDocumentAPI.dsXml.J_Ui)
+          .map(([key, value]) => `"${key}":"${value}"`)
+          .join(',');
+      
+        const X_Filter_Multiple = Object.keys(showViewDocumentAPI.dsXml.X_Filter_Multiple)
+          .filter(key => key in rowData)
+          .map(key => `<${key}>${rowData[key]}</${key}>`)
+          .join('');
+      
+        const xmlData = `<dsXml>
+          <J_Ui>${J_Ui}</J_Ui>
+          <Sql>${showViewDocumentAPI.dsXml.Sql || ''}</Sql>
+          <X_Filter>${showViewDocumentAPI.dsXml.X_Filter || ''}</X_Filter>
+          <X_Filter_Multiple>${X_Filter_Multiple}</X_Filter_Multiple>
+          <J_Api>"UserId":"${localStorage.getItem('userId')}"</J_Api>
+        </dsXml>`;
+      
+        try {
+          const response = await axios.post(BASE_URL + PATH_URL, xmlData, {
+            headers: {
+              'Content-Type': 'application/xml',
+              'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]}`
+            }
+          });
+      
+          console.log(response, 'response of document view');
+      
+          const base64 = response.data.data.rs0.Base64PDF;
+          const fileType = getFileTypeFromBase64(base64); // function you defined earlier
+          const mimeMap: Record<string, string> = {
+            pdf: 'application/pdf',
+            png: 'image/png',
+            jpeg: 'image/jpeg',
+            jpg: 'image/jpeg',
+            gif: 'image/gif',
+            xml: 'application/xml',
+            text: 'text/plain'
+          };
+      
+          const mimeType = mimeMap[fileType] || 'application/octet-stream';
+      
+          // Create Blob URL
+          const byteCharacters = atob(base64);
+          const byteNumbers = Array.from(byteCharacters, char => char.charCodeAt(0));
+          const byteArray = new Uint8Array(byteNumbers);
+          const blob = new Blob([byteArray], { type: mimeType });
+          const blobUrl = URL.createObjectURL(blob);
+      
+          // Open in new tab
+          const newTab = window.open(blobUrl, '_blank');
+          if (!newTab || newTab.closed || typeof newTab.closed === 'undefined') {
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = `document.${fileType}`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          }
+      
+        } catch (error) {
+          console.error("Error fetching DocumentView:", error);
+        }
+      };
+      
 
     const isNumeric = (value: any): boolean => {
         if (value === null || value === undefined) return false;
@@ -921,6 +1011,17 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
                                                     >
                                                         View
                                                     </button>
+                                                    {showViewDocument === true && 
+                                                    <button
+                                                    onClick={() => handleDocumentView(row, rowIndex)}
+                                                    className="bg-blue-50 text-blue-500 hover:bg-blue-100 hover:text-blue-700 px-3 py-1 rounded-md transition-colors mt-2"
+                                                    style={{
+                                                        fontFamily: fonts.content,
+                                                    }}
+                                                >
+                                                    View Document
+                                                </button>}
+                                                    
                                                 </td>}
                                                 {getOrderedColumns(Object.keys(row)).map((key) => {
                                                     const value = row[key];
