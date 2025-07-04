@@ -355,6 +355,7 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
       
         } catch (error) {
           console.error("Error fetching DocumentView:", error);
+          toast.error(error)
         }
       };
       
