@@ -87,3 +87,21 @@ export const buildFilterXml = (filters: Record<string, any>, userId: string): st
         return `<ClientCode>${userId}</ClientCode>`;
     }
 };
+
+
+
+export function getFileTypeFromBase64(base64: string): string {
+    const header = base64.slice(0, 30);
+  
+    if (header.startsWith('JVBERi0')) return 'pdf'; // PDF
+    if (header.startsWith('/9j/')) return 'jpeg';    // JPEG
+    if (header.startsWith('iVBORw0KGgo')) return 'png'; // PNG
+    if (header.startsWith('UEsDB')) return 'zip';    // ZIP
+    if (header.includes('<?xml') || header.includes('PD94bWwg')) return 'xml'; // XML
+    if (header.includes('R0lGOD')) return 'gif';     // GIF
+    if (header.includes('AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAQAAAAAAAAAAAAAAA')) return 'ico'; // ICO
+    if (/^[A-Za-z0-9+\/=]+\s*$/.test(base64)) return 'text'; // generic fallback for plain text
+  
+    return 'unknown';
+  }
+  
