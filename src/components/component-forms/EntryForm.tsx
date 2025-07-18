@@ -108,11 +108,11 @@ const DropdownField: React.FC<{
                     onMenuScrollToBottom={() => onMenuScrollToBottom(field)}
                     onFocus={() => handleDropDownChange(field)}
                     placeholder={
-                    formValues[field.wKey] !== undefined && 
-                    formValues[field.wKey] !== null && 
-                    String(formValues[field.wKey]).trim() !== "" 
-                      ? String(formValues[field.wKey]) 
-                      : "Select..."
+                        formValues[field.wKey] !== undefined &&
+                            formValues[field.wKey] !== null &&
+                            String(formValues[field.wKey]).trim() !== ""
+                            ? String(formValues[field.wKey])
+                            : "Select..."
                     }
                     className="react-select-container"
                     classNamePrefix="react-select"
@@ -174,9 +174,11 @@ const EntryForm: React.FC<EntryFormProps> = ({
     };
 
     // function called to check the validation of the field
-    const handleBlur = async (field: FormField) => {
+    const handleBlur = async (field: FormField, value?: any) => {
 
         if (!field.ValidationAPI || !field.ValidationAPI.dsXml) return;
+
+        console.log("check form values--->", formValues);
 
         const { J_Ui, Sql, X_Filter, X_Filter_Multiple, J_Api } = field.ValidationAPI.dsXml;
 
@@ -260,8 +262,17 @@ const EntryForm: React.FC<EntryFormProps> = ({
     };
 
 
+    const handleValidationWhileEntry = (fieldName: string, tagValue: string) => {
+        const filteredKey: FormField = formData.filter(item => fieldName === item.wKey)?.[0]
+        console.log("check field name---->", fieldName, tagValue, filteredKey);
+        if (Object.keys(filteredKey || {})?.length > 0 && filteredKey.FieldEnabledTag === "N") {
+            handleBlur(filteredKey, tagValue)
+        }
+
+    }
+
     // this function is used to show the respected flags according to the response from the API
-    const handleValidationApiResponse = (response:any, currFieldName:any, field:any) => {
+    const handleValidationApiResponse = (response: any, currFieldName: any, field: any) => {
         if (!response?.trim().startsWith("<root>")) {
             response = `<root>${response}</root>`;
         }
@@ -275,88 +286,119 @@ const EntryForm: React.FC<EntryFormProps> = ({
             (node) => node.tagName !== "Flag" && node.tagName !== "Message"
         );
 
-        switch (flag) {
-            case 'M':
-                setValidationModal({
-                    isOpen: true,
-                    message: message || 'Are you sure you want to proceed?',
-                    type: 'M',
-                    callback: (confirmed) => {
-                        if (confirmed) {
-                            dynamicTags.forEach((tag) => {
-                                const tagName = tag.tagName;
-                                const tagValue = tag.textContent;
-                                setFormValues(prev => ({ ...prev, [tagName]: tagValue }));
-                                // handleBlur(field)
-                            });
-                        } else {
-                            setFormValues(prev => ({ ...prev, [currFieldName]: "" }));
-                        }
-                        setValidationModal({ isOpen: false, message: '', type: 'M' });
-                    }
-                });
-                break;
+        // Helper function to process dynamic tags and return updates
+        const processDynamicTags = () => {
+            const formValueUpdates = {};
+            const errorUpdates = {};
+            const formDataUpdates = [];
 
-            case 'S':
-                // setValidationModal({
-                //     isOpen: true,
-                //     message: message || 'Please press ok to proceed',
-                //     type: 'S',
-                //     callback: () => {
-                //         dynamicTags.forEach((tag) => {
-                //             const tagName = tag.tagName;
-                //             const tagValue = tag.textContent;
-                //             setFormValues(prev => ({ ...prev, [tagName]: tagValue }));
-                //             setFieldErrors(prev => ({ ...prev, [tagName]: '' })); // Clear error
-                //         });
-                //         setValidationModal({ isOpen: false, message: '', type: 'S' });
-                //     }
-                // });
-                 dynamicTags.forEach((tag) => {
-                            const tagName = tag.tagName;
-                            const tagValue = tag.textContent;
-                            setFormValues(prev => ({ ...prev, [tagName]: tagValue }));
-                            setFieldErrors(prev => ({ ...prev, [tagName]: '' })); // Clear error
-                            });
-                break;
+            dynamicTags.forEach((tag) => {
+                const tagName = tag.tagName;
+                const tagValue = tag.textContent;
 
-            case 'E':
-                toast.warning(message);
-                setFormValues(prev => ({ ...prev, [currFieldName]: "" }));
-                break;
+                formValueUpdates[tagName] = tagValue;
+                errorUpdates[tagName] = '';
 
-            case 'D':
-                let updatedFormData = formData;
-                dynamicTags.forEach((tag) => {
-                    const tagName = tag.tagName;
-                    const tagValue = tag.textContent;
+                if (flag === 'D') {
                     const tagFlag = tagValue.toLowerCase();
                     const isDisabled = tagFlag === 'false';
 
                     if (tagFlag === 'true' || tagFlag === 'false') {
-                        setFormValues(prev => ({ ...prev, [tagName]: "" }));
-                        console.log("check value---->",isDisabled);
+                        formValueUpdates[tagName] = "";
                         if (isDisabled) {
-                            // handleBlur(field);
-                            setFieldErrors(prev => ({ ...prev, [tagName]: '' })); // Clear error for disabled fields
+                            errorUpdates[tagName] = '';
                         }
-                    } else {
-                        setFormValues(prev => ({ ...prev, [tagName]: tagValue }));
                     }
 
-                    updatedFormData = updatedFormData.map(field => {
-                        if (field.wKey === tagName) {
-                            return { ...field, FieldEnabledTag: isDisabled ? 'N' : 'Y' };
-                        }
-                        return field;
+                    formDataUpdates.push({
+                        key: tagName,
+                        update: { FieldEnabledTag: isDisabled ? 'N' : 'Y' }
                     });
-                });
-                setFormData(updatedFormData);
-                break;
-            default:
-                console.error("Unknown flag received:", flag);
-        }
+                }
+            });
+
+            return { formValueUpdates, errorUpdates, formDataUpdates };
+        };
+
+        const handleUpdates = () => {
+            // Declare variables once at the beginning of the function
+            let formValueUpdates, errorUpdates, formDataUpdates;
+
+            switch (flag) {
+                case 'M':
+                    ({ formValueUpdates, errorUpdates } = processDynamicTags());
+                    setValidationModal({
+                        isOpen: true,
+                        message: message || 'Are you sure you want to proceed?',
+                        type: 'M',
+                        callback: (confirmed) => {
+                            if (confirmed) {
+                                setFormValues(prev => ({ ...prev, ...formValueUpdates }));
+                                setFieldErrors(prev => ({ ...prev, ...errorUpdates }));
+
+                                // Process validations immediately after state updates
+                                Object.entries(formValueUpdates).forEach(([tagName, tagValue]) => {
+                                    const filteredKey = formData.find(item => tagName === item.wKey);
+                                    if (filteredKey && filteredKey.FieldEnabledTag === "N") {
+                                        handleBlur(filteredKey, tagValue);
+                                    }
+                                });
+                            } else {
+                                setFormValues(prev => ({ ...prev, [currFieldName]: "" }));
+                            }
+                            setValidationModal({ isOpen: false, message: '', type: 'M' });
+                        }
+                    });
+                    break;
+
+                case 'S':
+                    ({ formValueUpdates, errorUpdates } = processDynamicTags());
+                    setFormValues(prev => ({ ...prev, ...formValueUpdates }));
+                    setFieldErrors(prev => ({ ...prev, ...errorUpdates }));
+
+                    // Process validations immediately after state updates
+                    Object.entries(formValueUpdates).forEach(([tagName, tagValue]) => {
+                        const filteredKey = formData.find(item => tagName === item.wKey);
+                        if (filteredKey && filteredKey.FieldEnabledTag === "N") {
+                            handleBlur(filteredKey, tagValue);
+                        }
+                    });
+                    break;
+
+                case 'E':
+                    toast.warning(message);
+                    setFormValues(prev => ({ ...prev, [currFieldName]: "" }));
+                    break;
+
+                case 'D':
+                    ({ formValueUpdates, errorUpdates, formDataUpdates } = processDynamicTags());
+                    setFormValues(prev => ({ ...prev, ...formValueUpdates }));
+                    setFieldErrors(prev => ({ ...prev, ...errorUpdates }));
+
+                    setFormData(prev =>
+                        prev.map(field => {
+                            const update = formDataUpdates.find(u => u.key === field.wKey);
+                            return update ? { ...field, ...update.update } : field;
+                        })
+                    );
+
+                    // Process validations immediately after state updates
+                    Object.entries(formValueUpdates).forEach(([tagName, tagValue]) => {
+                        const filteredKey = formData.find(item => tagName === item.wKey);
+                        if (filteredKey && filteredKey.FieldEnabledTag === "N") {
+                            handleBlur(filteredKey, tagValue);
+                        }
+                    });
+                    break;
+
+                default:
+                    console.error("Unknown flag received:", flag);
+            }
+        };
+
+        handleUpdates();
     };
+
 
     //this error function is used to show file uploadation
     const handleFieldError = (fieldKey: string, errorMessage: string) => {
@@ -499,8 +541,8 @@ const EntryForm: React.FC<EntryFormProps> = ({
                                     type="button"
                                     onClick={() =>
                                         handleViewFile(
-                                          formValues[field.wKey],
-                                          field.FieldType?.split(',')[0] || 'file' // optional second param for extension
+                                            formValues[field.wKey],
+                                            field.FieldType?.split(',')[0] || 'file' // optional second param for extension
                                         )
                                     }
                                     className="text-blue-600 underline"
@@ -566,6 +608,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
                 return null;
         }
     };
+
 
     return (
         <div className="grid grid-cols-3 gap-4">
