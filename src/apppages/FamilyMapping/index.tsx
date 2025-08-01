@@ -201,6 +201,7 @@ export default function Family() {
       setOtpError("OTP must be 4 digits.");
       return;
     }
+    setIsLoading(true);
     try {
       const xmlData = `<dsXml>
         <J_Ui>"ActionName":"TradeWeb","Option":"Verify2FA","Level":1,"RequestFrom":"M"</J_Ui>
@@ -217,7 +218,9 @@ export default function Family() {
       });
 
       await saveUccData();
+      setIsLoading(false);
     } catch {
+        setIsLoading(false);
       setOtpError("OTP verification failed.");
     }
   };
