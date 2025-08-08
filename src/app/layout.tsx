@@ -13,11 +13,14 @@ import "flatpickr/dist/themes/light.css";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import TableStyling from "@/components/ui/table/TableStyling";
+import { setupApiRouter } from "@/utils/apiService";
+import AuthGuard from "@/components/auth/AuthGuard";
+import DevelopmentModeIndicator from "@/components/common/DevelopmentModeIndicator";
 
 const appMetadata = (() => {
   try {
     return JSON.parse(localStorage.getItem(APP_METADATA_KEY))
-  }catch(err) {
+  } catch (err) {
     return store.getState().common
   }
 })();
@@ -36,28 +39,29 @@ export default function RootLayout({
   const router = useRouter();
 
   useEffect(() => {
-    // Redirect if the initial path is "/"
-    if (window.location.pathname === "/") {
-      router.replace(`${BASE_PATH_FRONT_END}/signin`);
-    }
+    // Set up the router for API service
+    setupApiRouter(router);
   }, [router]);
-  
+
   return (
     <html lang="en">
-          <head>
-            <title>{appMetadata?.companyName || "Tradeweb"}</title>
-            {
-              appMetadata?.companyLogo && (
-                <link rel="icon" type="image/x-icon" href={appMetadata.companyLogo} />
-              )
-            }
-          </head>
+      <head>
+        <title>{appMetadata?.companyName || "Tradeweb"}</title>
+        {
+          appMetadata?.companyLogo && (
+            <link rel="icon" type="image/x-icon" href={appMetadata.companyLogo} />
+          )
+        }
+      </head>
       <body className={`${outfit.variable} dark:bg-gray-900`}>
         <Provider store={store}>
           <ThemeProvider>
             <SidebarProvider>
-              {children}
-              <TableStyling/>
+              <AuthGuard>
+                {children}
+              </AuthGuard>
+              <DevelopmentModeIndicator />
+              <TableStyling />
               <ToastContainer />
             </SidebarProvider>
           </ThemeProvider>

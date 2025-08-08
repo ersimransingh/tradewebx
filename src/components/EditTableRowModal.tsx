@@ -10,8 +10,10 @@ import CustomDropdown from './form/CustomDropdown';
 import { useTheme } from '@/context/ThemeContext';
 import EntryFormModal from './EntryFormModal';
 import KycPage from "@/apppages/KycPage";
-import { clearMakerSates } from "@/utils/helper";
+import { clearMakerSates, displayAndDownloadFile, dynamicXmlGenratingFn } from "@/utils/helper";
 import { getFileTypeFromBase64 } from "@/utils/helper";
+import apiService from "@/utils/apiService";
+import AccountClosure from "@/apppages/KycPage/account-closure";
 
 interface RowData {
     [key: string]: any;
@@ -52,6 +54,8 @@ interface EditTableRowModalProps {
     tableData: RowData[];
     wPage: string;
     settings: {
+        SavebName: any;
+        ViewDocumentName: string;
         ShowView: boolean;
         EditableColumn: EditableColumn[];
         leftAlignedColumns?: string;
@@ -62,6 +66,7 @@ interface EditTableRowModalProps {
         }>;
         hideMultiEditColumn?: string;
         ShowViewDocument?: boolean;
+
         ShowViewDocumentAPI?: {
             dsXml: {
                 J_Ui: any;
@@ -71,6 +76,18 @@ interface EditTableRowModalProps {
                 J_Api: any;
             };
         };
+
+        ViewAPI?: {
+            dsXml: {
+                J_Ui: any;
+                Sql: string;
+                X_Filter: string;
+                X_Filter_Multiple?: any;
+                J_Api: any;
+            };
+        };
+
+
     };
     showViewDocument?: boolean;
 }
@@ -104,19 +121,43 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
     const [entryFormData, setEntryFormData] = useState<any>(null);
     const [pageData, setPageData] = useState<any>(null);
     const [isLoadingPageData, setIsLoadingPageData] = useState(false);
-
+    const [processResponseData, setProcessResponseData] = useState<any[]>([]);
+    const [isProcessModalOpen, setIsProcessModalOpen] = useState(false);
+    //can be use in future
+    // const [viewLogHeader, setViewLogHeader] = useState({})
+    //end
     // eky modal state 
     const [isEkycModalOpen, setIsKycModalOpen] = useState(false);
-
-    // console.log(tableData,'tableData222');
-    // console.log(settings.ShowView,'settings in edit');
+    const [accountClouserOpen,setAccountClosureOpen] = useState(false)
+    const [accountClouserDataPass,setAccountClosureDataPass] = useState({
+        "name": "Account Closure",
+        "primaryHeaderKey": "",
+        "primaryKey": "",
+        "level": 1,
+        "summary": {},
+        "J_Ui": {
+            "ActionName": "TradeWeb",
+            "Option": "ClientClosure",
+            "Level": 1,
+            "RequestFrom": "W"
+        },
+        "settings": {},
+        "clientCode":''
+    })
+    // loading state for save/process button
+    const [isSaving, setIsSaving] = useState(false);
 
     const showViewTable = settings.ShowView
 
     const showViewDocumentBtn = settings.ShowViewDocument
 
-    
+    const showViewDocumentLabel = settings.ViewDocumentName
+
+    const saveBtnDocumentName = settings.SavebName
+
     const showViewDocumentAPI = settings.ShowViewDocumentAPI
+
+    const showViewApi = settings.ViewAPI
 
     const editableColumns = settings.EditableColumn || [];
 
@@ -163,12 +204,7 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
 
             console.log('Fetching page data for EntryFormModal:', xmlData);
 
-            const response = await axios.post(BASE_URL + PATH_URL, xmlData, {
-                headers: {
-                    'Content-Type': 'application/xml',
-                    'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]?.split(';')[0]}`
-                }
-            });
+            const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
 
             console.log('Page data response:', response.data.data);
 
@@ -275,15 +311,24 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
         console.log('Row Index:', rowIndex);
         console.log('wPage:', wPage);
 
+        const entryName = rowData?.EntryName?.trim().toLowerCase();
+
         // this condition is specifically for ekyc component form (check for entry name)
-        if (rowData?.EntryName === "Rekyc") {
+        if (entryName === "rekyc") {
             localStorage.setItem('rekycRowData_viewMode', JSON.stringify(rowData));
             localStorage.setItem("ekyc_viewMode_for_checker", "true");
             localStorage.setItem("ekyc_activeTab", "personal");
             localStorage.setItem("ekyc_checker", "false");
             setIsKycModalOpen(true);
             clearMakerSates();
-        } else {
+        }else if(entryName === "account closure") {
+            setAccountClosureOpen(true)
+            setAccountClosureDataPass(prev => ({
+                ...prev,
+                clientCode: rowData.ClientCode
+            }));            
+        }
+        else {
             fetchPageDataForView(rowData);
         }
     };
@@ -457,12 +502,7 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
         <J_Api>${jApi}</J_Api>
     </dsXml>`;
         try {
-            const response = await axios.post(BASE_URL + PATH_URL, xmlData, {
-                headers: {
-                    'Content-Type': 'application/xml',
-                    'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]}`
-                }
-            });
+            const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
             const result = response?.data?.data?.rs0?.[0]?.Column1;
             if (result) {
                 const messageMatch = result.match(/<Message>(.*?)<\/Message>/);
@@ -539,8 +579,9 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
             .join('');
         const userId = localStorage.getItem('userId') || 'ADMIN';
         const userType = localStorage.getItem('userType') || 'Branch';
+        const optiontag = (showViewDocumentBtn && showViewDocumentLabel ? 'Process' : 'Edit')
         return `<dsXml>
-                    <J_Ui>"ActionName":"${wPage}","Option":"Edit","RequestFrom":"W"</J_Ui>
+                    <J_Ui>"ActionName":"${wPage}","Option":"${optiontag}","RequestFrom":"W"</J_Ui>
                     <Sql/>
                     <X_Filter/>
                     <X_Filter_Multiple></X_Filter_Multiple>
@@ -553,79 +594,134 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
                 </dsXml>`;
     };
 
+    const hadleViewLog = async (rowData: any) => {
+        if ((rowData.ExportType === undefined || rowData.ExportType === '')) {
+            setValidationModal({
+                isOpen: true,
+                message: 'Please select a Export Type from the dropdown.',
+                type: 'E'
+            });
+            return;
+        }
 
-    const handleSave = async () => {
-        const xmlData = generateDsXml(localData);
         try {
-            const response = await axios.post(
-                BASE_URL + PATH_URL,
-                xmlData,
-                {
-                    headers: {
-                        'Content-Type': 'application/xml',
-                        'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]?.split(';')[0]}`
-                    }
-                }
-            );
+            const response = await apiService.postWithAuth(BASE_URL + PATH_URL, dynamicXmlGenratingFn(showViewApi, rowData));
+            const rs0 = response?.data?.data?.rs0 || [];
 
-            console.log('Save response:', response.data);
+            console.log(response,'responseeeee');
+            
 
-            // Check if the response indicates failure
-            if (response.data && response.data.success === false) {
-                let errorMessage = response.data.message || 'An error occurred while saving';
-
-                // Extract message from XML format if present
-                const messageMatch = errorMessage.match(/<Message>(.*?)<\/Message>/);
-                if (messageMatch) {
-                    errorMessage = messageMatch[1];
-                }
-
-                // Show error message using existing validation modal
-                showValidationMessage(errorMessage, 'E');
-                return; // Don't close the modal on error
+            if (!Array.isArray(rs0) || rs0.length === 0) {
+                toast.error('No logs found.');
+                return;
             }
-
-            // If we get here, the save was successful
-            // Extract success message from API response
-            let successMessage = 'Record saved successfully';
-
-            if (response.data?.message) {
-                // Extract message from XML format if present
-                const messageMatch = response.data.message.match(/<Message>(.*?)<\/Message>/);
-                if (messageMatch) {
-                    successMessage = messageMatch[1];
-                } else {
-                    // If not in XML format, use the message directly
-                    successMessage = response.data.message;
-                }
-            }
-
-            // Show success toast message
-            toast.success(successMessage);
-
-            // Close the modal after showing success message
-            onClose();
+            setProcessResponseData(rs0);
+            setIsProcessModalOpen(true);
+ 
 
         } catch (error) {
+            console.error('Error in handleProcess:', error);
+            toast.error('Failed to process request.');
+          
+        } finally {
+            setIsSaving(false);
+        }
+        //can be use in future
+        // setViewLogHeader(rowData)
+        // End
+
+    }
+
+
+    const handleSave = async () => {
+        setIsSaving(true);
+        const xmlData = generateDsXml(localData);
+    
+        try {
+            const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
+            const responseData = response.data?.data?.rs0?.[0];
+    
+            // Check API-level failure
+            if (response.data?.success === false) {
+                let errorMessage = response.data.message || 'An error occurred while saving';
+                const messageMatch = errorMessage.match(/<Message>(.*?)<\/Message>/);
+                if (messageMatch) errorMessage = messageMatch[1];
+    
+                showValidationMessage(errorMessage, 'E');
+                return;
+            }
+    
+            // Check business logic error from rs0[0]
+            if (responseData?.Flag === "E") {
+                const businessError = responseData?.Message || "Business error occurred";
+                showValidationMessage(businessError, "E");
+                return;
+            }
+    
+            // Success handling
+            let successMessage = 'Record saved successfully';
+            if (response.data?.message) {
+                const match = response.data.message.match(/<Message>(.*?)<\/Message>/);
+                if (match) successMessage = match[1];
+                else successMessage = response.data.message;
+            }
+    
+            const RemarkArray = responseData?.Remark?.[0];
+            if (RemarkArray?.fileContents) {
+                const base64 = RemarkArray.fileContents;
+                const fileDownloadName = RemarkArray.fileDownloadName;
+                displayAndDownloadFile(base64, fileDownloadName);
+            }
+    
+            toast.success(successMessage);
+            onClose();
+        } catch (error) {
             console.error('Error saving data:', error);
-
-            // Handle network errors or other exceptions
             let errorMessage = 'An error occurred while saving. Please try again.';
-
-            // Check if the error response has our expected structure
+    
             if (error.response?.data?.success === false) {
                 errorMessage = error.response.data.message || errorMessage;
-
-                // Extract message from XML format if present
-                const messageMatch = errorMessage.match(/<Message>(.*?)<\/Message>/);
-                if (messageMatch) {
-                    errorMessage = messageMatch[1];
-                }
+                const match = errorMessage.match(/<Message>(.*?)<\/Message>/);
+                if (match) errorMessage = match[1];
             }
-
+    
             showValidationMessage(errorMessage, 'E');
+        } finally {
+            setIsSaving(false);
         }
     };
+    
+
+
+    //this logic can be use in future
+
+    // const handleProcess = async () => {
+    //     setIsSaving(true);
+    //     try {
+    //         const response = await apiService.postWithAuth(BASE_URL + PATH_URL, viewApiXml);
+    //         const rs0 = response?.data?.data?.rs0 || [];
+
+    //         if (!Array.isArray(rs0) || rs0.length === 0) {
+    //             toast.error('No logs found.');
+    //             return;
+    //         }
+    //         setProcessResponseData(rs0);
+    //         setIsProcessModalOpen(true);
+    //         // setIsProcessButtonEnabled(false);
+
+    //     } catch (error) {
+    //         console.error('Error in handleProcess:', error);
+    //         toast.error('Failed to process request.');
+    //         setIsProcessButtonEnabled(false);
+    //     } finally {
+    //         setIsSaving(false);
+    //     }
+    // };
+
+    //end
+
+
+
 
     const getEditableColumn = (key: string) => {
         return editableColumns.find((col) => col.wKey === key);
@@ -704,15 +800,9 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
 
             console.log('Dropdown request XML:', xmlData);
 
-            const response = await axios.post(
+            const response = await apiService.postWithAuth(
                 BASE_URL + PATH_URL,
                 xmlData,
-                {
-                    headers: {
-                        'Content-Type': 'application/xml',
-                        'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]?.split(';')[0]}`
-                    }
-                }
             );
 
             const rs0Data = response.data?.data?.rs0;
@@ -832,16 +922,7 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
 
             console.log('Dependent dropdown request XML:', xmlData);
 
-            const response = await axios.post(
-                BASE_URL + PATH_URL,
-                xmlData,
-                {
-                    headers: {
-                        'Content-Type': 'application/xml',
-                        'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]?.split(';')[0]}`
-                    }
-                }
-            );
+            const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
 
             console.log('Dependent dropdown response:', response.data);
 
@@ -887,7 +968,7 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
     };
 
 
-    
+
     const handleDocumentView = async (rowData: any,) => {
         if ((rowData.RekycDocumentType === undefined || rowData.RekycDocumentType === '')) {
             setValidationModal({
@@ -897,18 +978,18 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
             });
             return;
         }
-        
-        
-      
+
+
+
         const J_Ui = Object.entries(showViewDocumentAPI.dsXml.J_Ui)
-          .map(([key, value]) => `"${key}":"${value}"`)
-          .join(',');
-      
+            .map(([key, value]) => `"${key}":"${value}"`)
+            .join(',');
+
         const X_Filter_Multiple = Object.keys(showViewDocumentAPI.dsXml.X_Filter_Multiple)
-          .filter(key => key in rowData)
-          .map(key => `<${key}>${rowData[key]}</${key}>`)
-          .join('');
-      
+            .filter(key => key in rowData)
+            .map(key => `<${key}>${rowData[key]}</${key}>`)
+            .join('');
+
         const xmlData = `<dsXml>
           <J_Ui>${J_Ui}</J_Ui>
           <Sql>${showViewDocumentAPI.dsXml.Sql || ''}</Sql>
@@ -916,80 +997,40 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
           <X_Filter_Multiple>${X_Filter_Multiple}</X_Filter_Multiple>
           <J_Api>"UserId":"${localStorage.getItem('userId')}"</J_Api>
         </dsXml>`;
-      
-        try {
-          const response = await axios.post(BASE_URL + PATH_URL, xmlData, {
-            headers: {
-              'Content-Type': 'application/xml',
-              'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]}`
-            }
-          });
 
-        // if((response.data.data.rs0[0].Flag === 'E')){
-        //     console.log(response.data.data.rs0[0],'inside if');
-             
-        //     setValidationModal({
-        //         isOpen: true,
-        //         message: response.data.data.rs0[0].Message,
-        //         type: 'E'
-        //     });
-        //   }else{
-            const base64 = response.data.data.rs0.Base64PDF;
-          const fileType = getFileTypeFromBase64(base64); // function you defined earlier
-          const mimeMap: Record<string, string> = {
-            pdf: 'application/pdf',
-            png: 'image/png',
-            jpeg: 'image/jpeg',
-            jpg: 'image/jpeg',
-            gif: 'image/gif',
-            xml: 'application/xml',
-            text: 'text/plain'
-          };
-      
-          const mimeType = mimeMap[fileType] || 'application/octet-stream';
-      
-          // Create Blob URL
-          const byteCharacters = atob(base64);
-          const byteNumbers = Array.from(byteCharacters, char => char.charCodeAt(0));
-          const byteArray = new Uint8Array(byteNumbers);
-          const blob = new Blob([byteArray], { type: mimeType });
-          const blobUrl = URL.createObjectURL(blob);
-      
-          // Open in new tab
-          const newTab = window.open(blobUrl, '_blank');
-          if (!newTab || newTab.closed || typeof newTab.closed === 'undefined') {
-            const link = document.createElement('a');
-            link.href = blobUrl;
-            link.download = `document.${fileType}`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-          }
-        //   }
+        try {
+            const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
+            const base64 = response?.data?.data?.rs0?.Base64PDF;
+            const fileName = response?.data?.data?.rs0?.PDFName
+            console.log(response?.data?.data?.rs0,'response?.data?.data?.rs0?');
             
-       
-          
-      
+            if(base64){
+                 displayAndDownloadFile(base64)
+            }
+            if(response?.data?.data?.rs0[0].Flag === "E"){
+                toast.error(response?.data?.data?.rs0[0]?.Message || "something went wrong")
+            }
+
         } catch (error) {
-          console.error("Error fetching DocumentView:", error);
-          toast.error(error)
+            console.error("Error fetching DocumentView:", error);
+            toast.error(error)
         }
-      };
+    };
 
     return (
         <>
             <Dialog open={isOpen} onClose={() => console.log("close")} className="relative z-[100]" >
                 <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
                 <div className="fixed inset-0 flex items-center justify-center p-4">
-                    <DialogPanel className="bg-white rounded-lg shadow-xl max-w-5xl w-full p-6 max-h-[80vh] min-h-[70vh] flex flex-col">
-                        <DialogTitle className="text-lg font-semibold mb-4">{title}</DialogTitle>
+                    <DialogPanel className="bg-white rounded-lg shadow-xl max-w-5xl w-full p-6 flex flex-col">
+                        <DialogTitle className="text-lg font-semibold mb-2">{title}</DialogTitle>
                         {localData.length > 0 ? (
                             showViewDocument ? (
                                 // Form layout for ShowViewDocument
-                                <div className="overflow-auto flex-1 p-4">
-                                    <div className="max-w-4xl mx-auto">
+                                <div className="overflow-auto">
+                                    <div className="mx-auto">
                                         {localData.map((row, rowIndex) => (
-                                            <div key={rowIndex} className="mb-8">
+                                            <div key={rowIndex} className="mb-2">
                                                 {rowIndex > 0 && <hr className="my-6 border-gray-300" />}
 
                                                 {/* Action buttons for view */}
@@ -1004,18 +1045,18 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
                                                         >
                                                             View Details
                                                         </button>
-                                                        
+
                                                     </div>
                                                 )}
 
                                                 {/* Form fields */}
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                                     {getOrderedColumns(Object.keys(row)).map((key) => {
                                                         const value = row[key];
                                                         const editable = getEditableColumn(key);
 
                                                         return (
-                                                            <div key={key} className="mb-4">
+                                                            <div key={key} className="mb-2">
                                                                 <label
                                                                     className="block text-sm font-medium mb-2"
                                                                     style={{
@@ -1141,7 +1182,7 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
                                 </div>
                             ) : (
                                 // Table layout for normal editing
-                                <div className="overflow-auto flex-1">
+                                <div className="overflow-auto">
                                     <table className="border text-sm">
                                         <thead>
                                             <tr>
@@ -1326,25 +1367,54 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
                             <p className="text-gray-600">No data available.</p>
                         )}
 
-                        <div className="mt-6 flex justify-end gap-4">
+                        <div className="mt-2 flex justify-end gap-4">
 
-                        {showViewDocumentBtn === true &&
-                                                         <button
-                                                         onClick={() => handleDocumentView(localData[0])}
-                                                         className="bg-blue-50 text-blue-500 hover:bg-blue-100 hover:text-blue-700 px-4 py-2 rounded-md transition-colors ml-4"
-                                                         style={{
-                                                             fontFamily: fonts.content,
-                                                         }}
-                                                     >
-                                                         View Document
-                                                     </button>
-                                                        }
+                            {showViewDocumentBtn === true &&
+                                <button
+                                    onClick={(showViewDocumentBtn && showViewDocumentLabel ? () => hadleViewLog(localData[0]) : () => handleDocumentView(localData[0]))}
+                                    className="bg-blue-50 text-blue-500 hover:bg-blue-100 hover:text-blue-700 px-4 py-2 rounded-md transition-colors ml-4"
+                                    style={{
+                                        fontFamily: fonts.content,
+                                    }}
+                                >
+                                    {(showViewDocumentBtn && showViewDocumentLabel ? showViewDocumentLabel : 'View Document')}
+                                </button>
+                            }
 
                             <button
-                                onClick={handleSave}
-                                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                                //this logic can be used in future
+                                // disabled={isSaving || ((showViewDocumentBtn && showViewDocumentLabel) && !isProcessButtonEnabled)}
+                                // (showViewDocumentBtn && showViewDocumentLabel ? handleProcess :
+                                //end
+                                onClick={ handleSave}
+                                className="px-4 py-2 rounded ml-2 flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
                             >
-                                Save
+                                {isSaving && (
+                                    <svg
+                                        className="animate-spin h-4 w-4"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <circle
+                                            className="opacity-25"
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            stroke="currentColor"
+                                            strokeWidth="4"
+                                        />
+                                        <path
+                                            className="opacity-75"
+                                            fill="currentColor"
+                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                        />
+                                    </svg>
+                                )}
+                                {isSaving
+                                    ? 'Processing...'
+                                    : (showViewDocumentBtn && showViewDocumentLabel ? saveBtnDocumentName : 'Save')
+                                }
                             </button>
                             <button
                                 onClick={onClose}
@@ -1437,6 +1507,90 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
                     </div>
                 </div>
             )}
+
+            {isProcessModalOpen && (
+                <Dialog open={isProcessModalOpen} onClose={() => setIsProcessModalOpen(false)} className="relative z-[200]">
+                    <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+                    <div className="fixed inset-0 flex items-center justify-center p-4">
+                        <DialogPanel className="bg-white rounded-lg shadow-xl max-w-4xl w-full p-6 max-h-[80vh] overflow-auto">
+                            <DialogTitle className="text-lg font-semibold mb-4">Client Export Logs</DialogTitle>
+
+                            {/* Header Info */}
+                            <div className="grid grid-cols-3 gap-4 text-sm font-medium mb-4">
+                                {Object.keys(showViewApi.dsXml.X_Filter_Multiple)
+                                    .filter(key => key in localData[0])
+                                    .map(key => (
+                                        <div key={key}>
+                                            <strong>{key.replace(/([A-Z])/g, ' $1').trim()}:</strong> {localData[0][key]}
+                                        </div>
+                                    ))}
+                            </div>
+
+
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full border border-gray-300 text-sm">
+                                    <thead>
+                                        <tr className="bg-gray-100">
+                                            {processResponseData.length > 0 &&
+                                                Object.keys(processResponseData[0]).map((key) => (
+                                                    <th key={key} className="border px-4 py-2 text-left">{key}</th>
+                                                ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {processResponseData.map((row, idx) => (
+                                            <tr key={idx} className="hover:bg-gray-50">
+                                                {Object.keys(row).map((key) => (
+                                                    <td key={key} className="border px-4 py-2 break-all">
+                                                        {row[key]}
+                                                    </td>
+                                                ))}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div className="mt-4 flex justify-end">
+                                <button
+                                    onClick={() => setIsProcessModalOpen(false)}
+                                    className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        </DialogPanel>
+                    </div>
+                </Dialog>
+            )}
+
+
+                {accountClouserOpen && (
+                <div className="fixed inset-0 flex items-center justify-center z-400" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
+                    <div className="bg-white rounded-lg py-3 w-full max-w-[85vw] overflow-y-auto min-h-[70vh] max-h-[75vh]">
+                        <div className="flex justify-end items-center pr-4 mb-2">
+                            <button
+                                onClick={() => {
+                                    setAccountClosureOpen(false);
+                                }}
+                                style={{
+                                    backgroundColor: colors.buttonBackground,
+                                    color: colors.buttonText,
+                                }}
+                                className="px-4 py-1 rounded-lg ml-4"
+
+                            >
+                                Close
+                            </button>
+                        </div>
+                        <div className="mt-4 border-t-2 border-solid p-4">
+                        <AccountClosure accountClouserOpen = {accountClouserOpen} accountClouserDataPass={accountClouserDataPass}/>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+
         </>
     );
 };

@@ -1,12 +1,30 @@
 "use client";
 import { useState } from "react";
+import CryptoJS from 'crypto-js';
 
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import Button from "@/components/ui/button/Button";
-import axios from "axios";
-import { ACTION_NAME, BASE_URL, PATH_URL } from "@/utils/constants";
+import apiService from "@/utils/apiService";
+import { ACTION_NAME, BASE_URL, PATH_URL, BASE_PATH_FRONT_END } from "@/utils/constants";
 import { useTheme } from "@/context/ThemeContext";
+
+// Password encryption key
+const passKey = "TradeWebX1234567";
+
+// Encryption function
+function Encryption(data) {
+    const key = CryptoJS.enc.Utf8.parse(passKey);
+    const iv = CryptoJS.enc.Utf8.parse(passKey);
+    const encrypted = CryptoJS.AES.encrypt(CryptoJS.enc.Utf8.parse(data), key,
+        {
+            keySize: 128 / 8,
+            iv: iv,
+            mode: CryptoJS.mode.CBC,
+            padding: CryptoJS.pad.Pkcs7
+        });
+    return encrypted.toString();
+}
 
 export default function ChangePassword() {
     const { colors } = useTheme();
@@ -50,8 +68,8 @@ export default function ChangePassword() {
             <J_Ui>"ActionName":"${ACTION_NAME}","Option":"ChangePassword","Level":1</J_Ui>
             <Sql></Sql>
             <X_Data>
-                <OldPassword>${formData.currentPassword}</OldPassword>
-                <NewPassword>${formData.newPassword}</NewPassword>
+                <EOldPassword>${Encryption(formData.currentPassword)}</EOldPassword>
+                <ENewPassword>${Encryption(formData.newPassword)}</ENewPassword>
                 <ClientCode>${localStorage.getItem('userId')}</ClientCode>
             </X_Data>
             <X_Filter></X_Filter>
@@ -60,22 +78,12 @@ export default function ChangePassword() {
         </dsXml>`;
 
         try {
-            const response = await axios.post(BASE_URL + PATH_URL, xmlData, {
-                headers: {
-                    'Content-Type': 'application/xml',
-                    'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]}`
-                },
-                timeout: 50000
-            });
-
-            // && response.data.data.rs0[0]
+            const apiUrl = BASE_URL + PATH_URL;
+            const response = await apiService.postWithAuth(apiUrl, xmlData);
 
             if (response.data.success && response.data.data.rs0) {
                 console.log('inside 11');
-                // console.log(,'response change password');
                 const result = response.data.data.rs0
-
-                // console.log(result.Flag,'result11');
 
                 if (result.Flag === 'S') {
                     setSuccess(result.Message);
@@ -84,6 +92,14 @@ export default function ChangePassword() {
                         newPassword: "",
                         confirmPassword: ""
                     });
+
+                    // Clear all authentication data
+                    localStorage.clear();
+
+                    // Redirect to sign-in page after a short delay
+                    setTimeout(() => {
+                        window.location.href = `${BASE_PATH_FRONT_END}/signin`;
+                    }, 2000);
                 } else {
                     setError(result.Message);
                 }

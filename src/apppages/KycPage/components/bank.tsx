@@ -176,52 +176,124 @@ const KycBank = ({ formFields, tableData, setFieldData, setActiveTab, Settings }
       return;
     }
 
+    //updated logic by pavan for defualt tag
     if (isEditing && editingIndex !== null) {
-      // Update existing entry
+      // Editing bank entry
       setFieldData((prevState: any) => {
         const prevTableData = prevState.bankTabData.tableData || [];
         const updatedTableData = [...prevTableData];
-
-        updatedTableData[editingIndex] = {
-          ...currentFormData,
-        };
-
+        const isDefaultChecked = currentFormData.IsDefault === "true";
+    
+        let newTableData;
+    
+        if (isDefaultChecked) {
+          // If current is set as default, uncheck others
+          newTableData = updatedTableData.map((entry, index) => {
+            if (index === editingIndex) {
+              return {
+                ...currentFormData,
+                IsDefault: "true"
+              };
+            } else {
+              if (entry.IsDefault === "true" && entry.BankID) {
+                return {
+                  ...entry,
+                  IsDefault: "false",
+                  IsModified: "true"
+                };
+              }
+              return {
+                ...entry,
+                IsDefault: "false"
+              };
+            }
+          });
+        } else {
+          // If current is unchecked
+          newTableData = updatedTableData.map((entry, index) => {
+            if (index === editingIndex) {
+              const wasPreviouslyDefault = entry.IsDefault === "true";
+              const isOld = !!entry.BankID;
+    
+              const modifiedEntry = {
+                ...currentFormData,
+                IsDefault: "false"
+              };
+    
+              return modifiedEntry;
+            }
+    
+            // Remove IsModified from old defaults if any
+            if (entry.BankID && entry.IsDefault === "true") {
+              delete entry.IsModified;
+            }
+    
+            return { ...entry };
+          });
+    
+          // Ensure at least one default remains
+          const hasDefault = newTableData.some((entry) => entry.IsDefault === "true");
+          if (!hasDefault) {
+            const firstOldIndex = newTableData.findIndex(
+              (entry, idx) => idx !== editingIndex && !!entry.BankID
+            );
+    
+            if (firstOldIndex !== -1) {
+              const restoredEntry = {
+                ...newTableData[firstOldIndex],
+                IsDefault: "true"
+              };
+    
+              delete restoredEntry.IsModified; // Ensure IsModified is not sent
+              newTableData[firstOldIndex] = restoredEntry;
+            }
+          }
+        }
+    
         return {
           ...prevState,
           bankTabData: {
             ...prevState.bankTabData,
-            tableData: updatedTableData
+            tableData: newTableData
           }
         };
       });
     } else {
-      // Add new entry
-      const updatedBankData = {
+      const isDefaultChecked = currentFormData.IsDefault === "true";
+      const newEntry = {
         ...currentFormData,
-        IsDefault: "true" // Force new entry to be default
+        IsDefault: isDefaultChecked ? "true" : "false"
       };
-
+    
       setFieldData((prevState: any) => {
         const prevTableData = prevState.bankTabData.tableData || [];
-
-        // Unset all other defaults
-        const updatedTableData = prevTableData.map(bank => ({
-          ...bank,
-          IsDefault: "false"
-        }));
-
+    
+        const updatedTableData = isDefaultChecked
+          ? prevTableData.map((bank) => {
+              if (bank.IsDefault === "true" && bank.BankID) {
+                return {
+                  ...bank,
+                  IsDefault: "false",
+                  IsModified: "true"
+                };
+              }
+              return {
+                ...bank,
+                IsDefault: "false"
+              };
+            })
+          : prevTableData;
+    
         return {
           ...prevState,
           bankTabData: {
             ...prevState.bankTabData,
-            tableData: [
-              ...updatedTableData,
-              updatedBankData
-            ]
+            tableData: [...updatedTableData, newEntry]
           }
         };
       });
     }
+    
 
     clearFormAndCloseModal();
   };

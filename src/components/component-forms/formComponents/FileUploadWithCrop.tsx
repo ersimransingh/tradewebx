@@ -1,4 +1,4 @@
-import { handleViewFile } from '@/utils/helper';
+import { displayAndDownloadFile} from '@/utils/helper';
 import React, { useRef, useState, useEffect } from 'react';
 import ReactCrop, { Crop, PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
@@ -14,6 +14,11 @@ interface FileUploadWithCropProps {
   handleBlur: (field: any) => void;
   isDisabled: boolean;
 }
+
+// Helper function to extract pure base64 data (remove the prefix)
+const getPureBase64 = (base64String: string) => {
+  return base64String.replace(/^data:.*?;base64,/, '');
+};
 
 const FileUploadWithCrop: React.FC<FileUploadWithCropProps> = ({
   field,
@@ -34,12 +39,7 @@ const FileUploadWithCrop: React.FC<FileUploadWithCropProps> = ({
   const [fileName, setFileName] = useState<string>('');
   const imgRef = useRef<HTMLImageElement>(null);
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
-  const acceptedTypes = field.fileType === 'image' 
-    ? 'image/*' 
-    : !(field.FileType.includes("jpg") || field.FileType.includes("png")) 
-      ? '.pdf,.doc,.docx,.xls,.xlsx,.txt' 
-      : 'image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt';
-
+  const acceptedTypes = field.FileType.split(',').map(ext => `.${ext.trim().toLowerCase()}`).join(',');
   const isRequired = field.isMandatory === "true"
 
   const onSelectFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -61,7 +61,7 @@ const FileUploadWithCrop: React.FC<FileUploadWithCropProps> = ({
       } else {
         const reader = new FileReader();
         reader.onload = () => {
-          const base64Data = reader.result as string;
+          const base64Data = getPureBase64(reader.result as string);
           setFormValues(prev => ({ 
             ...prev, 
             [field.wKey]: {
@@ -140,7 +140,7 @@ const FileUploadWithCrop: React.FC<FileUploadWithCropProps> = ({
           }
           const reader = new FileReader();
           reader.onloadend = () => {
-            const base64Data = reader.result as string;
+            const base64Data = getPureBase64(reader.result as string);
             setCroppedImageUrl(base64Data);
             setFormValues(prev => ({ 
               ...prev, 
@@ -170,7 +170,7 @@ const FileUploadWithCrop: React.FC<FileUploadWithCropProps> = ({
           type: fileType
         }
       }));
-        // Clear field error when crop is done
+      // Clear field error when crop is done
       setFieldErrors(prev => ({ ...prev, [field.wKey]: `` }));
     }
     setShowModal(false);
@@ -195,6 +195,12 @@ const FileUploadWithCrop: React.FC<FileUploadWithCropProps> = ({
 
   const currentFile = getFileData();
 
+  // Function to reconstruct full base64 URL for display
+  const getDisplayUrl = (base64Data: string, type: string) => {
+    if (!base64Data) return '';
+    return base64Data.startsWith('data:') ? base64Data : `data:${type};base64,${base64Data}`;
+  };
+
   return (
     <div className="mb-1">
       <label className="block text-sm font-medium mb-1" style={{ color: colors.text }}>
@@ -217,9 +223,9 @@ const FileUploadWithCrop: React.FC<FileUploadWithCropProps> = ({
             {currentFile.name}
           </p>
           
-          {fileType.startsWith('image/') ? (
+          {currentFile.type.startsWith('image/') ? (
             <Image
-              src={croppedImageUrl || currentFile.data}
+              src={getDisplayUrl(croppedImageUrl || currentFile.data, currentFile.type)}
               alt="Cropped Preview"
               width={150}
               height={150}
@@ -230,7 +236,7 @@ const FileUploadWithCrop: React.FC<FileUploadWithCropProps> = ({
               href="#"
               onClick={(e) => {
                 e.preventDefault();
-                handleViewFile(currentFile.data, currentFile.type.split('/')[1] || 'file');
+                displayAndDownloadFile(currentFile.data);
               }}
               className="text-blue-500 underline"
             >

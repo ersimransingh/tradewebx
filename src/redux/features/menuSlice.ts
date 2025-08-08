@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 import type { RootState } from '../store';
 import { ACTION_NAME, BASE_URL, PATH_URL } from '@/utils/constants';
+import apiService from '@/utils/apiService';
 
 // Enhanced types to include pageData
 type PageSettings = {
@@ -150,12 +151,7 @@ export const fetchMenuItems = createAsyncThunk(
             <J_Api>"UserId":"${userData.UserId}","UserType":"${userData.UserType}","AccYear":24,"MyDbPrefix":"SVVS","MemberCode":"undefined","SecretKey":"undefined"</J_Api>
         </dsXml>`;
 
-        const response = await axios.post(BASE_URL + PATH_URL, xmlData, {
-            headers: {
-                'Content-Type': 'application/xml',
-                'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]}`
-            }
-        });
+        const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
 
         return convertToNavItems(response.data.data.rs0);
     }

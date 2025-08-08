@@ -9,6 +9,7 @@ import { BASE_URL, PATH_URL } from '@/utils/constants';
 import { useTheme } from '@/context/ThemeContext';
 import { FaCalendarAlt } from 'react-icons/fa';
 import CustomDropdown from './form/CustomDropdown';
+import apiService from '@/utils/apiService';
 
 export interface FormElement {
     type: string;
@@ -360,15 +361,9 @@ const FormCreator: React.FC<FormCreatorProps> = ({
 
             // console.log('Dropdown request XML:', xmlData);
 
-            const response = await axios.post(
+            const response = await apiService.postWithAuth(
                 BASE_URL + PATH_URL,
                 xmlData,
-                {
-                    headers: {
-                        'Content-Type': 'application/xml',
-                        'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]}`
-                    }
-                }
             );
 
             const rs0Data = response.data?.data?.rs0;
@@ -562,16 +557,7 @@ const FormCreator: React.FC<FormCreatorProps> = ({
 
             // console.log('Dependent dropdown request XML:', xmlData);
 
-            const response = await axios.post(
-                BASE_URL + PATH_URL,
-                xmlData,
-                {
-                    headers: {
-                        'Content-Type': 'application/xml',
-                        'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]?.split(';')[0]}`
-                    }
-                }
-            );
+            const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
 
             // console.log('Dependent dropdown response:', response.data);
 

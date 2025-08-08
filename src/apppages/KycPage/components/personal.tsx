@@ -10,7 +10,7 @@ import { useSaveLoading } from '@/context/SaveLoadingContext';
 
 const Personal = ({ formFields, tableData, fieldErrors, setFieldData, setActiveTab, Settings }: EkycComponentProps) => {
 
-    const { colors, fonts } = useTheme();
+    const { colors } = useTheme();
     const viewMode = localStorage.getItem("ekyc_viewMode") === "true" || localStorage.getItem("ekyc_viewMode_for_checker") === "true" ;
 
     const { setSaving } = useSaveLoading();
@@ -18,6 +18,7 @@ const Personal = ({ formFields, tableData, fieldErrors, setFieldData, setActiveT
     const [personalDropdownOptions, setPersonalDropdownOptions] = useState<Record<string, any[]>>({});
     const [personalLoadingDropdowns, setPersonalLoadingDropdowns] = useState<Record<string, boolean>>({});
     const [fieldVlaues, setFieldValues] = useState<Record<string, any>>(tableData[0] || {});
+
     const [personalFieldErrors, setPersonalFieldErrors] = useState<Record<string, string>>({});
     const [validationModal, setValidationModal] = useState<{
         isOpen: boolean;
@@ -52,6 +53,7 @@ const Personal = ({ formFields, tableData, fieldErrors, setFieldData, setActiveT
 
     const handleSaveAndNext = () => {
         const { isValid, errors } = validateMandatoryFields(fieldVlaues);
+        const localPersonalData : any = [fieldVlaues];
         setPersonalFieldErrors(errors);
         if (!isValid) {
             toast.error("Please fill all mandatory fields");
@@ -73,7 +75,7 @@ const Personal = ({ formFields, tableData, fieldErrors, setFieldData, setActiveT
                     }
                 };
             })
-            handleSaveSinglePageData(Settings.SaveNextAPI, tableData, setActiveTab, "nominee", setSaving)
+            handleSaveSinglePageData(Settings.SaveNextAPI, localPersonalData, setActiveTab, "nominee", setSaving)
             // setActiveTab("nominee")
         }
     }

@@ -3,12 +3,13 @@ import React from 'react';
 
 interface TableStylingProps {
   onRowClick?: (rowData: any) => void; // Optional row click handler
+  screenSize?: 'mobile' | 'tablet' | 'web'; // Screen size for responsive styling
 }
 
 
-function TableStyling({ onRowClick }: TableStylingProps) {
+function TableStyling({ onRowClick, screenSize = 'web' }: TableStylingProps) {
   const { colors, fonts } = useTheme();
-    
+
   return (
     <style jsx global>{`
       .rdg {
@@ -26,11 +27,13 @@ function TableStyling({ onRowClick }: TableStylingProps) {
         font-weight: 600;
       }
 
-      .rdg-cell:first-child {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
+      ${screenSize === 'mobile' || screenSize === 'tablet' ? `
+        .rdg-cell:first-child {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+      ` : ''}
 
       .rdg-cell {
         border-right: 1px solid ${colors.textInputBorder};

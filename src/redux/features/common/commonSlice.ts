@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { APP_METADATA_KEY, ACTION_NAME, BASE_URL, OTP_VERIFICATION_URL, PATH_URL } from '@/utils/constants';
+import apiService from '@/utils/apiService';
 
 interface CommonState {
     tableStyle: 'small' | 'medium' | 'large';
@@ -42,12 +43,7 @@ export const fetchLastTradingDate = createAsyncThunk(
             <J_Api>"UserId":"${userId}", "UserType":"${userType}"</J_Api>
         </dsXml>`;
 
-        const response = await axios.post(BASE_URL + PATH_URL, xmlData, {
-            headers: {
-                'Content-Type': 'application/xml',
-                'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]}`
-            }
-        });
+        const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
 
         return response.data.data.rs0[0].LastTradeDate || '';
     }

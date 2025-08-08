@@ -2,14 +2,17 @@
 import React, { useState, useEffect } from "react";
 import { useModal } from "../../hooks/useModal";
 import { useTheme } from "../../context/ThemeContext";
+import { useSearchParams } from "next/navigation";
 
 import Image from "next/image";
 import axios from "axios";
 import { ACTION_NAME, BASE_URL, PATH_URL } from "../../utils/constants";
+import apiService from "@/utils/apiService";
 
 export default function UserMetaCard() {
   const { isOpen, openModal, closeModal } = useModal();
   const { colors } = useTheme();
+  const searchParams = useSearchParams();
   const [profileData, setProfileData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -19,6 +22,9 @@ export default function UserMetaCard() {
 
   const getUserDetails = async () => {
     setIsLoading(true);
+
+    // Get userid from URL parameters, fallback to localStorage
+    const urlUserId = searchParams.get('userid');
     const userData = {
       userId: localStorage.getItem('userId') || ''
     };
@@ -27,17 +33,13 @@ export default function UserMetaCard() {
         <J_Ui>"ActionName":"${ACTION_NAME}", "Option":"UserProfile","Level":1, "RequestFrom":"M"</J_Ui>
         <Sql></Sql>
         <X_Filter></X_Filter>
+        <X_Filter_Multiple>${urlUserId ? `<ClientCode>${urlUserId}</ClientCode>` : ''}</X_Filter_Multiple>
         <X_GFilter></X_GFilter>
         <J_Api>"UserId":"${userData.userId}", "UserType":"${localStorage.getItem('userType')}"</J_Api>
     </dsXml>`;
 
     try {
-      const response = await axios.post(BASE_URL + PATH_URL, xmlData, {
-        headers: {
-          'Content-Type': 'application/xml',
-          'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]}`
-        }
-      });
+      const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
 
       if (response.data?.data?.rs0?.[0]) {
         setProfileData(response.data.data.rs0[0]);
@@ -49,29 +51,22 @@ export default function UserMetaCard() {
     }
   };
 
-  // Helper function to get personal details
-  const getPersonalDetail = (field) => {
-    return profileData?.["Personal Detail"]?.[0]?.[field] || "";
-  };
-
-  // Helper function to get address details
-  const getAddressDetail = (field) => {
-    return profileData?.["Address Details"]?.[0]?.[field] || "";
-  };
-
-  // Helper function to get bank details
-  const getBankDetail = (field) => {
-    return profileData?.["Bank Details"]?.[0]?.[field] || "";
-  };
-
-  // Helper function to get demat details
-  const getDematDetail = (field) => {
-    return profileData?.["Demat Details"]?.[0]?.[field] || "";
-  };
-
   // Helper function to get user initials
   const getUserInitials = () => {
-    const name = getPersonalDetail("Name");
+    if (!profileData) return "";
+
+    // Try to get name from any available section
+    let name = "";
+    for (const sectionName in profileData) {
+      if (profileData[sectionName] && Array.isArray(profileData[sectionName]) && profileData[sectionName].length > 0) {
+        const sectionData = profileData[sectionName][0];
+        if (sectionData.Name) {
+          name = sectionData.Name;
+          break;
+        }
+      }
+    }
+
     if (!name) return "";
 
     const nameParts = name.split(" ");
@@ -81,6 +76,47 @@ export default function UserMetaCard() {
       return nameParts[0][0].toUpperCase();
     }
     return "";
+  };
+
+  // Function to render a single section box dynamically
+  const renderSectionBox = (sectionName, sectionData) => {
+    if (!sectionData || !Array.isArray(sectionData) || sectionData.length === 0) {
+      return null;
+    }
+
+    const data = sectionData[0]; // Get the first item from the array
+    const fields = Object.keys(data);
+
+    return (
+      <div key={sectionName} className="p-5 border rounded-2xl lg:p-6" style={cardStyle}>
+        <h4 className="mb-4 text-lg font-semibold" style={textStyle}>{sectionName}</h4>
+        <div className="space-y-3">
+          {fields.map((field) => {
+            const value = data[field];
+
+            return (
+              <div key={field} className="flex justify-between">
+                <span className="text-sm" style={secondaryTextStyle}>{field}</span>
+                <span className="text-sm font-medium text-right" style={textStyle}>
+                  {value || '-'}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  // Get available sections from profileData
+  const getAvailableSections = () => {
+    if (!profileData) return [];
+
+    return Object.keys(profileData).filter(sectionName =>
+      profileData[sectionName] &&
+      Array.isArray(profileData[sectionName]) &&
+      profileData[sectionName].length > 0
+    );
   };
 
   const handleSave = () => {
@@ -111,6 +147,53 @@ export default function UserMetaCard() {
     color: colors.buttonText,
   };
 
+  // Helper function to get display name from any section
+  const getDisplayName = () => {
+    if (!profileData) return "";
+
+    for (const sectionName in profileData) {
+      if (profileData[sectionName] && Array.isArray(profileData[sectionName]) && profileData[sectionName].length > 0) {
+        const sectionData = profileData[sectionName][0];
+        if (sectionData.Name) {
+          return sectionData.Name;
+        }
+      }
+    }
+    return "";
+  };
+
+  // Helper function to get display code from any section
+  const getDisplayCode = () => {
+    if (!profileData) return "";
+
+    for (const sectionName in profileData) {
+      if (profileData[sectionName] && Array.isArray(profileData[sectionName]) && profileData[sectionName].length > 0) {
+        const sectionData = profileData[sectionName][0];
+        if (sectionData.Code) {
+          return sectionData.Code;
+        }
+      }
+    }
+    return "";
+  };
+
+  // Helper function to get location info
+  const getLocationInfo = () => {
+    if (!profileData) return "";
+
+    for (const sectionName in profileData) {
+      if (profileData[sectionName] && Array.isArray(profileData[sectionName]) && profileData[sectionName].length > 0) {
+        const sectionData = profileData[sectionName][0];
+        if (sectionData.City || sectionData.Country) {
+          const city = sectionData.City || "";
+          const country = sectionData.Country || "";
+          return [city, country].filter(Boolean).join(", ");
+        }
+      }
+    }
+    return "";
+  };
+
   return (
     <>
       <div className="p-5 border rounded-2xl lg:p-6" style={cardStyle}>
@@ -137,15 +220,15 @@ export default function UserMetaCard() {
               </div>
               <div className="order-3 xl:order-2">
                 <h4 className="mb-2 text-lg font-semibold text-center xl:text-left" style={textStyle}>
-                  {getPersonalDetail("Name")}
+                  {getDisplayName()}
                 </h4>
                 <div className="flex flex-col items-center gap-1 text-center xl:flex-row xl:gap-3 xl:text-left">
                   <p className="text-sm" style={secondaryTextStyle}>
-                    {getPersonalDetail("Code")}
+                    {getDisplayCode()}
                   </p>
                   <div className="hidden h-3.5 w-px xl:block" style={{ backgroundColor: colors.color3 }}></div>
                   <p className="text-sm" style={secondaryTextStyle}>
-                    {getAddressDetail("City")}, {getAddressDetail("Country")}
+                    {getLocationInfo()}
                   </p>
                 </div>
               </div>
@@ -158,103 +241,7 @@ export default function UserMetaCard() {
       {/* Add profile details sections */}
       {!isLoading && profileData && (
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Personal Details */}
-          <div className="p-5 border rounded-2xl lg:p-6" style={cardStyle}>
-            <h4 className="mb-4 text-lg font-semibold" style={textStyle}>Personal Details</h4>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-sm" style={secondaryTextStyle}>Code</span>
-                <span className="text-sm font-medium" style={textStyle}>{getPersonalDetail("Code")}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm" style={secondaryTextStyle}>Name</span>
-                <span className="text-sm font-medium" style={textStyle}>{getPersonalDetail("Name")}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm" style={secondaryTextStyle}>Mobile</span>
-                <span className="text-sm font-medium" style={textStyle}>{getPersonalDetail("Mobile")}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm" style={secondaryTextStyle}>Email</span>
-                <span className="text-sm font-medium" style={textStyle}>{getPersonalDetail("Email")}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm" style={secondaryTextStyle}>Gender</span>
-                <span className="text-sm font-medium" style={textStyle}>{getPersonalDetail("Gender")}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm" style={secondaryTextStyle}>PAN</span>
-                <span className="text-sm font-medium" style={textStyle}>{getPersonalDetail("PAN")}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Address Details */}
-          <div className="p-5 border rounded-2xl lg:p-6" style={cardStyle}>
-            <h4 className="mb-4 text-lg font-semibold" style={textStyle}>Address Details</h4>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-sm" style={secondaryTextStyle}>Address</span>
-                <span className="text-sm font-medium text-right" style={textStyle}>
-                  {getAddressDetail("Address1")}, {getAddressDetail("Address2")}, {getAddressDetail("Address3")}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm" style={secondaryTextStyle}>City</span>
-                <span className="text-sm font-medium" style={textStyle}>{getAddressDetail("City")}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm" style={secondaryTextStyle}>State</span>
-                <span className="text-sm font-medium" style={textStyle}>{getAddressDetail("State")}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm" style={secondaryTextStyle}>Country</span>
-                <span className="text-sm font-medium" style={textStyle}>{getAddressDetail("Country")}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Bank Details */}
-          <div className="p-5 border rounded-2xl lg:p-6" style={cardStyle}>
-            <h4 className="mb-4 text-lg font-semibold" style={textStyle}>Bank Details</h4>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-sm" style={secondaryTextStyle}>Bank Name</span>
-                <span className="text-sm font-medium" style={textStyle}>{getBankDetail("Name")}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm" style={secondaryTextStyle}>Account No</span>
-                <span className="text-sm font-medium" style={textStyle}>{getBankDetail("Account No")}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm" style={secondaryTextStyle}>IFSC</span>
-                <span className="text-sm font-medium" style={textStyle}>{getBankDetail("IFSC")}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm" style={secondaryTextStyle}>MICR</span>
-                <span className="text-sm font-medium" style={textStyle}>{getBankDetail("MICR")}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm" style={secondaryTextStyle}>Account Type</span>
-                <span className="text-sm font-medium" style={textStyle}>{getBankDetail("AccountType")}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Demat Details */}
-          <div className="p-5 border rounded-2xl lg:p-6" style={cardStyle}>
-            <h4 className="mb-4 text-lg font-semibold" style={textStyle}>Demat Details</h4>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-sm" style={secondaryTextStyle}>DP ID</span>
-                <span className="text-sm font-medium" style={textStyle}>{getDematDetail("DP ID")}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm" style={secondaryTextStyle}>DP Account No</span>
-                <span className="text-sm font-medium" style={textStyle}>{getDematDetail("DP Account No")}</span>
-              </div>
-            </div>
-          </div>
+          {getAvailableSections().map(sectionName => renderSectionBox(sectionName, profileData[sectionName]))}
         </div>
       )}
     </>

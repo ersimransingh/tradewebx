@@ -10,6 +10,7 @@ import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import { BASE_URL, PATH_URL } from '@/utils/constants';
 import { handleViewFile } from "@/utils/helper";
+import apiService from "@/utils/apiService";
 
 const DropdownField: React.FC<{
     field: FormField;
@@ -108,11 +109,11 @@ const DropdownField: React.FC<{
                     onMenuScrollToBottom={() => onMenuScrollToBottom(field)}
                     onFocus={() => handleDropDownChange(field)}
                     placeholder={
-                    formValues[field.wKey] !== undefined && 
-                    formValues[field.wKey] !== null && 
-                    String(formValues[field.wKey]).trim() !== "" 
-                      ? String(formValues[field.wKey]) 
-                      : "Select..."
+                        formValues[field.wKey] !== undefined &&
+                            formValues[field.wKey] !== null &&
+                            String(formValues[field.wKey]).trim() !== ""
+                            ? String(formValues[field.wKey])
+                            : "Select..."
                     }
                     className="react-select-container"
                     classNamePrefix="react-select"
@@ -241,12 +242,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
         </dsXml>`;
 
         try {
-            const response = await axios.post(BASE_URL + PATH_URL, xmlData, {
-                headers: {
-                    'Content-Type': 'application/xml',
-                    'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]}`
-                }
-            });
+            const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
             // calling the function to  handle the flags
             const columnData = response?.data?.data?.rs0[0]?.Column1
             if (columnData) {
@@ -261,7 +257,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
 
 
     // this function is used to show the respected flags according to the response from the API
-    const handleValidationApiResponse = (response:any, currFieldName:any, field:any) => {
+    const handleValidationApiResponse = (response: any, currFieldName: any, field: any) => {
         if (!response?.trim().startsWith("<root>")) {
             response = `<root>${response}</root>`;
         }
@@ -312,12 +308,12 @@ const EntryForm: React.FC<EntryFormProps> = ({
                 //         setValidationModal({ isOpen: false, message: '', type: 'S' });
                 //     }
                 // });
-                 dynamicTags.forEach((tag) => {
-                            const tagName = tag.tagName;
-                            const tagValue = tag.textContent;
-                            setFormValues(prev => ({ ...prev, [tagName]: tagValue }));
-                            setFieldErrors(prev => ({ ...prev, [tagName]: '' })); // Clear error
-                            });
+                dynamicTags.forEach((tag) => {
+                    const tagName = tag.tagName;
+                    const tagValue = tag.textContent;
+                    setFormValues(prev => ({ ...prev, [tagName]: tagValue }));
+                    setFieldErrors(prev => ({ ...prev, [tagName]: '' })); // Clear error
+                });
                 break;
 
             case 'E':
@@ -335,7 +331,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
 
                     if (tagFlag === 'true' || tagFlag === 'false') {
                         setFormValues(prev => ({ ...prev, [tagName]: "" }));
-                        console.log("check value---->",isDisabled);
+                        console.log("check value---->", isDisabled);
                         if (isDisabled) {
                             // handleBlur(field);
                             setFieldErrors(prev => ({ ...prev, [tagName]: '' })); // Clear error for disabled fields
@@ -499,8 +495,8 @@ const EntryForm: React.FC<EntryFormProps> = ({
                                     type="button"
                                     onClick={() =>
                                         handleViewFile(
-                                          formValues[field.wKey],
-                                          field.FieldType?.split(',')[0] || 'file' // optional second param for extension
+                                            formValues[field.wKey],
+                                            field.FieldType?.split(',')[0] || 'file' // optional second param for extension
                                         )
                                     }
                                     className="text-blue-600 underline"

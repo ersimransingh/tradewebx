@@ -11,6 +11,7 @@ import CaseConfirmationModal from './Modals/CaseConfirmationModal';
 import { ApiResponse, EntryFormModalProps, FormField, ChildEntryModalProps, TabData } from '@/types';
 import EntryForm from './component-forms/EntryForm';
 import { handleValidationForDisabledField } from './component-forms/form-helper';
+import apiService from '@/utils/apiService';
 
 
 
@@ -274,12 +275,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                 <J_Api>${jApi}</J_Api>
             </dsXml>`;
 
-            const response = await axios.post(BASE_URL + PATH_URL, xmlData, {
-                headers: {
-                    'Content-Type': 'application/xml',
-                    'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]}`
-                }
-            });
+            const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
 
             if (response?.data?.data?.rs0) {
                 const allTabs: TabData[] = response.data.data.rs0;
@@ -419,12 +415,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                 <J_Api>${jApi}</J_Api>
             </dsXml>`;
 
-            const response = await axios.post(BASE_URL + PATH_URL, xmlData, {
-                headers: {
-                    'Content-Type': 'application/xml',
-                    'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]}`
-                }
-            });
+            const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
 
             const options = response.data?.data?.rs0?.map((item: any) => ({
                 label: item[field.wDropDownKey?.key || 'DisplayName'],
@@ -470,12 +461,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                 <J_Api>${jApi}</J_Api>
             </dsXml>`;
 
-            const response = await axios.post(BASE_URL + PATH_URL, xmlData, {
-                headers: {
-                    'Content-Type': 'application/xml',
-                    'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]}`
-                }
-            });
+            const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
 
             const options = response.data?.data?.rs0?.map((item: any) => ({
                 label: item[field.wDropDownKey?.key || 'DisplayName'],
@@ -530,12 +516,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                 <J_Api>${jApi}</J_Api>
             </dsXml>`;
 
-            const response = await axios.post(BASE_URL + PATH_URL, xmlData, {
-                headers: {
-                    'Content-Type': 'application/xml',
-                    'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]}`
-                }
-            });
+            const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
 
             const options = response.data?.data?.rs0?.map((item: any) => ({
                 label: item[field.wDropDownKey?.key || 'DisplayName'],
@@ -640,12 +621,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
             <J_Api>${jApi}</J_Api>
         </dsXml>`;
 
-            const response = await axios.post(BASE_URL + PATH_URL, xmlData, {
-                headers: {
-                    'Content-Type': 'application/xml',
-                    'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]}`
-                }
-            });
+            const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
 
             let formData = response?.data?.data?.rs0 || [];
             if (viewMode) {
@@ -784,12 +760,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
             <J_Api>${jApi}</J_Api>
         </dsXml>`;
 
-            const response = await axios.post(BASE_URL + PATH_URL, xmlData, {
-                headers: {
-                    'Content-Type': 'application/xml',
-                    'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]}`
-                }
-            });
+            const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
 
             let formData = response?.data?.data?.rs0 || [];
             if (viewMode) {
@@ -943,12 +914,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                 <J_Api>${jApi}</J_Api>
             </dsXml>`;
 
-            const response = await axios.post(BASE_URL + PATH_URL, xmlData, {
-                headers: {
-                    'Content-Type': 'application/xml',
-                    'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]}`
-                }
-            });
+            const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
             if (response?.data?.success) {
                 fetchMasterEntryData(masterFormValues)
                 setIsConfirmationModalOpen(false);
@@ -1157,18 +1123,17 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
     </dsXml>`;
 
         try {
-            const response = await axios.post<ApiResponse>(BASE_URL + PATH_URL, xmlData, {
-                headers: {
-                    'Content-Type': 'application/xml',
-                    'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]}`
-                }
-            });
+            const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
 
             if (response?.data?.success) {
                 onChildFormSubmit();
                 toast.success('Form submitted successfully!');
                 setIsFormSubmit(false);
                 resetParentForm();
+                if(response?.data?.message){
+                    const messageTxtPresent = response?.data?.message
+                    toast.success(messageTxtPresent)
+                }
             } else {
                 const message = response?.data?.message.replace(/<\/?Message>/g, '');
                 toast.warning(message);
@@ -1316,12 +1281,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                 <J_Api>${jApi}</J_Api>
             </dsXml>`;
 
-            const response = await axios.post<ApiResponse>(BASE_URL + PATH_URL, xmlData, {
-                headers: {
-                    'Content-Type': 'application/xml',
-                    'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]}`
-                }
-            });
+            const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
 
             if (response?.data?.success) {
                 toast.success('Tab form submitted successfully!');

@@ -14,8 +14,10 @@ import FileUploadWithCrop from './formComponents/FileUploadWithCrop';
 import { handleViewFile } from "@/utils/helper";
 import OtpVerificationModal from "./formComponents/OtpVerificationComponent";
 import LoaderOverlay from "../Loaders/LoadingSpinner";
+import CustomDatePicker from "./formComponents/CustomDatePicker";
 import Flatpickr from 'react-flatpickr';
 import { FaCalendar } from "react-icons/fa";
+import apiService from "@/utils/apiService";
 
 
 const DropdownField: React.FC<{
@@ -256,12 +258,7 @@ const EkycEntryForm: React.FC<EntryFormProps> = ({
         </dsXml>`;
 
         try {
-            const response = await axios.post(BASE_URL + PATH_URL, xmlData, {
-                headers: {
-                    'Content-Type': 'application/xml',
-                    'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]}`
-                }
-            });
+            const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
 
             const columnData = response?.data?.data?.rs0?.[0]?.Column1;
             if (columnData) {
@@ -341,12 +338,7 @@ const EkycEntryForm: React.FC<EntryFormProps> = ({
                 setIsThirdPartyLoading(true);
             }
 
-            const response = await axios.post(BASE_URL + PATH_URL, xmlData, {
-                headers: {
-                    'Content-Type': 'application/xml',
-                    'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]}`
-                }
-            });
+            const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
 
             // Extract and parse the XML from response
             const columnData = response?.data?.data?.rs0?.[0]?.Column1;
@@ -361,7 +353,7 @@ const EkycEntryForm: React.FC<EntryFormProps> = ({
                     const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
                     const urlNode = xmlDoc.getElementsByTagName('url')[0];
                     const url = urlNode?.textContent;
-            
+
                     if (url && field.GetResponseFlag === "true") {
                         window.open(url, '_blank');
                         toast.success('Redirecting to third party URL...');
@@ -375,7 +367,7 @@ const EkycEntryForm: React.FC<EntryFormProps> = ({
                     console.error('Error parsing ThirdPartyAPI XML:', err);
                 }
             }
-            
+
         } catch (error) {
             console.error('ThirdPartyAPI error:', error);
             toast.error('ThirdPartyAPI error!');
@@ -467,15 +459,7 @@ const EkycEntryForm: React.FC<EntryFormProps> = ({
                     break;
 
                 case 'S':
-                    setValidationModal({
-                        isOpen: true,
-                        message: message || 'Please press ok to proceed',
-                        type: 'S',
-                        callback: () => {
-                            applyTagUpdates(true);
-                            setValidationModal({ isOpen: false, message: '', type: 'S' });
-                        }
-                    });
+                    applyTagUpdates(true);
                     break;
 
                 case 'E':
@@ -549,36 +533,31 @@ const EkycEntryForm: React.FC<EntryFormProps> = ({
                             {field.label}
                             {isRequired && <span className="text-red-500 ml-1">*</span>}
                         </label>
-                        <div className="relative">
-                            <Flatpickr
-                                value={formValues[field.wKey] ? moment(formValues[field.wKey], 'YYYYMMDD').toDate() : null}
-                                onChange={([date]) => handleInputChange(field.wKey, date)}
-                                options={{
-                                    dateFormat: 'd/m/Y',
-                                    allowInput: true,
-                                    clickOpens: isEnabled,
-                                }}
-                                className={`
-                        w-full px-3 py-1 pr-10 border rounded-md
-                        focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500
-                        ${!isEnabled ? 'border-gray-300 bg-[#f2f2f0]' : hasError ? 'border-red-500' : 'border-gray-700'}
-                    `}
-                                style={{
-                                    backgroundColor: !isEnabled ? "#f2f2f0" : colors.textInputBackground,
-                                    color: isJustUpdated ? "#22c55e" : colors.textInputText
-                                }}
-                                placeholder="Select Date"
-                                onClose={() => handleBlur(field)}
-                                disabled={!isEnabled}
-                            />
-                            <FaCalendar
-                                className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none"
-                                style={{
-                                    color: !isEnabled ? '#9ca3af' : colors.textInputText,
-                                    fontSize: '14px'
-                                }}
-                            />
-                        </div>
+                        <CustomDatePicker
+                            selected={formValues[field.wKey] ? moment(formValues[field.wKey], 'YYYYMMDD').toDate() : null}
+                            onChange={(date) => {
+                                // Convert the selected date to YYYYMMDD format before saving
+                                const formattedDate = date ? moment(date).format('YYYYMMDD') : null;
+                                handleInputChange(field.wKey, formattedDate);
+                            }}
+                            disabled={!isEnabled}
+                            className={`
+                    w-full px-3 py-1 border rounded-md
+                    focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500
+                    ${!isEnabled
+                                    ? 'border-gray-300 bg-[#f2f2f0]'
+                                    : fieldErrors[field.wKey]
+                                        ? 'border-red-500'
+                                        : 'border-gray-700'
+                                }
+                    ${colors.textInputBackground ? `bg-[${colors.textInputBackground}]` : ''}
+                    ${isJustUpdated ? 'text-green-500' : ''}
+                `}
+                            onBlur={() => handleBlur(field)}
+                            placeholder="Select Date"
+                            id={field.wKey}
+                            name={field.wKey}
+                        />
                         {hasError && (
                             <span className="text-red-500 text-sm">{fieldErrors[field.wKey]}</span>
                         )}

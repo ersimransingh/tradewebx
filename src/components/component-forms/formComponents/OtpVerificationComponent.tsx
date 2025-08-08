@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import axios from 'axios';
 import { BASE_URL, PATH_URL } from '@/utils/constants';
+import apiService from '@/utils/apiService';
 
 interface OtpVerificationModalProps {
   isOpen: boolean;
@@ -115,12 +116,7 @@ const OtpVerificationModal: React.FC<OtpVerificationModalProps> = ({
         <X_Filter></X_Filter>
       </dsXml>`;
 
-      const response = await axios.post(BASE_URL + PATH_URL, xmlData, {
-        headers: {
-          'Content-Type': 'application/xml',
-          'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]}`
-        }
-      });
+      const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
       const responseData = response.data?.data?.rs0?.[0]?.Column1;
       if (responseData?.includes("<Flag>S</Flag>")) {
         toast.success(`OTP sent to ${requiresOldVerification ? `old ${type} ${oldValue}` : ''} ${requiresOldVerification && requiresNewVerification ? 'and ' : ''} ${requiresNewVerification ? `new ${type} ${newValue}` : ''}`);
@@ -202,12 +198,7 @@ const OtpVerificationModal: React.FC<OtpVerificationModalProps> = ({
         <X_Filter></X_Filter>
       </dsXml>`;
 
-      const response = await axios.post(BASE_URL + PATH_URL, xmlData, {
-        headers: {
-          'Content-Type': 'application/xml',
-          'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]}`
-        }
-      });
+      const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
       const responseData = response.data?.data?.rs0?.[0]?.Column1;
       if (responseData?.includes("<Flag>S</Flag>")) {
         const message = extractMessageFromResponse(responseData);
@@ -296,12 +287,7 @@ const OtpVerificationModal: React.FC<OtpVerificationModalProps> = ({
         <X_GFilter></X_GFilter>
       </dsXml>`;
 
-      const response = await axios.post(BASE_URL + PATH_URL, xmlData, {
-        headers: {
-          'Content-Type': 'application/xml',
-          'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]}`
-        }
-      });
+      const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
 
       const responseData = response.data?.data?.rs0?.[0]?.Column1;
       if (responseData?.includes("<Flag>S</Flag>")) {

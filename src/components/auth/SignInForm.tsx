@@ -2,18 +2,51 @@
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import Button from "@/components/ui/button/Button";
-import { EyeCloseIcon, EyeIcon } from "@/icons";
+// Eye icons as inline components
+const EyeIcon = () => (
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 20 20"
+    fill="currentColor"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M10.0002 13.8619C7.23361 13.8619 4.86803 12.1372 3.92328 9.70241C4.86804 7.26761 7.23361 5.54297 10.0002 5.54297C12.7667 5.54297 15.1323 7.26762 16.0771 9.70243C15.1323 12.1372 12.7667 13.8619 10.0002 13.8619ZM10.0002 4.04297C6.48191 4.04297 3.49489 6.30917 2.4155 9.4593C2.3615 9.61687 2.3615 9.78794 2.41549 9.94552C3.49488 13.0957 6.48191 15.3619 10.0002 15.3619C13.5184 15.3619 16.5055 13.0957 17.5849 9.94555C17.6389 9.78797 17.6389 9.6169 17.5849 9.45932C16.5055 6.30919 13.5184 4.04297 10.0002 4.04297ZM9.99151 7.84413C8.96527 7.84413 8.13333 8.67606 8.13333 9.70231C8.13333 10.7286 8.96527 11.5605 9.99151 11.5605H10.0064C11.0326 11.5605 11.8646 10.7286 11.8646 9.70231C11.8646 8.67606 11.0326 7.84413 10.0064 7.84413H9.99151Z"
+    />
+  </svg>
+);
+
+const EyeCloseIcon = () => (
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 20 20"
+    fill="currentColor"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M4.63803 3.57709C4.34513 3.2842 3.87026 3.2842 3.57737 3.57709C3.28447 3.86999 3.28447 4.34486 3.57737 4.63775L4.85323 5.91362C3.74609 6.84199 2.89363 8.06395 2.4155 9.45936C2.3615 9.61694 2.3615 9.78801 2.41549 9.94558C3.49488 13.0957 6.48191 15.3619 10.0002 15.3619C11.255 15.3619 12.4422 15.0737 13.4994 14.5598L15.3625 16.4229C15.6554 16.7158 16.1302 16.7158 16.4231 16.4229C16.716 16.13 16.716 15.6551 16.4231 15.3622L4.63803 3.57709ZM12.3608 13.4212L10.4475 11.5079C10.3061 11.5423 10.1584 11.5606 10.0064 11.5606H9.99151C8.96527 11.5606 8.13333 10.7286 8.13333 9.70237C8.13333 9.5461 8.15262 9.39434 8.18895 9.24933L5.91885 6.97923C5.03505 7.69015 4.34057 8.62704 3.92328 9.70247C4.86803 12.1373 7.23361 13.8619 10.0002 13.8619C10.8326 13.8619 11.6287 13.7058 12.3608 13.4212ZM16.0771 9.70249C15.7843 10.4569 15.3552 11.1432 14.8199 11.7311L15.8813 12.7925C16.6329 11.9813 17.2187 11.0143 17.5849 9.94561C17.6389 9.78803 17.6389 9.61696 17.5849 9.45938C16.5055 6.30925 13.5184 4.04303 10.0002 4.04303C9.13525 4.04303 8.30244 4.17999 7.52218 4.43338L8.75139 5.66259C9.1556 5.58413 9.57311 5.54303 10.0002 5.54303C12.7667 5.54303 15.1323 7.26768 16.0771 9.70249Z"
+    />
+  </svg>
+);
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import axios from 'axios';
 import { useDispatch, useSelector } from 'react-redux';
 import { setAuthData, setError as setAuthError, setLoading } from '@/redux/features/authSlice';
-import { BASE_URL, LOGIN_AS, PRODUCT, LOGIN_KEY, LOGIN_URL, BASE_PATH_FRONT_END, OTP_VERIFICATION_URL, VERSION, ACTION_NAME } from "@/utils/constants";
+import { BASE_URL, LOGIN_AS, PRODUCT, LOGIN_KEY, LOGIN_URL, BASE_PATH_FRONT_END, OTP_VERIFICATION_URL, VERSION, ACTION_NAME, ENABLE_CAPTCHA } from "@/utils/constants";
 import Image from "next/image";
 import { RootState } from "@/redux/store";
 import { clearAuthStorage } from '@/utils/auth';
 import Link from "next/link";
 import CryptoJS from 'crypto-js';
+import { isAllowedHttpHost, SECURITY_CONFIG } from '@/utils/securityConfig';
+import CaptchaComponent from './CaptchaComponent';
 
 // Password encryption key
 const passKey = "TradeWebX1234567";
@@ -31,9 +64,6 @@ function Encryption(data: string) {
     });
   return encrypted.toString();
 }
-
-// Default options to use if JSON file is not available
-const DEFAULT_LOGIN_OPTIONS = [];
 
 // Interface for version updates
 interface VersionItem {
@@ -64,9 +94,9 @@ const VersionUpdateModal = ({
   // Check if there are any mandatory updates
   const hasMandatoryUpdates = updates.some(update => update.Status === 'M');
 
-  // Determine if user has update rights based on loginAs value
-  // Client (loginAs: "C") cannot update, Branch (loginAs: "B") can update
-  const canUpdate = userType !== "C"; // Only Client (loginAs: "C") cannot update
+  // Determine if user has update rights based on UserType from login response
+  // "user" = normal user (cannot update), anything else = admin (can update)
+  const canUpdate = userType.toLowerCase() !== "user";
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-[300]" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
@@ -84,7 +114,7 @@ const VersionUpdateModal = ({
               </svg>
               <div>
                 <strong>Access Restricted:</strong>
-                <p className="mt-1">You cannot login as Client until the mandatory system update is completed. Please contact your branch administrator to update the system, or login as Branch if you have the required permissions.</p>
+                <p className="mt-1">You cannot login as User until the mandatory system update is completed. Please contact your administrator to update the system.</p>
               </div>
             </div>
           </div>
@@ -130,7 +160,7 @@ const VersionUpdateModal = ({
         </div>
 
         <div className="flex justify-end gap-4">
-          {/* For clients with mandatory updates: Only OK button that closes modal and prevents login */}
+          {/* For users with mandatory updates: Only OK button that closes modal and prevents login */}
           {hasMandatoryUpdates && !canUpdate ? (
             <button
               onClick={onClose}
@@ -154,7 +184,7 @@ const VersionUpdateModal = ({
                     : 'bg-gray-300 hover:bg-gray-400 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200'
                     }`}
                 >
-                  {userType === "C" ? "OK" : "Skip for Now"}
+                  {userType.toLowerCase() === "user" ? "OK" : "Skip for Now"}
                 </button>
               )}
 
@@ -198,12 +228,7 @@ export default function SignInForm() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [loginAsOptions, setLoginAsOptions] = useState(DEFAULT_LOGIN_OPTIONS);
   const { companyInfo, status } = useSelector((state: RootState) => state.common);
-  // Initialize with first option's values
-  const [selectedName, setSelectedName] = useState("");
-  const [selectedLoginAs, setSelectedLoginAs] = useState("");
-  const [selectedLoginKey, setSelectedLoginKey] = useState("");
 
   // State for version update modal
   const [showVersionModal, setShowVersionModal] = useState(false);
@@ -211,20 +236,18 @@ export default function SignInForm() {
   const [version, setVersion] = useState("2.0.0.0"); // Default version
   const [loginData, setLoginData] = useState<any>(null); // Store login data for navigation after version check
   const [isUpdating, setIsUpdating] = useState(false); // Loading state for update button
+  const [currentUserType, setCurrentUserType] = useState<string>(""); // Store user type from login response
+  const [isCaptchaValid, setIsCaptchaValid] = useState(false); // CAPTCHA validation state
 
   // Check version function inside component using useCallback to memoize
   const checkVersion = useCallback(async () => {
     try {
-      // Get login as value
-      const loginAs = loginAsOptions.length > 0 ? selectedLoginAs : LOGIN_AS;
-
       const xmlData = `
         <dsXml>
           <J_Ui>"ActionName":"${ACTION_NAME}","Option":"CheckVersion","RequestFrom":"W","ReportDisplay":"A"</J_Ui>
           <Sql/>
           <X_Filter>
               <ApplicationName>${ACTION_NAME}</ApplicationName>
-              <LoginAs>${loginAs}</LoginAs>
               <Product>${PRODUCT}</Product>
               <Version>${VERSION}</Version>
           </X_Filter>
@@ -247,41 +270,19 @@ export default function SignInForm() {
       console.error('Version check error:', error);
       throw error;
     }
-  }, [loginAsOptions, selectedLoginAs, version]);
-
-  // Load login options from JSON file with fallback
-  useEffect(() => {
-    const loadLoginOptions = async () => {
-      try {
-        // Dynamically import the JSON file
-        const options = await import("../../../loginOptions.json")
-          .then(module => module.default)
-          .catch(() => {
-            console.log("Login options JSON file not found, using defaults");
-            return DEFAULT_LOGIN_OPTIONS;
-          });
-
-        setLoginAsOptions(options);
-
-        // Set initial selected values from the first option
-        if (options && options.length > 0) {
-          setSelectedName(options[0].name || "");
-          setSelectedLoginAs(options[0].loginAs || "");
-          setSelectedLoginKey(options[0].key || "");
-        }
-      } catch (error) {
-        console.error("Error loading login options:", error);
-        // Keep using the default options that were set initially
-      }
-    };
-
-    loadLoginOptions();
-  }, []);
+  }, [version]);
 
   // Function to proceed with navigation after version check
   const proceedAfterVersionCheck = useCallback((dataToUse?: any, forceLogout = false) => {
     const currentLoginData = dataToUse || loginData;
     if (!currentLoginData) return;
+
+    // Debug: Log the navigation flow
+    console.log('proceedAfterVersionCheck called:', {
+      loginType: currentLoginData.LoginType,
+      forceLogout,
+      hasTempToken: !!localStorage.getItem('temp_token')
+    });
 
     // If forceLogout is true (mandatory update for non-admin users), clear everything and stay on login
     if (forceLogout) {
@@ -292,17 +293,21 @@ export default function SignInForm() {
       // Reset form
       setUserId("");
       setPassword("");
-      setError("System update required. Please contact your branch administrator to update the system.");
-      dispatch(setAuthError("System update required. Please contact your branch administrator to update the system."));
+      setError("System update required. Please contact your administrator to update the system.");
+      dispatch(setAuthError("System update required. Please contact your administrator to update the system."));
       return;
     }
 
     if (currentLoginData.LoginType === "2FA") {
+      console.log('Redirecting to OTP verification');
       router.push('/otp-verification');
     } else {
-      // Set cookie
-      document.cookie = `auth_token=${currentLoginData.token}; path=/; expires=${new Date(currentLoginData.tokenExpireTime).toUTCString()}`;
+      // Set localStorage only
+      localStorage.setItem('auth_token', currentLoginData.token);
+      localStorage.setItem('refreshToken', currentLoginData.refreshToken);
+      localStorage.setItem('tokenExpireTime', currentLoginData.tokenExpireTime);
       localStorage.removeItem('temp_token');
+      console.log('Redirecting to dashboard');
       router.push('/dashboard');
     }
   }, [loginData, router, dispatch]);
@@ -319,13 +324,19 @@ export default function SignInForm() {
         setError(errorMessage);
         dispatch(setAuthError(errorMessage));
 
-        // Clear login data and reset form
-        clearAuthStorage();
-
-        // Reset form state
-        setUserId("");
-        setPassword("");
-        setLoginData(null);
+        // Only clear auth storage for non-2FA users
+        // For 2FA users, keep the temp_token so they can proceed to OTP verification
+        if (currentLoginData.LoginType !== "2FA") {
+          clearAuthStorage();
+          // Reset form state
+          setUserId("");
+          setPassword("");
+          setLoginData(null);
+        } else {
+          // For 2FA users, allow them to proceed even if version check fails
+          console.log('Version check failed for 2FA user, but allowing to proceed to OTP verification');
+          proceedAfterVersionCheck(currentLoginData);
+        }
         return; // Don't proceed to next page
       }
 
@@ -343,13 +354,19 @@ export default function SignInForm() {
       setError(errorMessage);
       dispatch(setAuthError(errorMessage));
 
-      // Clear login data and reset form
-      clearAuthStorage();
-
-      // Reset form state
-      setUserId("");
-      setPassword("");
-      setLoginData(null);
+      // Only clear auth storage for non-2FA users
+      // For 2FA users, keep the temp_token so they can proceed to OTP verification
+      if (currentLoginData.LoginType !== "2FA") {
+        clearAuthStorage();
+        // Reset form state
+        setUserId("");
+        setPassword("");
+        setLoginData(null);
+      } else {
+        // For 2FA users, allow them to proceed even if version check fails
+        console.log('Version check error for 2FA user, but allowing to proceed to OTP verification');
+        proceedAfterVersionCheck(currentLoginData);
+      }
     }
   }, [checkVersion, proceedAfterVersionCheck, dispatch]);
 
@@ -359,16 +376,12 @@ export default function SignInForm() {
     setError(""); // Clear any previous errors
 
     try {
-      // Create XML with the correct login as value
-      const loginAs = loginAsOptions.length > 0 ? selectedLoginAs : LOGIN_AS;
-
       const xmlData = `
         <dsXml>
           <J_Ui>"ActionName":"${ACTION_NAME}","Option":"UpdateVersion","RequestFrom":"W","ReportDisplay":"A"</J_Ui>
           <Sql/>
           <X_Filter>
               <ApplicationName>TradeWeb</ApplicationName>
-              <LoginAs>${loginAs}</LoginAs>
               <Product>${PRODUCT}</Product>
               <Version>${VERSION}</Version>
           </X_Filter>
@@ -421,25 +434,57 @@ export default function SignInForm() {
         proceedAfterVersionCheck(loginData);
       }
     }
-  }, [loginAsOptions, selectedLoginAs, version, loginData, proceedAfterVersionCheck, versionUpdates]);
-
-  const handleLoginAsChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedIndex = e.target.selectedIndex;
-    const selectedOption = loginAsOptions[selectedIndex];
-    setSelectedName(selectedOption?.name || "");
-    setSelectedLoginAs(selectedOption?.loginAs || "");
-    setSelectedLoginKey(selectedOption?.key || "");
-  };
+  }, [version, loginData, proceedAfterVersionCheck, versionUpdates]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // CAPTCHA validation
+    if (ENABLE_CAPTCHA && !isCaptchaValid) {
+      setError('Please complete the security verification');
+      dispatch(setAuthError('Please complete the security verification'));
+      return;
+    }
+
     setIsLoading(true);
     dispatch(setLoading(true));
     dispatch(setAuthError(null));
 
-    // Use fallback values if no login options are available
-    const loginKey = loginAsOptions.length > 0 ? selectedLoginKey : LOGIN_KEY;
-    const loginAsValue = loginAsOptions.length > 0 ? selectedLoginAs : LOGIN_AS;
+    // Check if development mode is enabled
+    const isDevMode = process.env.NEXT_DEVELOPMENT_MODE === 'true';
+
+    // Security: Check for HTTPS in production (allow localhost and testing URLs)
+    // Skip HTTPS check if development mode is enabled
+    if (!isDevMode && typeof window !== 'undefined' && window.location.protocol !== 'https:' && process.env.NODE_ENV === 'production') {
+      const hostname = window.location.hostname;
+
+      if (!isAllowedHttpHost(hostname)) {
+        setError('Security Error: HTTPS required for login');
+        dispatch(setAuthError('Security Error: HTTPS required for login'));
+        setIsLoading(false);
+        dispatch(setLoading(false));
+        return;
+      }
+    }
+
+    // Security: Rate limiting check
+    const loginAttempts = localStorage.getItem('login_attempts') || '0';
+    const attemptCount = parseInt(loginAttempts);
+    const lastAttemptTime = localStorage.getItem('last_login_attempt') || '0';
+    const timeSinceLastAttempt = Date.now() - parseInt(lastAttemptTime);
+
+    if (attemptCount >= SECURITY_CONFIG.RATE_LIMITING.MAX_LOGIN_ATTEMPTS &&
+      timeSinceLastAttempt < SECURITY_CONFIG.RATE_LIMITING.LOCKOUT_DURATION) {
+      setError(`Too many login attempts. Please try again in ${Math.ceil(SECURITY_CONFIG.RATE_LIMITING.LOCKOUT_DURATION / 60000)} minutes.`);
+      dispatch(setAuthError(`Too many login attempts. Please try again in ${Math.ceil(SECURITY_CONFIG.RATE_LIMITING.LOCKOUT_DURATION / 60000)} minutes.`));
+      setIsLoading(false);
+      dispatch(setLoading(false));
+      return;
+    }
+
+    // Update login attempts
+    localStorage.setItem('login_attempts', (attemptCount + 1).toString());
+    localStorage.setItem('last_login_attempt', Date.now().toString());
 
     const xmlData = `<dsXml>
     <J_Ui>"ActionName":"TradeWeb","Option":"Login"</J_Ui>
@@ -449,8 +494,8 @@ export default function SignInForm() {
         <UserId>${userId}</UserId>
         
         <EPassword>${Encryption(password)}</EPassword>
-        <Key>${loginKey}</Key>
-        <LoginAs>${loginAsValue}</LoginAs>
+        <Key></Key>
+        
         <Product>${PRODUCT}</Product>
         <ICPV></ICPV>
         <Feature></Feature>
@@ -472,24 +517,82 @@ export default function SignInForm() {
 
       const data = response.data;
       console.log('Login Response:', data);
+      console.log('Response status:', data.status);
+      console.log('Response token:', data.token);
+      console.log('Response refreshToken:', data.refreshToken);
 
       if (data.status) {
+        // Security: Validate response integrity
+        if (!data.token) {
+          setError('Invalid response from server');
+          dispatch(setAuthError('Invalid response from server'));
+          return;
+        }
+
+        // Store the UserType from login response
+        const userType = data.data[0].UserType;
+        setCurrentUserType(userType);
+
+        // For user type, refreshToken comes after OTP verification
+        // For branch type, refreshToken comes in initial login response
+        if (userType.toLowerCase() === 'branch' && !data.refreshToken) {
+          setError('Invalid response from server');
+          dispatch(setAuthError('Invalid response from server'));
+          return;
+        }
+
+        // Security: Clear login attempts on successful login
+        localStorage.removeItem('login_attempts');
+        localStorage.removeItem('last_login_attempt');
+
+        // Handle different field names based on UserType
+        const clientCode = data.data[0].ClientCode || data.data[0].UserCode || '';
+        const clientName = data.data[0].ClientName || data.data[0].UserName || '';
+
+        // Debug logging to help identify field mapping issues
+        console.log('Login response data:', data.data[0]);
+        console.log('UserType:', userType);
+        console.log('Mapped clientCode:', clientCode);
+        console.log('Mapped clientName:', clientName);
+
+        // Validate that we have the required data
+        if (!clientCode || !clientName) {
+          console.error('Missing required user data:', { clientCode, clientName, userType });
+          setError('Invalid user data received from server');
+          dispatch(setAuthError('Invalid user data received from server'));
+          return;
+        }
+
         dispatch(setAuthData({
           userId: userId,
           token: data.token,
+          refreshToken: data.refreshToken || '', // Use empty string if refreshToken not present
           tokenExpireTime: data.tokenExpireTime,
-          clientCode: data.data[0].ClientCode,
-          clientName: data.data[0].ClientName,
-          userType: data.data[0].UserType,
+          clientCode: clientCode,
+          clientName: clientName,
+          userType: userType,
           loginType: data.data[0].LoginType,
         }));
 
+        // Security: Store tokens with integrity checks (handled by API service)
         localStorage.setItem('userId', userId);
         localStorage.setItem('temp_token', data.token);
+
+        // Debug: Log token storage
+        console.log('Token stored for 2FA:', {
+          tempToken: data.token ? 'Stored' : 'Missing',
+          loginType: data.data[0].LoginType,
+          userType: userType
+        });
+
+        // Only store refreshToken if it exists (for branch users)
+        if (data.refreshToken) {
+          localStorage.setItem('refreshToken', data.refreshToken);
+        }
         localStorage.setItem('tokenExpireTime', data.tokenExpireTime);
-        localStorage.setItem('clientCode', data.data[0].ClientCode);
-        localStorage.setItem('clientName', data.data[0].ClientName);
-        localStorage.setItem('userType', data.data[0].UserType);
+        localStorage.setItem('clientCode', clientCode);
+        localStorage.setItem('clientName', clientName);
+        localStorage.setItem('userType', userType);
         localStorage.setItem('loginType', data.data[0].LoginType);
         localStorage.removeItem("ekyc_dynamicData");
         localStorage.removeItem("ekyc_activeTab");
@@ -497,6 +600,7 @@ export default function SignInForm() {
         // Store login data for navigation after version check
         const currentLoginData = {
           token: data.token,
+          refreshToken: data.refreshToken || '', // Use empty string if refreshToken not present
           tokenExpireTime: data.tokenExpireTime,
           LoginType: data.data[0].LoginType
         };
@@ -606,31 +710,17 @@ export default function SignInForm() {
               </div>
             </div>
 
-            {/* Only show the dropdown if login options are available */}
-            {loginAsOptions.length > 0 && (
-              <div>
-                <Label className="text-gray-700 dark:text-gray-300 font-medium">Login As</Label>
-                <select
-                  className="w-full mt-1 px-4 py-2 border rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
-                  value={selectedName}
-                  onChange={handleLoginAsChange}
-                >
-                  {loginAsOptions.map((option: any, index: number) => (
-                    <option
-                      key={index}
-                      value={option.name}
-                    >
-                      {option.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            {ENABLE_CAPTCHA && (
+              <CaptchaComponent
+                onCaptchaChange={setIsCaptchaValid}
+                className="mt-4"
+              />
             )}
 
             <Button
               type="submit"
               className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-medium transition-all duration-200 mt-2"
-              disabled={isLoading}
+              disabled={isLoading || (ENABLE_CAPTCHA && !isCaptchaValid)}
             >
               {isLoading ? (
                 <div className="flex items-center justify-center">
@@ -640,7 +730,7 @@ export default function SignInForm() {
                   </svg>
                   Signing in...
                 </div>
-              ) : 'Sign in'}
+              ) : ENABLE_CAPTCHA && !isCaptchaValid ? 'Complete verification to continue' : 'Sign in'}
             </Button>
           </form>
           <div className="flex justify-center items-center mt-2">
@@ -670,21 +760,21 @@ export default function SignInForm() {
 
           // Check if there are mandatory updates and user doesn't have update rights
           const hasMandatoryUpdates = versionUpdates.some(update => update.Status === 'M');
-          // Use selectedLoginAs to determine user type (C = Client, B = Branch)
-          const currentLoginAs = loginAsOptions.length > 0 ? selectedLoginAs : LOGIN_AS;
-          const canUpdate = currentLoginAs !== "C"; // Only Client (loginAs: "C") cannot update
+          // Use UserType from login response to determine user permissions
+          // "user" = normal user (cannot update), anything else = admin (can update)
+          const canUpdate = currentUserType.toLowerCase() !== "user";
 
           if (hasMandatoryUpdates && !canUpdate) {
-            // Force logout for clients with mandatory updates
+            // Force logout for users with mandatory updates who cannot update
             proceedAfterVersionCheck(loginData, true);
           } else {
-            // Allow normal login flow for optional updates or branch users
+            // Allow normal login flow for optional updates or admin users
             proceedAfterVersionCheck(loginData);
           }
         }}
         updates={versionUpdates}
         onConfirm={handleUpdateConfirm}
-        userType={loginAsOptions.length > 0 ? selectedLoginAs : LOGIN_AS}
+        userType={currentUserType}
         isUpdating={isUpdating}
       />
     </div>

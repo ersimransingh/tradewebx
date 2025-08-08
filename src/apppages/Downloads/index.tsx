@@ -9,6 +9,7 @@ import { ACTION_NAME, BASE_URL, PATH_URL } from '@/utils/constants';
 import { RootState } from '@/redux/store';
 import FilterModal from '@/components/FilterModal';
 import { FaFilter, FaSync } from 'react-icons/fa';
+import apiService from '@/utils/apiService';
 
 const Downloads = () => {
     const [downloads, setDownloads] = useState([]);
@@ -56,12 +57,7 @@ const Downloads = () => {
         </dsXml>`;
 
         try {
-            const response = await axios.post(BASE_URL + PATH_URL, xmlData, {
-                headers: {
-                    'Content-Type': 'application/xml',
-                    'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]}`
-                }
-            });
+            const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
 
             const endTime = performance.now();
             setApiResponseTime(Math.round(endTime - startTime));
@@ -117,13 +113,7 @@ const Downloads = () => {
         </dsXml>`;
 
         try {
-            const response = await axios.post(BASE_URL + PATH_URL, xmlData, {
-                headers: {
-                    'Content-Type': 'application/xml',
-                    'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]}`
-                },
-                timeout: 600000
-            });
+            const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
 
             const fileData = response.data.data.rs0[0];
             if (fileData?.Base64) {

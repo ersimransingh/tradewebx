@@ -8,6 +8,7 @@ interface InputProps {
   placeholder?: string;
   defaultValue?: string | number;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onPaste?: (e: React.ClipboardEvent<HTMLInputElement>) => void;
   className?: string;
   min?: string;
   max?: string;
@@ -27,6 +28,7 @@ const Input: FC<InputProps> = ({
   placeholder,
   defaultValue,
   onChange,
+  onPaste,
   className = "",
   min,
   max,
@@ -71,6 +73,7 @@ const Input: FC<InputProps> = ({
         placeholder={placeholder}
         defaultValue={defaultValue}
         onChange={onChange}
+        onPaste={onPaste}
         min={min}
         max={max}
         step={step}
@@ -81,11 +84,10 @@ const Input: FC<InputProps> = ({
       />
 
       {hint && (
-        <p className={`mt-1.5 text-xs ${
-          error ? "text-error-500" :
-          success ? "text-success-500" :
-          "text-gray-500"
-        }`}>
+        <p className={`mt-1.5 text-xs ${error ? "text-error-500" :
+            success ? "text-success-500" :
+              "text-gray-500"
+          }`}>
           {hint}
         </p>
       )}

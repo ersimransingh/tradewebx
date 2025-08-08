@@ -14,6 +14,7 @@ import { ACTION_NAME, BASE_URL, PATH_URL } from '@/utils/constants';
 import { toast } from 'react-toastify';
 import { IoArrowBack } from "react-icons/io5";
 import { useSaveLoading } from '@/context/SaveLoadingContext';
+import apiService from '@/utils/apiService';
 
 const Nominee = ({ formFields, tableData, setFieldData, setActiveTab, Settings }: EkycComponentProps) => {
   const { colors, fonts } = useTheme();
@@ -42,6 +43,7 @@ const Nominee = ({ formFields, tableData, setFieldData, setActiveTab, Settings }
   const [guardianDropdownOptions, setGuardianDropdownOptions] = useState<Record<string, any[]>>({});
   const [guardianLoadingDropdowns, setGuardianLoadingDropdowns] = useState<Record<string, boolean>>({});
   const [guardianFieldErrors, setGuardianFieldErrors] = useState<Record<string, string>>({});
+  const [showChildForm, setShowChildForm] = useState(false)
   const menuItems = useAppSelector(selectAllMenuItems);
   const pageData: any = findPageData(menuItems, "rekyc");
 
@@ -156,6 +158,9 @@ const Nominee = ({ formFields, tableData, setFieldData, setActiveTab, Settings }
     checkIfMinor(row.NomineeDOB);
     setFieldErrors({});
     setGuardianFieldErrors({});
+    if (Object.keys(row.GuardianDetails || {}).length) {
+      setShowChildForm(true)
+    }
   };
 
   const checkIfMinor = (dob: string) => {
@@ -282,6 +287,7 @@ const Nominee = ({ formFields, tableData, setFieldData, setActiveTab, Settings }
     setIsEditing(false);
     setEditIndex(null);
     setOpenAddNominee(false);
+    setShowChildForm(false);
   };
 
 
@@ -315,12 +321,7 @@ const Nominee = ({ formFields, tableData, setFieldData, setActiveTab, Settings }
                 <J_Api>"UserId":"${localStorage.getItem('userId') || 'ADMIN'}","AccYear":"${localStorage.getItem('accYear') || '24'}","MyDbPrefix":"${localStorage.getItem('myDbPrefix') || 'undefined'}","MemberCode":"${localStorage.getItem('memberCode') || ''}","SecretKey":"${localStorage.getItem('secretKey') || ''}","MenuCode":"${localStorage.getItem('menuCode') || 27}","ModuleID":"${localStorage.getItem('moduleID') || '27'}","MyDb":"${localStorage.getItem('myDb') || 'undefined'}","DenyRights":"${localStorage.getItem('denyRights') || ''}"</J_Api>
             </dsXml>`;
 
-      const response = await axios.post(BASE_URL + PATH_URL, xmlData, {
-        headers: {
-          'Content-Type': 'application/xml',
-          'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]}`
-        }
-      });
+      const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
       const formData = response?.data?.data?.rs0[0].Data || [];
 
       setGuardianFields(formData)
@@ -505,17 +506,27 @@ const Nominee = ({ formFields, tableData, setFieldData, setActiveTab, Settings }
               viewMode={viewMode}
             />
 
-            {isMinor && (
+            {(isMinor || showChildForm) && (
               <div className="mt-6">
                 <div className="flex items-center justify-between mb-4">
                   <h4 className="text-lg font-semibold">Guardian Details</h4>
-                  <button
-                    onClick={toggleGuardianForm}
-                    disabled={viewMode}
-                    className={`px-4 py-2 rounded-md ${showGuardianForm ? 'bg-gray-500 hover:bg-gray-600 text-white' : 'bg-green-500 hover:bg-green-600 text-white'}`}
-                  >
-                    {showGuardianForm ? 'Remove Guardian' : 'Add Guardian'}
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={toggleGuardianForm}
+                      disabled={viewMode}
+                      className={`px-4 py-2 rounded-md ${showGuardianForm ? 'bg-gray-500 hover:bg-gray-600 text-white' : 'bg-green-500 hover:bg-green-600 text-white'}`}
+                    >
+                      {showGuardianForm ? 'Remove Guardian' : 'Add Guardian'}
+                    </button>
+                    {showGuardianForm && (
+                      <button
+                        className={`px-4 py-2 rounded-md ${showGuardianForm ? 'bg-gray-500 hover:bg-gray-600 text-white' : 'bg-green-500 hover:bg-green-600 text-white'}`}
+                        onClick={() => setGuardianFormData({})}
+                      >
+                        Reset Form
+                      </button>
+                    )}
+                  </div>
                 </div>
                 {showGuardianForm && (
                   <div className="border-t pt-4">

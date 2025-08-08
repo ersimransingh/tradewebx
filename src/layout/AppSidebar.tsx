@@ -5,23 +5,54 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSidebar } from "../context/SidebarContext";
 import axios from 'axios';
-import {
-  BoxCubeIcon,
-  CalenderIcon,
-  ChevronDownIcon,
-  GridIcon,
-  HorizontaLDots,
-  ListIcon,
-  PageIcon,
-  PieChartIcon,
-  PlugInIcon,
-  TableIcon,
-  UserCircleIcon,
-} from "../icons/index";
 import SidebarWidget from "./SidebarWidget";
 import { useTheme } from "@/context/ThemeContext";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { fetchMenuItems, selectAllMenuItems, selectMenuStatus, selectMenuError } from "@/redux/features/menuSlice";
+
+// Font Awesome icons from react-icons/fa
+import {
+  FaHome,
+  FaCalendar,
+  FaUser,
+  FaList,
+  FaTable,
+  FaFileAlt,
+  FaCubes,
+  FaChevronDown,
+  FaTh,
+  FaEllipsisH,
+  FaFile,
+  FaChartPie,
+  FaPlug,
+  FaUserCircle
+} from 'react-icons/fa';
+
+import { PATH_URL } from "@/utils/constants";
+import { BASE_URL } from "@/utils/constants";
+import { fetchInitializeLogin } from "@/redux/features/common/commonSlice";
+
+const iconMap = {
+  'home': <FaHome />,
+  'area-graph': <FaTable />,
+  'report': <FaList />,
+  'password': <FaUser />,
+  'download': <FaFileAlt />,
+  'theme-light-dark': <FaTh />,
+  'logout': <FaUser />,
+  'default-icon': <FaList />,
+  'box-cube': <FaCubes />,
+  'calender': <FaCalendar />,
+  'chevron-down': <FaChevronDown />,
+  'grid': <FaTh />,
+  'horizontal-dots': <FaEllipsisH />,
+  'list': <FaList />,
+  'page': <FaFile />,
+  'pie-chart': <FaChartPie />,
+  'plug-in': <FaPlug />,
+  'table': <FaTable />,
+  'user-circle': <FaUserCircle />,
+};
 
 
 type SubMenuItem = {
@@ -44,24 +75,6 @@ type NavItem = {
   pageData?: any[];
   subItems?: SubMenuItem[];
 };
-
-import { FaHome, FaCalendar, FaUser, FaList, FaTable, FaFileAlt } from 'react-icons/fa';
-import { PATH_URL } from "@/utils/constants";
-import { BASE_URL } from "@/utils/constants";
-import { fetchInitializeLogin } from "@/redux/features/common/commonSlice";
-const iconMap = {
-  'home': <FaHome />,
-  'area-graph': <FaTable />,
-  'report': <FaList />,
-  'password': <FaUser />,
-  'download': <FaFileAlt />,
-  'theme-light-dark': <FaTable />, // Adjust as needed
-  'logout': <FaUser />,
-  'default-icon': <FaList />,           // Adjust as needed
-  // Add more mappings based on your icons
-};
-
-
 
 
 const AppSidebar: React.FC = () => {
@@ -176,12 +189,14 @@ const AppSidebar: React.FC = () => {
                 }}
               >
                 <span className="font-bold">{item.name}</span>
-                <ChevronDownIcon
+                <span
                   className={`ml-auto w-4 h-4 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
                   style={{
                     color: isActive(item.path || '') ? colors.buttonText : colors.text,
                   }}
-                />
+                >
+                  {iconMap['chevron-down']}
+                </span>
               </button>
               <div
                 ref={(el) => {
@@ -248,12 +263,14 @@ const AppSidebar: React.FC = () => {
                     <span className="font-bold">{nav.name}</span>
                   )}
                   {(isExpanded || isHovered || isMobileOpen) && (
-                    <ChevronDownIcon
+                    <span
                       className={`ml-auto w-5 h-5 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
                       style={{
                         color: isOpen ? colors.buttonText : colors.text,
                       }}
-                    />
+                    >
+                      {iconMap['chevron-down']}
+                    </span>
                   )}
                 </button>
                 {(isExpanded || isHovered || isMobileOpen) && (
@@ -370,7 +387,7 @@ const AppSidebar: React.FC = () => {
                 {isExpanded || isHovered || isMobileOpen ? (
                   "Menu"
                 ) : (
-                  <HorizontaLDots />
+                  <span>{iconMap['horizontal-dots']}</span>
                 )}
               </h2>
               {menuStatus === 'loading' && <div className={fontStyles.menuItem}>Loading...</div>}

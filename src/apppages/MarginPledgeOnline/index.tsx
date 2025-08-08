@@ -6,6 +6,7 @@ import axios from 'axios';
 import { BASE_URL, PATH_URL } from '@/utils/constants';
 import { FaFileExcel } from 'react-icons/fa';
 import { exportTableToExcel } from '@/components/DataTable';
+import apiService from '@/utils/apiService';
 
 type TableRow = {
   [key: string]: any;
@@ -27,8 +28,8 @@ export default function MarginPledgeOnline() {
   const [pledgeRedirectData, setPledgeRedirectData] = useState<any>([]);
   const [buttonDisable, setButtonDisable] = useState<boolean>(true);
 
-  console.log(colors,'colors');
-  
+  console.log(colors, 'colors');
+
 
   useEffect(() => {
     dropDownApiCall(setDematId);
@@ -147,12 +148,7 @@ export default function MarginPledgeOnline() {
       </dsXml>
     `;
     try {
-      const request = await axios.post(BASE_URL + PATH_URL, tableDataPost, {
-        headers: {
-          'Content-Type': 'application/xml',
-          'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]}`
-        }
-      });
+      const request = await apiService.postWithAuth(BASE_URL + PATH_URL, tableDataPost);
       if (request.data.success === true) {
         setPledgeRedirectData(request.data.data.rs0);
       }
@@ -202,56 +198,56 @@ export default function MarginPledgeOnline() {
 
   return (
     <div className="w-full">
-    
-    <div className="border-b-1 border-grey-500 flex items-center gap-5">
-  <button
-    className="px-4 py-2 text-sm rounded-t-lg font-bold bg-[#3EB489] mt-2"
-    style={{ backgroundColor: 'white' }}
-  >
-    Pledge For Margin (Online)
-  </button>
 
-  {/* Styled Dropdown like React-Select */}
-  <div className="relative w-full max-w-xs mt-2">
-  <select
-    className="w-full h-[40px] pl-4 pr-10 py-1.5 text-sm font-medium rounded border border-gray-400 bg-white text-gray-800 appearance-none focus:outline-none focus:ring-2 focus:ring-[#3EB489]"
-    style={{
-      backgroundColor: colors.textInputBackground,
-      boxShadow: '0 0 0 1px rgba(0,0,0,0.05)',
-      transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
-    }}
-    value={selectedDemat ? selectedDemat.DPAccountNo : ''}
-    onChange={(e) => {
-      const selected = dematId.find(d => d.DPAccountNo === e.target.value);
-      setSelectedDemat(selected || null);
-      setTableVisible(!!selected);
-    }}
-  >
-    <option value="" disabled>Select Demat A/C No</option>
-    {dematId.map((item, idx) => (
-      <option key={idx} value={item.DPAccountNo}>
-        {item.DPAccountNo} ({item.DPType})
-      </option>
-    ))}
-  </select>
+      <div className="border-b-1 border-grey-500 flex items-center gap-5">
+        <button
+          className="px-4 py-2 text-sm rounded-t-lg font-bold bg-[#3EB489] mt-2"
+          style={{ backgroundColor: 'white' }}
+        >
+          Pledge For Margin (Online)
+        </button>
 
-  {/* Smaller Custom Dropdown Indicator */}
-  <div className="pointer-events-none absolute right-2 top-[6px] bottom-[6px] flex items-center border-l border-[#cccccc] px-1.5">
-    <svg
-      height="12"
-      width="12"
-      viewBox="0 0 20 20"
-      aria-hidden="true"
-      focusable="false"
-      className="fill-current text-gray-400"
-    >
-      <path d="M4.516 7.548c0.436-0.446 1.043-0.481 1.576 0l3.908 3.747 3.908-3.747c0.533-0.481 1.141-0.446 1.574 0 0.436 0.445 0.408 1.197 0 1.615-0.406 0.418-4.695 4.502-4.695 4.502-0.217 0.223-0.502 0.335-0.787 0.335s-0.57-0.112-0.789-0.335c0 0-4.287-4.084-4.695-4.502s-0.436-1.17 0-1.615z" />
-    </svg>
-  </div>
-</div>
+        {/* Styled Dropdown like React-Select */}
+        <div className="relative w-full max-w-xs mt-2">
+          <select
+            className="w-full h-[40px] pl-4 pr-10 py-1.5 text-sm font-medium rounded border border-gray-400 bg-white text-gray-800 appearance-none focus:outline-none focus:ring-2 focus:ring-[#3EB489]"
+            style={{
+              backgroundColor: colors.textInputBackground,
+              boxShadow: '0 0 0 1px rgba(0,0,0,0.05)',
+              transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+            }}
+            value={selectedDemat ? selectedDemat.DPAccountNo : ''}
+            onChange={(e) => {
+              const selected = dematId.find(d => d.DPAccountNo === e.target.value);
+              setSelectedDemat(selected || null);
+              setTableVisible(!!selected);
+            }}
+          >
+            <option value="" disabled>Select Demat A/C No</option>
+            {dematId.map((item, idx) => (
+              <option key={idx} value={item.DPAccountNo}>
+                {item.DPAccountNo} ({item.DPType})
+              </option>
+            ))}
+          </select>
 
-    {/* Added logic for excel dwn */}
-    {/* <div>
+          {/* Smaller Custom Dropdown Indicator */}
+          <div className="pointer-events-none absolute right-2 top-[6px] bottom-[6px] flex items-center border-l border-[#cccccc] px-1.5">
+            <svg
+              height="12"
+              width="12"
+              viewBox="0 0 20 20"
+              aria-hidden="true"
+              focusable="false"
+              className="fill-current text-gray-400"
+            >
+              <path d="M4.516 7.548c0.436-0.446 1.043-0.481 1.576 0l3.908 3.747 3.908-3.747c0.533-0.481 1.141-0.446 1.574 0 0.436 0.445 0.408 1.197 0 1.615-0.406 0.418-4.695 4.502-4.695 4.502-0.217 0.223-0.502 0.335-0.787 0.335s-0.57-0.112-0.789-0.335c0 0-4.287-4.084-4.695-4.502s-0.436-1.17 0-1.615z" />
+            </svg>
+          </div>
+        </div>
+
+        {/* Added logic for excel dwn */}
+        {/* <div>
     <button
                             className="p-2 rounded"
                             onClick={() => exportTableToExcel('')}
@@ -261,103 +257,103 @@ export default function MarginPledgeOnline() {
                         </button>
     </div> */}
 
-</div>
+      </div>
 
-     
+
       <div className='mt-4'>
-      {tableVisible && (
-        <div  className="flex justify-center">
-          <div  className="overflow-auto sm:overflow-visible w-full">
-            <table className="min-w-full text-sm border-collapse" style={{ border: `1px solid ${colors?.color1 || '#f0f0f0'}`, backgroundColor: colors.textInputBackground }}>
-              <thead>
-                <tr>
-                  {extendedHeaders.map((key, index) => (
-                    <th
-                      key={index}
-                      className={`p-2 ${rightAlignKeys.includes(key) ? 'text-right' : 'text-center'}`}
-                      style={{
-                        border: `1px solid ${colors?.color1 || '#f0f0f0'}`,
-                        background: colors?.primary || '#f0f0f0',
-                        width: ['ReqValue'].includes(key) ? '130px' : undefined,
-                      }}
-                    >
-                      {key}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {tableData.map((row, rowIndex) => (
-                  <tr key={rowIndex}>
-                    {extendedHeaders.map((header, colIndex) => (
-                      <td
-                        key={colIndex}
-                        className="px-2 py-1 text-sm"
-                        style={{ border: `1px solid ${colors?.color1 || '#f0f0f0'}` }}
+        {tableVisible && (
+          <div className="flex justify-center">
+            <div className="overflow-auto sm:overflow-visible w-full">
+              <table className="min-w-full text-sm border-collapse" style={{ border: `1px solid ${colors?.color1 || '#f0f0f0'}`, backgroundColor: colors.textInputBackground }}>
+                <thead>
+                  <tr>
+                    {extendedHeaders.map((key, index) => (
+                      <th
+                        key={index}
+                        className={`p-2 ${rightAlignKeys.includes(key) ? 'text-right' : 'text-center'}`}
+                        style={{
+                          border: `1px solid ${colors?.color1 || '#f0f0f0'}`,
+                          background: colors?.primary || '#f0f0f0',
+                          width: ['ReqValue'].includes(key) ? '130px' : undefined,
+                        }}
                       >
-                        {header === 'ReqValue' ? (
-                          <input
-                            type="text"
-                            className="border border-gray-300 rounded w-full px-1 text-right"
-                            value={row.ReqValue}
-                            onChange={(e) => handleReqValueChange(e, rowIndex)}
-                            onBlur={() => handleReqValueBlur(rowIndex)}
-                          />
-                        ) : header === 'Value' ? (
-                          <div className="text-right">{row.Value}</div>
-                        ) : (
-                          <div className={`${rightAlignKeys.includes(header) ? 'text-right' : 'text-left'}`}>
-                            {formatValue(header, row[header])}
-                          </div>
-                        )}
-                      </td>
+                        {key}
+                      </th>
                     ))}
                   </tr>
-                ))}
-                <tr className="font-semibold">
-                  {extendedHeaders.map((header, index) => {
-                    const totalKeys = ['TotalQty', 'NetValue', 'ReqValue', 'Value'];
-                    const isTotal = totalKeys.includes(header);
-                    return (
-                      <td
-                        key={index}
-                        className={`p-2 ${rightAlignKeys.includes(header) ? 'text-right' : 'text-left'}`}
-                        style={{ border: `1px solid ${colors?.color1 || '#f0f0f0'}` }}
-                      >
-                        {index === 0 ? 'Total:' : isTotal ? getTotal(header as keyof TableRow) : ''}
-                      </td>
-                    );
-                  })}
-                </tr>
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {tableData.map((row, rowIndex) => (
+                    <tr key={rowIndex}>
+                      {extendedHeaders.map((header, colIndex) => (
+                        <td
+                          key={colIndex}
+                          className="px-2 py-1 text-sm"
+                          style={{ border: `1px solid ${colors?.color1 || '#f0f0f0'}` }}
+                        >
+                          {header === 'ReqValue' ? (
+                            <input
+                              type="text"
+                              className="border border-gray-300 rounded w-full px-1 text-right"
+                              value={row.ReqValue}
+                              onChange={(e) => handleReqValueChange(e, rowIndex)}
+                              onBlur={() => handleReqValueBlur(rowIndex)}
+                            />
+                          ) : header === 'Value' ? (
+                            <div className="text-right">{row.Value}</div>
+                          ) : (
+                            <div className={`${rightAlignKeys.includes(header) ? 'text-right' : 'text-left'}`}>
+                              {formatValue(header, row[header])}
+                            </div>
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                  <tr className="font-semibold">
+                    {extendedHeaders.map((header, index) => {
+                      const totalKeys = ['TotalQty', 'NetValue', 'ReqValue', 'Value'];
+                      const isTotal = totalKeys.includes(header);
+                      return (
+                        <td
+                          key={index}
+                          className={`p-2 ${rightAlignKeys.includes(header) ? 'text-right' : 'text-left'}`}
+                          style={{ border: `1px solid ${colors?.color1 || '#f0f0f0'}` }}
+                        >
+                          {index === 0 ? 'Total:' : isTotal ? getTotal(header as keyof TableRow) : ''}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {tableVisible && (
-        <>
-          <div className="flex justify-end w-full max-w-[80%] mx-auto mt-2">
-            <label className="text-sm">
-              <input type="checkbox" className="mr-2" checked={selectAll} onChange={handleSelectAll} />
-              Select All
-            </label>
-          </div>
-          <div className="flex justify-center items-center mt-4">
-            <button
-              onClick={tableAllData}
-              disabled={buttonDisable}
-              style={{
-                backgroundColor: buttonDisable ? '#ccc' : colors.primary,
-                cursor: buttonDisable ? 'not-allowed' : 'pointer',
-              }}
-              className={`text-white py-2 px-8 rounded-md shadow-lg transform transition-transform duration-200 ease-in-out font-medium ${buttonDisable ? 'opacity-50' : 'active:scale-90'}`}
-            >
-              OK
-            </button>
-          </div>
-        </>
-      )}
+        {tableVisible && (
+          <>
+            <div className="flex justify-end w-full max-w-[80%] mx-auto mt-2">
+              <label className="text-sm">
+                <input type="checkbox" className="mr-2" checked={selectAll} onChange={handleSelectAll} />
+                Select All
+              </label>
+            </div>
+            <div className="flex justify-center items-center mt-4">
+              <button
+                onClick={tableAllData}
+                disabled={buttonDisable}
+                style={{
+                  backgroundColor: buttonDisable ? '#ccc' : colors.primary,
+                  cursor: buttonDisable ? 'not-allowed' : 'pointer',
+                }}
+                className={`text-white py-2 px-8 rounded-md shadow-lg transform transition-transform duration-200 ease-in-out font-medium ${buttonDisable ? 'opacity-50' : 'active:scale-90'}`}
+              >
+                OK
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

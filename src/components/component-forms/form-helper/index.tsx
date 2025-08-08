@@ -1,4 +1,5 @@
 import { FormField } from "@/types";
+import apiService from "@/utils/apiService";
 import { BASE_URL, PATH_URL } from "@/utils/constants";
 import axios from "axios";
 
@@ -71,13 +72,8 @@ export const handleValidationForDisabledField = async (
     </dsXml>`;
 
     try {
-        const response = await axios.post(BASE_URL + PATH_URL, xmlData, {
-            headers: {
-                'Content-Type': 'application/xml',
-                'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]}`
-            }
-        });
-        
+        const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
+
         const columnData = response?.data?.data?.rs0[0]?.Column1;
         if (!columnData) return;
 
@@ -99,7 +95,7 @@ export const handleValidationForDisabledField = async (
             const tagValue = tag.textContent;
             const tagFlag = tagValue.toLowerCase();
             const isDisabled = tagFlag === 'false';
-            
+
             return {
                 fieldKey: tagName,
                 isDisabled,

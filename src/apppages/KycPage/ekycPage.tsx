@@ -11,6 +11,7 @@ import { buildTabs, TabData } from "./KycTabs";
 import { FiRefreshCcw } from "react-icons/fi";
 import { useSaveLoading } from "@/context/SaveLoadingContext";
 import { useLocalStorageListener } from "@/hooks/useLocalStorageListner";
+import apiService from "@/utils/apiService";
 
 // IndexedDB setup
 const DB_NAME = 'ekycDB';
@@ -42,20 +43,20 @@ const Kyc = () => {
         const initDB = async () => {
             return new Promise<IDBDatabase>((resolve, reject) => {
                 const request = indexedDB.open(DB_NAME, DB_VERSION);
-                
+
                 request.onupgradeneeded = (event) => {
                     const db = (event.target as IDBOpenDBRequest).result;
                     if (!db.objectStoreNames.contains(STORE_NAME)) {
                         db.createObjectStore(STORE_NAME);
                     }
                 };
-                
+
                 request.onsuccess = () => {
                     const db = request.result;
                     setDb(db);
                     resolve(db);
                 };
-                
+
                 request.onerror = () => {
                     console.error("IndexedDB error:", request.error);
                     reject(request.error);
@@ -66,17 +67,17 @@ const Kyc = () => {
         const loadInitialData = async () => {
             try {
                 const db = await initDB();
-                
+
                 // Load active tab
                 const tab = await new Promise<string>((resolve) => {
                     const transaction = db.transaction(STORE_NAME, 'readonly');
                     const store = transaction.objectStore(STORE_NAME);
                     const request = store.get('activeTab');
-                    
+
                     request.onsuccess = () => {
                         resolve(request.result || "personal");
                     };
-                    
+
                     request.onerror = () => resolve("personal");
                 });
                 setActiveTab(tab);
@@ -86,7 +87,7 @@ const Kyc = () => {
                     const transaction = db.transaction(STORE_NAME, 'readonly');
                     const store = transaction.objectStore(STORE_NAME);
                     const request = store.get('dynamicData');
-                    
+
                     request.onsuccess = () => {
                         const result = request.result || {
                             personalTabData: { formFields: [], tableData: [], fieldsErrors: {}, Settings: {} },
@@ -100,7 +101,7 @@ const Kyc = () => {
                         setLastUpdated(result._lastUpdated || null);
                         resolve(result);
                     };
-                    
+
                     request.onerror = () => resolve({
                         personalTabData: { formFields: [], tableData: [], fieldsErrors: {}, Settings: {} },
                         // ... other initial tabs
@@ -123,7 +124,7 @@ const Kyc = () => {
             try {
                 const transaction = db.transaction(STORE_NAME, 'readwrite');
                 const store = transaction.objectStore(STORE_NAME);
-                
+
                 store.put(activeTab, 'activeTab');
                 store.put(dynamicData, 'dynamicData');
             } catch (error) {
@@ -138,16 +139,23 @@ const Kyc = () => {
         setIsLoading(true);
         try {
             const { MasterEntry = {} } = pageData && pageData[0]?.Entry || {};
-            console.log("Check data",MasterEntry , pageData);
+            console.log("Check data", MasterEntry, pageData);
             const userData = localStorage.getItem("rekycRowData_viewMode");
             const parsedUserData = userData ? JSON.parse(userData) : null;
             const isKeysPresent = Object.keys(MasterEntry || {}).length > 0;
             const payload = isKeysPresent ? MasterEntry?.X_Filter : {
                 EntryName: parsedUserData?.EntryName || "Rekyc",
                 ClientCode: parsedUserData?.ClientCode || localStorage.getItem("clientCode"),
+                FormNo: parsedUserData?.FormNo || ""
             };
 
-            const xFilter = Object.entries(payload || {}).map(([k, v]) => `<${k}>${v}</${k}>`).join("");
+            const xFilter = Object.entries(payload || {}).map(([k, v]) => {
+                if (k === "FormNo") {
+                    return `<${k}>${v === "##FormNo##" ? "" : v}</${k}>`;
+                } else {
+                    return `<${k}>${v}</${k}>`;
+                }
+            }).join("");
 
             const xmlData = `<dsXml>
                 <J_Ui>"ActionName":"${ACTION_NAME}","Option":"Master_Edit"</J_Ui>
@@ -156,15 +164,10 @@ const Kyc = () => {
                 <J_Api>"UserId":"${localStorage.getItem('userId') || 'ADMIN'}","AccYear":"${localStorage.getItem('accYear') || '24'}","MyDbPrefix":"${localStorage.getItem('myDbPrefix') || 'undefined'}","MemberCode":"${localStorage.getItem('memberCode') || ''}","SecretKey":"${localStorage.getItem('secretKey') || ''}","MenuCode":"${localStorage.getItem('menuCode') || 27}","ModuleID":"${localStorage.getItem('moduleID') || '27'}","MyDb":"${localStorage.getItem('myDb') || 'undefined'}","DenyRights":"${localStorage.getItem('denyRights') || ''}"</J_Api>
             </dsXml>`;
 
-            const response = await axios.post(BASE_URL + PATH_URL, xmlData, {
-                headers: {
-                    'Content-Type': 'application/xml',
-                    Authorization: `Bearer ${document.cookie.split('auth_token=')[1]}`
-                }
-            });
+            const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
 
             const formData = response?.data?.data?.rs0 || [];
-            const updatedData :any = { ...dynamicData, _lastUpdated: new Date().toISOString() };
+            const updatedData: any = { ...dynamicData, _lastUpdated: new Date().toISOString() };
 
             formData.forEach((tab: any) => {
                 const keyMap: Record<string, keyof typeof updatedData> = {
@@ -188,7 +191,7 @@ const Kyc = () => {
                         if (isViewMode) {
                             localStorage.setItem("ekyc_viewMode", "true");
                             localStorage.setItem("ekyc_checker", "true");
-                            localStorage.setItem("ekyc_submit","true")
+                            localStorage.setItem("ekyc_submit", "true")
                         } else {
                             localStorage.setItem("ekyc_viewMode", "false");
                         }
@@ -210,17 +213,17 @@ const Kyc = () => {
         fetchFormData(viewMode);
     }, []);
 
-    const tabs = buildTabs(dynamicData, setDynamicData, setActiveTab , fetchFormData);
-    
+    const tabs = buildTabs(dynamicData, setDynamicData, setActiveTab, fetchFormData);
+
     return (
         <div className="p-4 pt-0" style={{ fontFamily: fonts.content }}>
             <div className="flex justify-between items-center mb-2">
                 <h1 className="text-2xl font-bold" style={{ color: colors.text }}>KYC Verification</h1>
                 <div className="flex items-center">
                     {lastUpdated && <span className="text-sm mr-4" style={{ color: colors.secondary }}>Last updated: {new Date(lastUpdated).toLocaleString()}</span>}
-                    <button 
-                        onClick={() => fetchFormData(localStorage.getItem("ekyc_viewMode_for_checker") === "true")} 
-                        className="px-3 py-1 text-sm rounded flex items-center" 
+                    <button
+                        onClick={() => fetchFormData(localStorage.getItem("ekyc_viewMode_for_checker") === "true")}
+                        className="px-3 py-1 text-sm rounded flex items-center"
                         style={{ backgroundColor: colors.buttonBackground, color: colors.buttonText }}
                     >
                         <FiRefreshCcw />

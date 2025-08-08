@@ -1,3 +1,4 @@
+import apiService from "@/utils/apiService";
 import { BASE_URL, PATH_URL } from "@/utils/constants"
 import axios from "axios"
 
@@ -31,12 +32,7 @@ export const dropDownApiCall = async (setDematId) => {
   `;
 
   try {
-    const request = await axios.post(BASE_URL + PATH_URL, xmlDataDropDown, {
-      headers: {
-        'Content-Type': 'application/xml',
-        'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]}`
-      }
-    });
+    const request = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlDataDropDown);
 
     const result = request.data.data.rs0 || [];
     setDematId(result);
@@ -64,12 +60,7 @@ export const tableApiCall = async (selectedDemat, setTableHeaders, setTableRows)
 
   try {
 
-    const request = await axios.post(BASE_URL + PATH_URL, xmlDataTable, {
-      headers: {
-        'Content-Type': 'application/xml',
-        'Authorization': `Bearer ${document.cookie.split('auth_token=')[1]}`
-      }
-    })
+    const request = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlDataTable);
 
     const result = request.data?.data?.rs0?.[0]?.DATA || [];
     const headers = Object.keys(result[0]);

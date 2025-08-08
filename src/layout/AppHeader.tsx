@@ -176,7 +176,7 @@ const AppHeader: React.FC = () => {
         >
           <div className="flex items-center gap-2 2xsm:gap-3">
             {/* Theme Selector Dropdown */}
-            <div className="flex items-center gap-2">
+            {/* <div className="flex items-center gap-2">
               <div className="relative">
                 <select
                   className="h-11 w-40 appearance-none rounded-lg border px-4 pr-10 text-sm transition-colors focus:outline-none focus:ring-2"
@@ -201,7 +201,7 @@ const AppHeader: React.FC = () => {
                   </svg>
                 </div>
               </div>
-            </div>
+            </div> */}
             <div className="relative">
               <select
                 value={theme}

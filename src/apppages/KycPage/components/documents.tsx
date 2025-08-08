@@ -1,7 +1,7 @@
 import EkycEntryForm from '@/components/component-forms/EkycEntryForm';
 import { EkycComponentProps } from '@/types/EkycFormTypes';
 import React, { useEffect, useState } from 'react'
-import { fetchEkycDropdownOptions, handleDigiLockerCallBackAPI, handleSaveSinglePageData, SubmitEkycForm } from '../ekychelper';
+import { fetchEkycDropdownOptions, handleDigiLockerCallBackAPI, handleSaveSinglePageData, SubmitEkycForm, handleThirdPartyApi } from '../ekychelper';
 import CaseConfirmationModal from '@/components/Modals/CaseConfirmationModal';
 import { IoArrowBack } from 'react-icons/io5';
 import { useTheme } from '@/context/ThemeContext';
@@ -9,23 +9,24 @@ import { toast } from 'react-toastify';
 import { useSaveLoading } from '@/context/SaveLoadingContext';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useLocalStorageListener } from '@/hooks/useLocalStorageListner';
-import axios from 'axios';
 import { BASE_URL, PATH_URL } from '@/utils/constants';
 import { displayAndDownloadPDF } from '@/utils/helper';
 import { getFromDB } from '@/utils/indexDB';
+import apiService from '@/utils/apiService';
 
 const Documents = ({ formFields, tableData, fieldErrors, setFieldData, setActiveTab, Settings, fetchFormData }: EkycComponentProps) => {
     const { colors } = useTheme();
     const { setSaving } = useSaveLoading();
-    const [checkRAMode,setCheckKRAMode] = useState(false);
+    const [checkRAMode, setCheckKRAMode] = useState(false);
     const viewMode1 = useLocalStorageListener("ekyc_viewMode", false);
     const viewMode2 = useLocalStorageListener("ekyc_viewMode_for_checker", false);
     const checker_mode = useLocalStorageListener("ekyc_viewMode_for_checker", false);
     const enableSubmitBtn = useLocalStorageListener("ekyc_submit", false);
+    const hideVerifyAadhar = useLocalStorageListener("hideVerifyAadhar",false);
     const ekycChecker1 = checkRAMode
     const ekycChecker2 = useLocalStorageListener("ekyc_checker", false);
     const ekycChecker = ekycChecker1 || ekycChecker2;
-    const viewMode = viewMode1 || viewMode2 || checkRAMode; 
+    const viewMode = viewMode1 || viewMode2 || checkRAMode;
     const searchParams = useSearchParams();
     const router = useRouter();
     const success = searchParams.get('success');
@@ -58,8 +59,6 @@ const Documents = ({ formFields, tableData, fieldErrors, setFieldData, setActive
     const [isSigningFinal, setIsSigningFinal] = useState(false);
     const [viewKRAPdf, setViewKRAPdf] = useState(false);
     const [viewFinalPdf, setViewFinalPdf] = useState(false);
-
-    console.log("check pdf data", kraPdfData, finalPdfData);
 
     // Load state from localStorage on component mount
     useEffect(() => {
@@ -187,37 +186,38 @@ const Documents = ({ formFields, tableData, fieldErrors, setFieldData, setActive
                 transformedData,
                 setActiveTab,
                 "attachments",
-                setSaving
+                setSaving,
+                "finalPage"
             );
         }
     };
 
     const handleSubmit = async () => {
         const storedFormData = await getFromDB('dynamicData');
-        console.log("check data",storedFormData)
-      const constructPayload: any = {
-        RekycJson: [
-          {
-            ReKycDetails: [
-              {
-                KycMode: "Online",
-                NomineeOpt: "",
-                IsNomineeModified: "",
-                IsBankModified: "",
-                IsDematModified: ""
-              }
-            ],
-            PersonalDetails: storedFormData?.personalTabData?.tableData || [],
-            NomineeDetails: storedFormData?.nomineeTabData?.tableData || [],
-            BankDetails: storedFormData?.bankTabData?.tableData || [],
-            DematDetails: storedFormData?.dematTabData?.tableData || [],
-            SegmentDetails: storedFormData?.segmentTabData?.tableData || [],
-          }
-        ]
-      };
-      
+        console.log("check data", storedFormData)
+        const constructPayload: any = {
+            RekycJson: [
+                {
+                    ReKycDetails: [
+                        {
+                            KycMode: "Online",
+                            NomineeOpt: "",
+                            IsNomineeModified: "",
+                            IsBankModified: "",
+                            IsDematModified: ""
+                        }
+                    ],
+                    PersonalDetails: storedFormData?.personalTabData?.tableData || [],
+                    NomineeDetails: storedFormData?.nomineeTabData?.tableData || [],
+                    BankDetails: storedFormData?.bankTabData?.tableData || [],
+                    DematDetails: storedFormData?.dematTabData?.tableData || [],
+                    SegmentDetails: storedFormData?.segmentTabData?.tableData || [],
+                }
+            ]
+        };
+
         SubmitEkycForm(Settings?.MakerSaveAPI, constructPayload, setSaving, Settings);
-    
+
     };
 
 
@@ -240,12 +240,7 @@ const Documents = ({ formFields, tableData, fieldErrors, setFieldData, setActive
                 <J_Api>"UserId":"${userId}","AccYear":"${accYear}","MyDbPrefix":"${myDbPrefix}","MemberCode":"${memberCode}","SecretKey":"${secretKey}","MenuCode":"${menuCode}"</J_Api>
             </dsXml>`;
 
-            const response = await axios.post(BASE_URL + PATH_URL, xmlData, {
-                headers: {
-                    'Content-Type': 'application/xml',
-                    Authorization: `Bearer ${document.cookie.split('auth_token=')[1]}`
-                }
-            });
+            const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
 
             if (response.data?.data?.rs0?.[0]?.Flag === 'E') {
                 await handleGenerateRekycPdf('KRAPDF');
@@ -288,12 +283,7 @@ const Documents = ({ formFields, tableData, fieldErrors, setFieldData, setActive
                 <J_Api>"UserId":"${userId}"</J_Api>
             </dsXml>`;
 
-            const response = await axios.post(BASE_URL + PATH_URL, xmlData, {
-                headers: {
-                    'Content-Type': 'application/xml',
-                    Authorization: `Bearer ${document.cookie.split('auth_token=')[1]}`
-                }
-            });
+            const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
 
             if (response.data?.data?.rs0?.[0]?.Base64PDF) {
                 const pdfData = response.data.data.rs0[0];
@@ -359,12 +349,7 @@ const Documents = ({ formFields, tableData, fieldErrors, setFieldData, setActive
                 <J_Api>${jApi}</J_Api>
             </dsXml>`;
 
-            const response = await axios.post(BASE_URL + PATH_URL, xmlData, {
-                headers: {
-                    'Content-Type': 'application/xml',
-                    Authorization: `Bearer ${document.cookie.split('auth_token=')[1]}`
-                }
-            });
+            const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
 
             if (response.data?.success) {
                 const columnData = response.data?.data?.rs0?.[0]?.Column1;
@@ -425,12 +410,7 @@ const Documents = ({ formFields, tableData, fieldErrors, setFieldData, setActive
                 <J_Api>"UserId":"${userId}","AccYear":"${accYear}","MyDbPrefix":"${myDbPrefix}","MemberCode":"${memberCode}","SecretKey":"${secretKey}","MenuCode":"${menuCode}"</J_Api>
             </dsXml>`;
 
-            const response = await axios.post(BASE_URL + PATH_URL, xmlData, {
-                headers: {
-                    'Content-Type': 'application/xml',
-                    Authorization: `Bearer ${document.cookie.split('auth_token=')[1]}`
-                }
-            });
+            const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
 
             if (response.data?.data?.rs0?.[0]?.Flag === 'E') {
                 await handleGenerateRekycPdf('FINALPDF');
@@ -492,12 +472,7 @@ const Documents = ({ formFields, tableData, fieldErrors, setFieldData, setActive
                 <J_Api>${jApi}</J_Api>
             </dsXml>`;
 
-            const response = await axios.post(BASE_URL + PATH_URL, xmlData, {
-                headers: {
-                    'Content-Type': 'application/xml',
-                    Authorization: `Bearer ${document.cookie.split('auth_token=')[1]}`
-                }
-            });
+            const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
 
             if (response.data?.success) {
                 const columnData = response.data?.data?.rs0?.[0]?.Column1;
@@ -561,12 +536,7 @@ const Documents = ({ formFields, tableData, fieldErrors, setFieldData, setActive
             <J_Api>"UserId":"${userId}"</J_Api>
         </dsXml>`;
 
-            const response = await axios.post(BASE_URL + PATH_URL, xmlData, {
-                headers: {
-                    'Content-Type': 'application/xml',
-                    Authorization: `Bearer ${document.cookie.split('auth_token=')[1]}`
-                }
-            });
+            const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
 
             if (response.data?.data?.rs0) {
                 localStorage.removeItem("KRAredirectedField");
@@ -603,7 +573,7 @@ const Documents = ({ formFields, tableData, fieldErrors, setFieldData, setActive
     }
     useEffect(() => {
         if (scope && scope.includes("ADHAR") && success === "True" && localStorage.getItem("redirectedField") === "FinalFormSubmission") {
-            handleDigiLockerCallBackAPI(Settings,setCheckKRAMode,fetchFormData,setSaving);
+            handleDigiLockerCallBackAPI(Settings, setCheckKRAMode, fetchFormData, setSaving);
             localStorage.removeItem("redirectedField");
             router.replace(window.location.pathname);
         }
@@ -622,7 +592,23 @@ const Documents = ({ formFields, tableData, fieldErrors, setFieldData, setActive
                 >
                     <IoArrowBack size={20} />
                 </button>
-                {(!viewMode && !ekycChecker) && (
+                {
+
+                (viewMode && Settings?.existsDigiLockerAPI === "false" && !checker_mode && !hideVerifyAadhar) ? (
+                    <button
+                     style={{
+                            backgroundColor: colors.buttonBackground,
+                            color: colors.buttonText,
+                           }}
+                    className="px-4 py-1 rounded-lg ml-4"
+                    onClick={()=>{
+                         handleThirdPartyApi(Settings)
+                         localStorage.setItem('redirectedField', "FinalFormSubmission");
+                    }}
+                    >verify aadhar</button>
+                ) : (
+                    <>
+                      {(!viewMode && !ekycChecker) && (
                     <div className="text-end">
                         <button
                             className="px-4 py-1 rounded-lg ml-4"
@@ -762,6 +748,10 @@ const Documents = ({ formFields, tableData, fieldErrors, setFieldData, setActive
 
                     </div>
                 )}
+                </>
+                )
+              
+            }
             </div>
             <CaseConfirmationModal
                 isOpen={validationModal.isOpen}

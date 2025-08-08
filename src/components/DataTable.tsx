@@ -17,6 +17,7 @@ import { BASE_URL } from '@/utils/constants';
 import { buildFilterXml } from '@/utils/helper';
 import { toast } from "react-toastify";
 import TableStyling from './ui/table/TableStyling';
+import apiService from '@/utils/apiService';
 
 interface DataTableProps {
     data: any[];
@@ -421,23 +422,40 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, onRow
                     )
                 }]
                 : []),
-            {
+            // Only show expand column for mobile and tablet, not for web
+            ...((screenSize === 'mobile' || screenSize === 'tablet') ? [{
                 key: '_expanded',
                 name: '',
                 minWidth: 30,
                 width: 30,
                 colSpan: (props: any) => {
                     if (props.type === 'ROW' && props.row._expanded) {
-                        return columnsToShow.length;
+                        // Calculate the total number of visible columns
+                        let totalColumns = 0;
+
+                        // Add selection column if enabled
+                        if (settings?.EditableColumn) {
+                            totalColumns += 1;
+                        }
+
+                        // Add the expand column itself (only if mobile or tablet)
+                        if (screenSize === 'mobile' || screenSize === 'tablet') {
+                            totalColumns += 1;
+                        }
+
+                        // Add visible data columns (columnsToShow minus hidden columns)
+                        const visibleDataColumns = columnsToShow.filter(col => !columnsToHide.includes(col));
+                        totalColumns += visibleDataColumns.length;
+
+                        // Add actions column if isEntryForm
+                        if (isEntryForm) {
+                            totalColumns += 1;
+                        }
+
+                        return totalColumns;
                     }
                     return undefined;
                 },
-                // cellClass: (row: any) => {
-                //     if (row._expanded) {
-                //         return 'expanded-row';
-                //     }
-                //     return undefined;
-                // },
                 renderCell: ({ row, tabIndex, onRowChange }: any) => {
                     if (row._expanded) {
                         return (
@@ -456,7 +474,13 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, onRow
                                 </div>
                                 <div className="expanded-details">
                                     {Object.entries(row)
-                                        .filter(([key]) => !key.startsWith('_'))
+                                        .filter(([key]) => {
+                                            // Filter out internal keys and hidden columns
+                                            if (key.startsWith('_')) return false;
+
+                                            // Use the same column hiding logic as the main table
+                                            return !columnsToHide.includes(key);
+                                        })
                                         .map(([key, value]) => {
                                             // Use the same formatter logic as the main table
                                             const isLeftAligned = leftAlignedColumns.includes(key);
@@ -536,7 +560,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, onRow
                         </div>
                     );
                 },
-            },
+            }] : []),
             ...columnsToShow.map((key: any) => {
                 const isLeftAligned = leftAlignedColumns.includes(key);
                 const isNumericColumn = !isLeftAligned && formattedData.some((row: any) => {
@@ -654,7 +678,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, onRow
             )
         }
         return baseColumns;
-    }, [formattedData, colors.text, settings?.hideEntireColumn, settings?.leftAlignedColumns, settings?.leftAlignedColums, summary?.columnsToShowTotal, screenSize, settings?.mobileColumns, settings?.tabletColumns, settings?.webColumns, settings?.columnWidth, expandedRows]);
+    }, [formattedData, colors.text, settings?.hideEntireColumn, settings?.leftAlignedColumns, settings?.leftAlignedColums, summary?.columnsToShowTotal, screenSize, settings?.mobileColumns, settings?.tabletColumns, settings?.webColumns, settings?.columnWidth, expandedRows, selectedRows]);
 
     // Sort function
     const sortRows = (initialRows: any[], sortColumns: any[]) => {
@@ -772,7 +796,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, onRow
                     }
                 }}
             />
-            <TableStyling onRowClick={onRowClick} />
+            <TableStyling onRowClick={onRowClick} screenSize={screenSize} />
         </div>
     );
 };
@@ -1293,7 +1317,6 @@ export const exportTableToPdf = async (
         const currentLevelData = pageData[0]?.levels[currentLevel];
         const userId = localStorage.getItem('userId') || '';
         const userType = localStorage.getItem('userType') || '';
-        const authToken = document?.cookie?.split('auth_token=')[1]?.split(';')[0] || '';
 
         const filterXml = buildFilterXml(filters, userId);
 
@@ -1311,13 +1334,7 @@ export const exportTableToPdf = async (
                     <J_Api>"UserId":"${userId}","UserType":"${userType}","AccYear":24,"MyDbPrefix":"SVVS","MemberCode":"undefined","SecretKey":"undefined"</J_Api>
                 </dsXml>`;
 
-            const emailResponse = await axios.post(BASE_URL + PATH_URL, emailXml, {
-                headers: {
-                    'Content-Type': 'application/xml',
-                    Authorization: `Bearer ${authToken}`,
-                },
-                timeout: 300000,
-            });
+            const emailResponse = await apiService.postWithAuth(BASE_URL + PATH_URL, emailXml);
 
             const result = emailResponse?.data;
             const columnMsg = result?.data?.rs0?.[0]?.Column1 || '';
@@ -1345,13 +1362,7 @@ export const exportTableToPdf = async (
                         <J_Api>"UserId":"${userId}","UserType":"${userType}","AccYear":24,"MyDbPrefix":"SVVS","MemberCode":"undefined","SecretKey":"undefined"</J_Api>
                     </dsXml>`;
 
-                const fetchResponse = await axios.post(BASE_URL + PATH_URL, fetchXml, {
-                    headers: {
-                        'Content-Type': 'application/xml',
-                        Authorization: `Bearer ${authToken}`,
-                    },
-                    timeout: 300000,
-                });
+                const fetchResponse = await apiService.postWithAuth(BASE_URL + PATH_URL, fetchXml);
 
                 const rs0 = fetchResponse?.data?.data?.rs0;
                 if (!Array.isArray(rs0) || rs0.length === 0 || !rs0[0]?.Base64PDF) {
@@ -1389,7 +1400,6 @@ export const downloadOption = async (
 ) => {
 
     const userId = localStorage.getItem('userId') || '';
-    const authToken = document.cookie.split('auth_token=')[1]?.split(';')[0] || '';
 
     const filterXml = buildFilterXml(filters, userId);
 
@@ -1404,13 +1414,7 @@ export const downloadOption = async (
     </dsXml>`;
 
     try {
-        const response = await axios.post(BASE_URL + PATH_URL, xmlData1, {
-            headers: {
-                'Content-Type': 'application/xml',
-                Authorization: `Bearer ${authToken}`,
-            },
-            timeout: 300000,
-        });
+        const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData1);
 
         // Pull out the first rs0 entry
         const rs0 = response.data?.data?.rs0;

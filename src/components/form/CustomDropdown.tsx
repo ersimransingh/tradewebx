@@ -57,9 +57,19 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
         ? value.includes(String(opt.value))
         : false
     )
-    : visibleOptions.find(opt =>
-      String(opt.value) === String(value)
-    );
+    : (() => {
+      // For single select, first try to find in visibleOptions
+      const foundInVisible = visibleOptions.find(opt =>
+        String(opt.value) === String(value)
+      );
+
+      // If not found in visibleOptions but value exists, find in full options
+      if (!foundInVisible && value !== undefined && value !== null && value !== '') {
+        return options.find(opt => String(opt.value) === String(value));
+      }
+
+      return foundInVisible;
+    })();
 
   const handleChange = (selected: any) => {
     if (selected) {
@@ -153,7 +163,7 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
           }),
           menuPortal: base => ({
             ...base,
-            zIndex: 9999, 
+            zIndex: 9999,
           }),
           singleValue: (base) => ({
             ...base,
