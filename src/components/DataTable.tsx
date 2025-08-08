@@ -1100,8 +1100,6 @@ export const exportTableToPdf = async (
     currentLevel: any,
     mode: 'download' | 'email',
 ) => {
-
-    console.log(jsonData,'jsonData,pdf');
     
 
     if (!allData || allData.length === 0) return;
