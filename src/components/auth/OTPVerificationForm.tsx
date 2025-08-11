@@ -29,7 +29,7 @@ export default function OTPVerificationForm() {
 
     if (!tempToken || !userId) {
       console.log('Missing authentication data, redirecting to signin');
-      router.replace('/signin');
+      router.replace(`${BASE_PATH_FRONT_END}/signin`);
       return;
     }
   }, [router]);
@@ -118,7 +118,7 @@ export default function OTPVerificationForm() {
         // Clean up temporary token
         localStorage.removeItem('temp_token');
 
-        router.push('/dashboard');
+        router.push(`${BASE_PATH_FRONT_END}/dashboard`);
       } else {
         const errorMessage = data.message || 'OTP verification failed';
         dispatch(setAuthError(errorMessage));
@@ -134,7 +134,7 @@ export default function OTPVerificationForm() {
           errorMessage = 'Authentication failed. Please try logging in again.';
           // Clear auth data and redirect to signin
           localStorage.clear();
-          router.replace('/signin');
+          router.replace(`${BASE_PATH_FRONT_END}/signin`);
           return;
         } else {
           errorMessage = err.response?.data?.message || errorMessage;

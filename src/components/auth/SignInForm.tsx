@@ -300,7 +300,7 @@ export default function SignInForm() {
 
     if (currentLoginData.LoginType === "2FA") {
       console.log('Redirecting to OTP verification');
-      router.push('/otp-verification');
+      router.push(`${BASE_PATH_FRONT_END}/otp-verification`);
     } else {
       // Set localStorage only
       localStorage.setItem('auth_token', currentLoginData.token);
@@ -308,7 +308,7 @@ export default function SignInForm() {
       localStorage.setItem('tokenExpireTime', currentLoginData.tokenExpireTime);
       localStorage.removeItem('temp_token');
       console.log('Redirecting to dashboard');
-      router.push('/dashboard');
+      router.push(`${BASE_PATH_FRONT_END}/dashboard`);
     }
   }, [loginData, router, dispatch]);
 

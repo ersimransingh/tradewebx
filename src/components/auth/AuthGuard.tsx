@@ -33,8 +33,9 @@ export default function AuthGuard({ children }: AuthGuardProps) {
         // If user is not authenticated and trying to access protected route
         if (!authToken && !isAuthPage) {
           const signInUrl = `${BASE_PATH_FRONT_END}/signin`;
-          // Only redirect if we're not already on the signin page
-          if (pathname !== '/signin') {
+          // Only redirect if we're not already on the signin page (account for basePath)
+          const currentSigninPath = `${BASE_PATH_FRONT_END}/signin`;
+          if (pathname !== '/signin' && pathname !== currentSigninPath) {
             router.replace(signInUrl);
           }
           setIsChecking(false);
@@ -45,8 +46,9 @@ export default function AuthGuard({ children }: AuthGuardProps) {
         // If user is authenticated and trying to access auth pages
         if (authToken && isAuthPage) {
           const dashboardUrl = `${BASE_PATH_FRONT_END}/dashboard`;
-          // Only redirect if we're not already on the dashboard
-          if (pathname !== '/dashboard') {
+          // Only redirect if we're not already on the dashboard (account for basePath)
+          const currentDashboardPath = `${BASE_PATH_FRONT_END}/dashboard`;
+          if (pathname !== '/dashboard' && pathname !== currentDashboardPath) {
             router.replace(dashboardUrl);
           }
           setIsChecking(false);

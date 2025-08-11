@@ -322,10 +322,13 @@ class ApiService {
 
         // Use Next.js router for client-side navigation if available
         if (routerInstance) {
-            routerInstance.replace('/signin');
+            // Use BASE_PATH_FRONT_END for proper routing with basePath
+            const BASE_PATH_FRONT_END = process.env.NEXT_PUBLIC_BASE_PATH || '';
+            routerInstance.replace(`${BASE_PATH_FRONT_END}/signin`);
         } else if (typeof window !== 'undefined') {
             // Fallback to window.location.href if router is not set
-            window.location.href = '/signin';
+            const BASE_PATH_FRONT_END = process.env.NEXT_PUBLIC_BASE_PATH || '';
+            window.location.href = `${BASE_PATH_FRONT_END}/signin`;
         }
 
         // Reset the flag after a delay to allow for navigation
