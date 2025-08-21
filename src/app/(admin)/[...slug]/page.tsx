@@ -14,6 +14,7 @@ import Ipo from "@/apppages/Ipo";
 import AccountClosure from "@/apppages/KycPage/account-closure";
 import Family from "@/apppages/FamilyMapping";
 import ApiConfiguration from "@/apppages/ApiChecker";
+import AccessRight from "@/apppages/AccessRight";
 // Define static route components
 const staticRoutes: Record<string, React.ReactNode> = {
   dashboard: <Dashboard />,
@@ -26,7 +27,8 @@ const staticRoutes: Record<string, React.ReactNode> = {
   marginPledge: <MarginPledgeOnline />,
   ipo: <Ipo />,
   familymapping:<Family />,
-  apiconfiguration:<ApiConfiguration/>
+  apiconfiguration:<ApiConfiguration/>,
+  accessRight:<AccessRight/>,
 };
 
 // Define the type for params explicitly
