@@ -21,7 +21,7 @@ import EditTableRowModal from './EditTableRowModal';
 import FormCreator from './FormCreator';
 import Loader from './Loader';
 import apiService from '@/utils/apiService';
-import { parseSettingsFromXml } from '@/utils/helper';
+import { parseSettingsFromXml, shouldShowButton } from '@/utils/helper';
 import { toast } from "react-toastify";
 
 // const { companyLogo, companyName } = useAppSelector((state) => state.common);
@@ -58,7 +58,7 @@ const safePageDataAccess = (pageData: any, validationResult: PageDataValidationR
     }
 
     const config = pageData[0];
-
+    console.log("Config:", config);
     return {
         config,
         isValid: true,
@@ -1158,6 +1158,10 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
     const safePageData = safePageDataAccess(pageData, validationResult);
     const showTypeList = safePageData.getSetting('levels.0.settings.showTypstFlag') || false;
     const showFilterHorizontally = safePageData.getSetting('filterType') === "onPage";
+    
+    // Extract buttonConfig from pageData settings
+    const buttonConfig = safePageData.getSetting('settings.buttonConfig');
+    console.log('Button config from pageData:', buttonConfig);
 
     return (
         <div className=""
@@ -1193,30 +1197,39 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                         {/* Mobile View - Show essential buttons and More menu */}
                         <div className="flex gap-2 md:hidden">
                             {/* Essential buttons for mobile */}
-                            <div className="relative group">
-                                <button
-                                    className="p-2 rounded hover:bg-gray-100 transition-colors"
-                                    onClick={() => {
-                                        // Clear cache for current filter combination when manually refreshing
-                                        const cacheKey = generateCacheKey(currentLevel, filters, primaryKeyFilters);
-                                        setDataCache(prevCache => {
-                                            const newCache = { ...prevCache };
-                                            delete newCache[cacheKey];
-                                            return newCache;
-                                        });
-                                        fetchData();
-                                    }}
-                                    style={{ color: colors.text }}
-                                >
-                                    <FaSync size={20} />
-                                </button>
-                                <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
-                                    Refresh Data
-                                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-800"></div>
+                            {shouldShowButton({
+                                buttonType: 'refresh',
+                                buttonConfig
+                            }) && (
+                                <div className="relative group">
+                                    <button
+                                        className="p-2 rounded hover:bg-gray-100 transition-colors"
+                                        onClick={() => {
+                                            // Clear cache for current filter combination when manually refreshing
+                                            const cacheKey = generateCacheKey(currentLevel, filters, primaryKeyFilters);
+                                            setDataCache(prevCache => {
+                                                const newCache = { ...prevCache };
+                                                delete newCache[cacheKey];
+                                                return newCache;
+                                            });
+                                            fetchData();
+                                        }}
+                                        style={{ color: colors.text }}
+                                    >
+                                        <FaSync size={20} />
+                                    </button>
+                                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                                        Refresh Data
+                                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-800"></div>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
-                            {(componentType === 'entry' || componentType === "multientry") && (
+                            {shouldShowButton({
+                                buttonType: 'add',
+                                componentType,
+                                buttonConfig
+                            }) && (
                                 <div className="relative group">
                                     <button
                                         className="p-2 rounded hover:bg-gray-100 transition-colors"
@@ -1232,7 +1245,12 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                 </div>
                             )}
 
-                            {!showFilterHorizontally && safePageData.hasFilters() && (
+                            {shouldShowButton({
+                                buttonType: 'filter',
+                                showFilterHorizontally,
+                                hasFilters: safePageData.hasFilters(),
+                                buttonConfig
+                            }) && (
                                 <div className="relative group">
                                     <button
                                         className="p-2 rounded hover:bg-gray-100 transition-colors"
@@ -1267,7 +1285,12 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                         }}
                                     >
                                         <div className="py-1">
-                                            {selectedRows.length > 0 && safePageData.getCurrentLevel(currentLevel)?.settings?.EditableColumn && (
+                                            {shouldShowButton({
+                                                buttonType: 'edit',
+                                                selectedRowsLength: selectedRows.length,
+                                                hasEditableColumn: !!safePageData.getCurrentLevel(currentLevel)?.settings?.EditableColumn,
+                                                buttonConfig
+                                            }) && (
                                                 <button
                                                     onClick={() => {
                                                         setIsEditTableRowModalOpen(true);
@@ -1280,30 +1303,44 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                                     Edit Selected Rows
                                                 </button>
                                             )}
-                                            <button
-                                                onClick={() => {
-                                                    exportTableToExcel(tableRef.current, jsonData, apiData, pageData, appMetadata);
-                                                    setIsMobileMenuOpen(false);
-                                                }}
-                                                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
-                                                style={{ color: colors.text }}
-                                            >
-                                                <FaFileExcel size={16} />
-                                                Export to Excel
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    setPdfParams([tableRef.current, jsonData, appMetadata, apiData, pageData, filters, currentLevel, 'email']);
-                                                    setIsConfirmModalOpen(true);
-                                                    setIsMobileMenuOpen(false);
-                                                }}
-                                                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
-                                                style={{ color: colors.text }}
-                                            >
-                                                <FaEnvelope size={16} />
-                                                Email Report
-                                            </button>
-                                            {showTypeList && (
+                                            {shouldShowButton({
+                                                buttonType: 'excel_export',
+                                                buttonConfig
+                                            }) && (
+                                                <button
+                                                    onClick={() => {
+                                                        exportTableToExcel(tableRef.current, jsonData, apiData, pageData, appMetadata);
+                                                        setIsMobileMenuOpen(false);
+                                                    }}
+                                                    className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
+                                                    style={{ color: colors.text }}
+                                                >
+                                                    <FaFileExcel size={16} />
+                                                    Export to Excel
+                                                </button>
+                                            )}
+                                            {shouldShowButton({
+                                                buttonType: 'email_report',
+                                                buttonConfig
+                                            }) && (
+                                                <button
+                                                    onClick={() => {
+                                                        setPdfParams([tableRef.current, jsonData, appMetadata, apiData, pageData, filters, currentLevel, 'email']);
+                                                        setIsConfirmModalOpen(true);
+                                                        setIsMobileMenuOpen(false);
+                                                    }}
+                                                    className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
+                                                    style={{ color: colors.text }}
+                                                >
+                                                    <FaEnvelope size={16} />
+                                                    Email Report
+                                                </button>
+                                            )}
+                                            {shouldShowButton({
+                                                buttonType: 'download_options',
+                                                showTypeList,
+                                                buttonConfig
+                                            }) && (
                                                 <button
                                                     onClick={() => {
                                                         downloadOption(jsonData, appMetadata, apiData, pageData, filters, currentLevel);
@@ -1316,33 +1353,45 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                                     Download Options
                                                 </button>
                                             )}
-                                            {Object.keys(additionalTables).length == 0 && (
-                                                <>
-                                                    <button
-                                                        onClick={() => {
-                                                            exportTableToCsv(tableRef.current, jsonData, apiData, pageData);
-                                                            setIsMobileMenuOpen(false);
-                                                        }}
-                                                        className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
-                                                        style={{ color: colors.text }}
-                                                    >
-                                                        <FaFileCsv size={16} />
-                                                        Export to CSV
-                                                    </button>
-                                                    <button
-                                                        onClick={() => {
-                                                            exportTableToPdf(tableRef.current, jsonData, appMetadata, apiData, pageData, filters, currentLevel, 'download');
-                                                            setIsMobileMenuOpen(false);
-                                                        }}
-                                                        className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
-                                                        style={{ color: colors.text }}
-                                                    >
-                                                        <FaFilePdf size={16} />
-                                                        Export to PDF
-                                                    </button>
-                                                </>
+                                            {shouldShowButton({
+                                                buttonType: 'csv_export',
+                                                additionalTablesLength: Object.keys(additionalTables).length,
+                                                buttonConfig
+                                            }) && (
+                                                <button
+                                                    onClick={() => {
+                                                        exportTableToCsv(tableRef.current, jsonData, apiData, pageData);
+                                                        setIsMobileMenuOpen(false);
+                                                    }}
+                                                    className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
+                                                    style={{ color: colors.text }}
+                                                >
+                                                    <FaFileCsv size={16} />
+                                                    Export to CSV
+                                                </button>
                                             )}
-                                            {apiData && apiData?.length > 0 && (
+                                            {shouldShowButton({
+                                                buttonType: 'pdf_export',
+                                                additionalTablesLength: Object.keys(additionalTables).length,
+                                                buttonConfig
+                                            }) && (
+                                                <button
+                                                    onClick={() => {
+                                                        exportTableToPdf(tableRef.current, jsonData, appMetadata, apiData, pageData, filters, currentLevel, 'download');
+                                                        setIsMobileMenuOpen(false);
+                                                    }}
+                                                    className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
+                                                    style={{ color: colors.text }}
+                                                >
+                                                    <FaFilePdf size={16} />
+                                                    Export to PDF
+                                                </button>
+                                            )}
+                                            {shouldShowButton({
+                                                buttonType: 'search',
+                                                hasApiData: !!(apiData && apiData?.length > 0),
+                                                buttonConfig
+                                            }) && (
                                                 <button
                                                     onClick={() => {
                                                         handleSearchToggle();
@@ -1406,7 +1455,12 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
 
                         {/* Desktop View - Show all buttons */}
                         <div className="hidden md:flex gap-2">
-                            {selectedRows.length > 0 && safePageData.getCurrentLevel(currentLevel)?.settings?.EditableColumn && (
+                            {shouldShowButton({
+                                buttonType: 'edit',
+                                selectedRowsLength: selectedRows.length,
+                                hasEditableColumn: !!safePageData.getCurrentLevel(currentLevel)?.settings?.EditableColumn,
+                                buttonConfig
+                            }) && (
                                 <div className="relative group">
                                     <button
                                         className="p-2 rounded hover:bg-gray-100 transition-colors"
@@ -1421,7 +1475,11 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                     </div>
                                 </div>
                             )}
-                            {(componentType === 'entry' || componentType === "multientry") && (
+                            {shouldShowButton({
+                                buttonType: 'add',
+                                componentType,
+                                buttonConfig
+                            }) && (
                                 <div className="relative group">
                                     <button
                                         className="p-2 rounded hover:bg-gray-100 transition-colors"
@@ -1441,51 +1499,65 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                     </div>
                                 </div>
                             )}
-                            <div className="relative group">
-                                {/* <button
-                                    className="p-2 rounded hover:bg-gray-100 transition-colors"
-                                    onClick={() => exportTableToExcel(tableRef.current, jsonData, apiData, pageData, appMetadata)}
-                                    style={{ color: colors.text }}
-                                >
-                                    <FaFileExcel size={20} />
-                                </button> */}
-                                <button
-                                    onClick={() => {
-                                        if (apiData?.length > 25000) {
-                                            toast.warning(`Excel export allowed up to 25,000 records. You have ${apiData?.length} records.`);
-                                            return; // stop here, don't export
-                                        }
-                                        exportTableToExcel(tableRef.current, jsonData, apiData, pageData, appMetadata);
-                                    }}
-                                    className="p-2 rounded hover:bg-gray-100 transition-colors"
-                                    style={{ color: colors.text }}
-                                >
-                                    <FaFileExcel size={20} />
-                                </button>
+                            {shouldShowButton({
+                                buttonType: 'excel_export',
+                                buttonConfig
+                            }) && (
+                                <div className="relative group">
+                                    {/* <button
+                                        className="p-2 rounded hover:bg-gray-100 transition-colors"
+                                        onClick={() => exportTableToExcel(tableRef.current, jsonData, apiData, pageData, appMetadata)}
+                                        style={{ color: colors.text }}
+                                    >
+                                        <FaFileExcel size={20} />
+                                    </button> */}
+                                    <button
+                                        onClick={() => {
+                                            if (apiData?.length > 25000) {
+                                                toast.warning(`Excel export allowed up to 25,000 records. You have ${apiData?.length} records.`);
+                                                return; // stop here, don't export
+                                            }
+                                            exportTableToExcel(tableRef.current, jsonData, apiData, pageData, appMetadata);
+                                        }}
+                                        className="p-2 rounded hover:bg-gray-100 transition-colors"
+                                        style={{ color: colors.text }}
+                                    >
+                                        <FaFileExcel size={20} />
+                                    </button>
 
 
-                                <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
-                                    Export to Excel
-                                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-800"></div>
+                                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                                        Export to Excel
+                                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-800"></div>
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="relative group">
-                                <button
-                                    className="p-2 rounded hover:bg-gray-100 transition-colors"
-                                    onClick={() => {
-                                        setPdfParams([tableRef.current, jsonData, appMetadata, apiData, pageData, filters, currentLevel, 'email']);
-                                        setIsConfirmModalOpen(true);
-                                    }}
-                                    style={{ color: colors.text }}
-                                >
-                                    <FaEnvelope size={20} />
-                                </button>
-                                <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
-                                    Email Report
-                                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-800"></div>
+                            )}
+                            {shouldShowButton({
+                                buttonType: 'email_report',
+                                buttonConfig
+                            }) && (
+                                <div className="relative group">
+                                    <button
+                                        className="p-2 rounded hover:bg-gray-100 transition-colors"
+                                        onClick={() => {
+                                            setPdfParams([tableRef.current, jsonData, appMetadata, apiData, pageData, filters, currentLevel, 'email']);
+                                            setIsConfirmModalOpen(true);
+                                        }}
+                                        style={{ color: colors.text }}
+                                    >
+                                        <FaEnvelope size={20} />
+                                    </button>
+                                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                                        Email Report
+                                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-800"></div>
+                                    </div>
                                 </div>
-                            </div>
-                            {showTypeList && (
+                            )}
+                            {shouldShowButton({
+                                buttonType: 'download_options',
+                                showTypeList,
+                                buttonConfig
+                            }) && (
                                 <div className="relative group">
                                     <button
                                         className="p-2 rounded hover:bg-gray-100 transition-colors"
@@ -1500,52 +1572,63 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                     </div>
                                 </div>
                             )}
-                            {Object.keys(additionalTables).length == 0 && (
-                                <>
-                                    <div className="relative group">
-                                        <button
-                                            className="p-2 rounded hover:bg-gray-100 transition-colors"
-                                            onClick={() => exportTableToCsv(tableRef.current, jsonData, apiData, pageData)}
-                                            style={{ color: colors.text }}
-                                        >
-                                            <FaFileCsv size={20} />
-                                        </button>
-                                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
-                                            Export to CSV
-                                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-800"></div>
-                                        </div>
+                            {shouldShowButton({
+                                buttonType: 'csv_export',
+                                additionalTablesLength: Object.keys(additionalTables).length,
+                                buttonConfig
+                            }) && (
+                                <div className="relative group">
+                                    <button
+                                        className="p-2 rounded hover:bg-gray-100 transition-colors"
+                                        onClick={() => exportTableToCsv(tableRef.current, jsonData, apiData, pageData)}
+                                        style={{ color: colors.text }}
+                                    >
+                                        <FaFileCsv size={20} />
+                                    </button>
+                                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                                        Export to CSV
+                                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-800"></div>
                                     </div>
-
-                                    <div className="relative group">
-                                        {/* <button
-                                            className="p-2 rounded hover:bg-gray-100 transition-colors"
-                                            onClick={() => exportTableToPdf(tableRef.current, jsonData, appMetadata, apiData, pageData, filters, currentLevel, 'download')}
-                                            style={{ color: colors.text }}
-                                        >
-                                            <FaFilePdf size={20} />
-                                        </button> */}
-                                        <button
-                                            onClick={() => {
-                                                if (apiData?.length > 8000) {
-                                                    toast.warning(`PDF export allowed up to 8,000 records. You have ${apiData?.length} records.`);
-                                                    return; // stop here
-                                                }
-                                                exportTableToPdf(tableRef.current, jsonData, appMetadata, apiData, pageData, filters, currentLevel, 'download'
-                                                );
-                                            }}
-                                            className="p-2 rounded transition-colors flex items-center hover:bg-gray-100"
-                                            style={{ color: colors.text }}
-                                        >
-                                            <FaFilePdf size={20} />
-                                        </button>
-                                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
-                                            Export to PDF
-                                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-800"></div>
-                                        </div>
-                                    </div>
-                                </>
+                                </div>
                             )}
-                            {apiData && apiData?.length > 0 && (
+                            {shouldShowButton({
+                                buttonType: 'pdf_export',
+                                additionalTablesLength: Object.keys(additionalTables).length,
+                                buttonConfig
+                            }) && (
+                                <div className="relative group">
+                                    {/* <button
+                                        className="p-2 rounded hover:bg-gray-100 transition-colors"
+                                        onClick={() => exportTableToPdf(tableRef.current, jsonData, appMetadata, apiData, pageData, filters, currentLevel, 'download')}
+                                        style={{ color: colors.text }}
+                                    >
+                                        <FaFilePdf size={20} />
+                                    </button> */}
+                                    <button
+                                        onClick={() => {
+                                            if (apiData?.length > 8000) {
+                                                toast.warning(`PDF export allowed up to 8,000 records. You have ${apiData?.length} records.`);
+                                                return; // stop here
+                                            }
+                                            exportTableToPdf(tableRef.current, jsonData, appMetadata, apiData, pageData, filters, currentLevel, 'download'
+                                            );
+                                        }}
+                                        className="p-2 rounded transition-colors flex items-center hover:bg-gray-100"
+                                        style={{ color: colors.text }}
+                                    >
+                                        <FaFilePdf size={20} />
+                                    </button>
+                                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                                        Export to PDF
+                                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-800"></div>
+                                    </div>
+                                </div>
+                            )}
+                            {shouldShowButton({
+                                buttonType: 'search',
+                                hasApiData: !!(apiData && apiData?.length > 0),
+                                buttonConfig
+                            }) && (
                                 <div className="relative search-container group">
                                     <button
                                         className="p-2 rounded hover:bg-gray-100 transition-colors"
@@ -1625,7 +1708,12 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                     <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-800"></div>
                                 </div>
                             </div>
-                            {!showFilterHorizontally && safePageData.hasFilters() && (
+                            {shouldShowButton({
+                                buttonType: 'filter',
+                                showFilterHorizontally,
+                                hasFilters: safePageData.hasFilters(),
+                                buttonConfig
+                            }) && (
                                 <div className="relative group">
                                     <button
                                         className="p-2 rounded hover:bg-gray-100 transition-colors"

@@ -285,6 +285,165 @@ export function displayAndDownloadFile(base64: string, fileDownloadName?: string
     }
 }
 
+// Interface for button configuration
+interface ButtonConfig {
+    show_edit_button?: boolean;
+    show_add_button?: boolean;
+    show_excel_export_button?: boolean;
+    show_email_report_button?: boolean;
+    show_download_options_button?: boolean;
+    show_csv_export_button?: boolean;
+    show_pdf_export_button?: boolean;
+    show_search_button?: boolean;
+    show_refresh_button?: boolean;
+    show_filter_button?: boolean;
+}
+
+// Interface for button visibility parameters
+interface ButtonVisibilityParams {
+    buttonType: 'edit' | 'add' | 'excel_export' | 'email_report' | 'download_options' | 'csv_export' | 'pdf_export' | 'search' | 'refresh' | 'filter';
+    // Existing conditions
+    componentType?: string;
+    selectedRowsLength?: number;
+    hasEditableColumn?: boolean;
+    showFilterHorizontally?: boolean;
+    hasFilters?: boolean;
+    showTypeList?: boolean;
+    additionalTablesLength?: number;
+    hasApiData?: boolean;
+    // New button config from API
+    buttonConfig?: ButtonConfig;
+}
+
+/**
+ * Determines if a button should be visible based on both existing logic and new buttonConfig
+ * @param params - Parameters containing button type, existing conditions, and button config
+ * @returns boolean - true if button should be shown, false otherwise
+ */
+export const shouldShowButton = (params: ButtonVisibilityParams): boolean => {
+    const {
+        buttonType,
+        componentType,
+        selectedRowsLength = 0,
+        hasEditableColumn = false,
+        showFilterHorizontally = false,
+        hasFilters = false,
+        showTypeList = false,
+        additionalTablesLength = 0,
+        hasApiData = false,
+        buttonConfig
+    } = params;
+
+    // First check existing logic conditions
+    let existingLogicResult = false;
+
+    switch (buttonType) {
+        case 'edit':
+            existingLogicResult = selectedRowsLength > 0 && hasEditableColumn;
+            break;
+        
+        case 'add':
+            existingLogicResult = componentType === 'entry' || componentType === 'multientry';
+            break;
+        
+        case 'excel_export':
+            existingLogicResult = true; // Always shown in current logic
+            break;
+        
+        case 'email_report':
+            existingLogicResult = true; // Always shown in current logic
+            break;
+        
+        case 'download_options':
+            existingLogicResult = showTypeList;
+            break;
+        
+        case 'csv_export':
+            existingLogicResult = additionalTablesLength === 0;
+            break;
+        
+        case 'pdf_export':
+            existingLogicResult = additionalTablesLength === 0;
+            break;
+        
+        case 'search':
+            existingLogicResult = hasApiData;
+            break;
+        
+        case 'refresh':
+            existingLogicResult = true; // Always shown in current logic
+            break;
+        
+        case 'filter':
+            existingLogicResult = !showFilterHorizontally && hasFilters;
+            break;
+        
+        default:
+            existingLogicResult = false;
+    }
+
+    // If existing logic says don't show, then don't show regardless of buttonConfig
+    if (!existingLogicResult) {
+        return false;
+    }
+
+    // If no buttonConfig is provided, fall back to existing logic
+    if (!buttonConfig) {
+        return existingLogicResult;
+    }
+
+    // Check buttonConfig setting for this button type
+    let buttonConfigResult = false;
+    
+    switch (buttonType) {
+        case 'edit':
+            buttonConfigResult = buttonConfig.show_edit_button ?? true;
+            break;
+        
+        case 'add':
+            buttonConfigResult = buttonConfig.show_add_button ?? true;
+            break;
+        
+        case 'excel_export':
+            buttonConfigResult = buttonConfig.show_excel_export_button ?? true;
+            break;
+        
+        case 'email_report':
+            buttonConfigResult = buttonConfig.show_email_report_button ?? true;
+            break;
+        
+        case 'download_options':
+            buttonConfigResult = buttonConfig.show_download_options_button ?? true;
+            break;
+        
+        case 'csv_export':
+            buttonConfigResult = buttonConfig.show_csv_export_button ?? true;
+            break;
+        
+        case 'pdf_export':
+            buttonConfigResult = buttonConfig.show_pdf_export_button ?? true;
+            break;
+        
+        case 'search':
+            buttonConfigResult = buttonConfig.show_search_button ?? true;
+            break;
+        
+        case 'refresh':
+            buttonConfigResult = buttonConfig.show_refresh_button ?? true;
+            break;
+        
+        case 'filter':
+            buttonConfigResult = buttonConfig.show_filter_button ?? true;
+            break;
+        
+        default:
+            buttonConfigResult = true;
+    }
+
+    // Both existing logic AND buttonConfig must be true for button to show
+    return existingLogicResult && buttonConfigResult;
+};
+
 
 
 
