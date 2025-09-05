@@ -366,6 +366,29 @@ function Dashboard() {
     const [dropdownChanged, setDropdownChanged] = useState(false);
     const [isRefreshingData, setIsRefreshingData] = useState(false);
 
+    // Utility function to get session key for current user
+    const getSessionKey = () => {
+        const userId = localStorage.getItem('userId');
+        return `dashboard_session_${userId}`;
+    };
+
+    // Utility function to check if session data is valid
+    const isSessionDataValid = () => {
+        const sessionKey = getSessionKey();
+        const sessionData = sessionStorage.getItem(sessionKey);
+        if (sessionData) {
+            try {
+                const parsed = JSON.parse(sessionData);
+                // Check if session data is less than 24 hours old
+                const isRecent = Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000;
+                return isRecent && parsed.fetched;
+            } catch (e) {
+                return false;
+            }
+        }
+        return false;
+    };
+
     console.log(auth.userType, 'auth');
     console.log('🔧 Environment variables check:');
     console.log('BASE_URL:', BASE_URL);
@@ -380,14 +403,21 @@ function Dashboard() {
 
             console.log('🔍 getUserDashboardData called with:', { userId, userType });
 
-            // Try to get cached dropdown options first for immediate display
-            const cachedOptions = localStorage.getItem('userDashboardOptions');
-            console.log('🔍 Cache check - cachedOptions exists:', !!cachedOptions);
-            if (cachedOptions) {
-                console.log('📦 Found cached dropdown options, using cache for immediate display');
+            // Check if we already have data in sessionStorage for this session
+            const sessionKey = getSessionKey();
+            const cachedOptions = sessionStorage.getItem('userDashboardOptions');
+            const sessionData = sessionStorage.getItem(sessionKey);
+
+            console.log('🔍 Session check - cachedOptions exists:', !!cachedOptions);
+            console.log('🔍 Session check - sessionData exists:', !!sessionData);
+            console.log('🔍 Session check - isSessionDataValid:', isSessionDataValid());
+
+            if (cachedOptions && isSessionDataValid()) {
+                console.log('📦 Found cached dropdown options and session data, using cache for immediate display');
                 console.log('📦 Cached data length:', cachedOptions.length);
                 try {
                     const parsedOptions = JSON.parse(cachedOptions);
+                    const parsedSessionData = JSON.parse(sessionData);
                     console.log('📦 Parsed options is array:', Array.isArray(parsedOptions));
                     console.log('📦 Parsed options length:', parsedOptions?.length);
                     if (Array.isArray(parsedOptions) && parsedOptions.length > 0) {
@@ -395,7 +425,7 @@ function Dashboard() {
                         setUserDashData(parsedOptions);
 
                         // Handle client selection with cached options
-                        const savedClient = localStorage.getItem('selectedDashboardClient');
+                        const savedClient = sessionStorage.getItem('selectedDashboardClient');
                         if (savedClient) {
                             try {
                                 const parsedClient = JSON.parse(savedClient);
@@ -422,8 +452,9 @@ function Dashboard() {
                             });
                         }
 
-                        // Continue to fetch fresh data in background (don't return early)
-                        console.log('🔄 Cached data displayed, now fetching fresh data in background...');
+                        // Return early if we have valid session data - no need to fetch again
+                        console.log('✅ Using cached session data, skipping API call');
+                        return;
                     }
                 } catch (e) {
                     console.error('Error parsing cached dropdown options:', e);
@@ -431,7 +462,7 @@ function Dashboard() {
                 }
             }
 
-            // Always fetch fresh dropdown options to update cache
+            // Fetch fresh dropdown options only if not cached
             const xmlData1 = `
             <dsXml>
                 <J_Ui>"ActionName":"Common","Option":"Search","RequestFrom":"W"</J_Ui>
@@ -470,23 +501,17 @@ function Dashboard() {
             console.log('📊 Length:', result?.length);
 
             if (result && Array.isArray(result) && result.length > 0) {
-                console.log('✅ Fresh dropdown data received, updating cache and state');
+                console.log('✅ Fresh dropdown data received, updating sessionStorage cache and state');
                 setUserDashData(result);
 
-                // Update the cache with fresh data
-                localStorage.setItem('userDashboardOptions', JSON.stringify(result));
-
-                // Show success notification if we had cached data (background refresh)
-                if (cachedOptions) {
-                    console.log('🔄 Background refresh completed successfully');
-                    // You can add a toast notification here if you have a toast library
-                    // toast.success('Dashboard data updated successfully');
-                }
+                // Update the sessionStorage cache with fresh data
+                sessionStorage.setItem('userDashboardOptions', JSON.stringify(result));
+                sessionStorage.setItem(sessionKey, JSON.stringify({ fetched: true, timestamp: Date.now() }));
 
                 // Only update selected client if we didn't have cached data or if the current selection is invalid
                 if (!cachedOptions) {
-                    // Check for saved client in localStorage
-                    const savedClient = localStorage.getItem('selectedDashboardClient');
+                    // Check for saved client in sessionStorage
+                    const savedClient = sessionStorage.getItem('selectedDashboardClient');
                     if (savedClient) {
                         try {
                             const parsedClient = JSON.parse(savedClient);
@@ -548,6 +573,26 @@ function Dashboard() {
             dropdownChanged
         });
 
+        // Check if we have cached data for this client in sessionStorage
+        if (selectedClient && !dropdownChanged && !isInitialLoad) {
+            const cachedDataKey = `dashboardData_${selectedClient.value}`;
+            const cachedData = sessionStorage.getItem(cachedDataKey);
+
+            if (cachedData) {
+                console.log('📦 Found cached dashboard data for client:', selectedClient.value);
+                try {
+                    const parsedData = JSON.parse(cachedData);
+                    setDashboardData(parsedData);
+                    setLoading(false);
+                    setError(false);
+                    return; // Use cached data, no need to fetch
+                } catch (e) {
+                    console.error('Error parsing cached dashboard data:', e);
+                    // Continue to fetch fresh data if parsing fails
+                }
+            }
+        }
+
         // Only show loader if data isn't already loaded or dropdown was changed
         if (isInitialLoad || dropdownChanged) {
             setLoading(true);
@@ -588,9 +633,9 @@ function Dashboard() {
             const newData = response.data.data.rs0 || [];
             setDashboardData(newData);
 
-            // Store the data in localStorage
+            // Store the data in sessionStorage
             if (selectedClient) {
-                localStorage.setItem(`dashboardData_${selectedClient.value}`, JSON.stringify(newData));
+                sessionStorage.setItem(`dashboardData_${selectedClient.value}`, JSON.stringify(newData));
             }
 
             // Reset flags
@@ -611,6 +656,27 @@ function Dashboard() {
             setLoading(false);
         }
     };
+
+    // Restore selected client from sessionStorage on component mount
+    useEffect(() => {
+        const savedClient = sessionStorage.getItem('selectedDashboardClient');
+        if (savedClient) {
+            try {
+                const parsedClient = JSON.parse(savedClient);
+                // Validate that the client data has the required structure
+                if (parsedClient && parsedClient.value && parsedClient.label) {
+                    setSelectedClient(parsedClient);
+                    console.log('📦 Restored selected client from sessionStorage:', parsedClient);
+                } else {
+                    console.warn('Invalid client data structure in sessionStorage, clearing...');
+                    sessionStorage.removeItem('selectedDashboardClient');
+                }
+            } catch (e) {
+                console.error('Error parsing saved client from sessionStorage:', e);
+                sessionStorage.removeItem('selectedDashboardClient');
+            }
+        }
+    }, []);
 
     useEffect(() => {
         console.log('🔄 useEffect triggered with auth.userType:', auth.userType);
@@ -637,10 +703,10 @@ function Dashboard() {
         }
     }, [dispatch, lastTradingDate, companyLogo]);
 
-    // Save selected client to localStorage whenever it changes
+    // Save selected client to sessionStorage whenever it changes
     useEffect(() => {
         if (selectedClient) {
-            localStorage.setItem('selectedDashboardClient', JSON.stringify(selectedClient));
+            sessionStorage.setItem('selectedDashboardClient', JSON.stringify(selectedClient));
         }
     }, [selectedClient]);
 
@@ -649,7 +715,7 @@ function Dashboard() {
         if (selectedClient && (auth.userType === 'branch' || auth.userType === 'user')) {
             // Check if we have persisted data for this client
             const persistedDataKey = `dashboardData_${selectedClient.value}`;
-            const savedData = localStorage.getItem(persistedDataKey);
+            const savedData = sessionStorage.getItem(persistedDataKey);
 
             if (savedData && !dropdownChanged && !isInitialLoad) {
                 // Use persisted data if available and dropdown wasn't changed
@@ -681,7 +747,7 @@ function Dashboard() {
     const handleRefresh = useCallback(() => {
         // Clear persisted data for the current client
         if (selectedClient) {
-            localStorage.removeItem(`dashboardData_${selectedClient.value}`);
+            sessionStorage.removeItem(`dashboardData_${selectedClient.value}`);
         }
 
         // Force new data fetch with loader
@@ -693,9 +759,16 @@ function Dashboard() {
 
     // Debug function to clear cache and force fresh API call
     const clearCacheAndRefresh = useCallback(() => {
-        console.log('🧹 Clearing cache and forcing fresh API call...');
-        localStorage.removeItem('userDashboardOptions');
-        localStorage.removeItem('selectedDashboardClient');
+        console.log('🧹 Clearing sessionStorage cache and forcing fresh API call...');
+        sessionStorage.removeItem('userDashboardOptions');
+        sessionStorage.removeItem('selectedDashboardClient');
+        // Clear all dashboard data cache
+        const keys = Object.keys(sessionStorage);
+        keys.forEach(key => {
+            if (key.startsWith('dashboardData_') || key.startsWith('dashboard_session_')) {
+                sessionStorage.removeItem(key);
+            }
+        });
         setUserDashData([]);
         setSelectedClient(null);
         setIsInitialLoad(true);
@@ -710,13 +783,26 @@ function Dashboard() {
         }
     }, [auth.userType]);
 
-    // Clear cache on mount and auth changes to ensure fresh data after login
+    // Function to clear session data on logout
+    const clearSessionData = useCallback(() => {
+        console.log('🧹 Clearing session data on logout...');
+        sessionStorage.removeItem('userDashboardOptions');
+        sessionStorage.removeItem('selectedDashboardClient');
+        // Clear all dashboard data cache
+        const keys = Object.keys(sessionStorage);
+        keys.forEach(key => {
+            if (key.startsWith('dashboardData_') || key.startsWith('dashboard_session_')) {
+                sessionStorage.removeItem(key);
+            }
+        });
+    }, []);
+
+    // Clear sessionStorage cache on mount and auth changes to ensure fresh data after login
     useEffect(() => {
-        console.log('🔄 Clearing dashboard cache on mount/auth change...');
-        localStorage.removeItem('userDashboardOptions');
-        localStorage.removeItem('selectedDashboardClient');
+        console.log('🔄 Clearing dashboard sessionStorage cache on mount/auth change...');
+        clearSessionData();
         // Note: We don't clear the dashboard data cache here as it's handled in the data fetching logic
-    }, [auth.userId]); // Clear cache when user ID changes (login/logout)
+    }, [auth.userId, clearSessionData]); // Clear cache when user ID changes (login/logout)
 
     if (loading) {
         return (
