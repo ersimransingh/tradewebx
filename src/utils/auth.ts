@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { APP_METADATA_KEY, BASE_PATH_FRONT_END, BASE_URL } from './constants';
 import { clearIndexedDB, clearLocalStorage } from './helper';
+import { localStorageManager, STORAGE_KEYS } from './localStorageManager';
 
 // Create axios instance with default config
 export const api = axios.create({
@@ -92,30 +93,12 @@ export const clearAuthStorage = () => {
 // Comprehensive function to clear all authentication data
 export const clearAllAuthData = () => {
   if (typeof window !== 'undefined') {
-    // Clear all authentication-related localStorage items
-    localStorage.removeItem('userId');
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('tokenExpireTime');
-    localStorage.removeItem('clientCode');
-    localStorage.removeItem('clientName');
-    localStorage.removeItem('userType');
-    localStorage.removeItem('loginType');
-    localStorage.removeItem('temp_token');
+    // Use the new localStorage manager for safe clearing
+    localStorageManager.clearAuthData();
+    localStorageManager.clearEkycData();
 
-    // Clear ekyc related states
-    localStorage.removeItem('ekyc_dynamicData');
-    localStorage.removeItem('ekyc_activeTab');
-    localStorage.removeItem('redirectedField');
-    localStorage.removeItem('ekyc_submit');
-    localStorage.removeItem('ekyc_viewMode');
-    localStorage.removeItem('ekyc_viewMode_for_checker');
-    localStorage.removeItem('ekyc_checker');
-
-    // Clear any other auth-related items
-    localStorage.removeItem('auth_token_integrity');
-    localStorage.removeItem('login_attempts');
-    localStorage.removeItem('KRAredirectedField');
+    // Clear any remaining auth-related items
+    localStorageManager.removeItem('KRAredirectedField');
 
     // Clear IndexedDB
     clearIndexedDB();

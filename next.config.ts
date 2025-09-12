@@ -10,6 +10,18 @@ const nextConfig: NextConfig = {
   output: 'standalone',
   poweredByHeader: false, // Disable X-Powered-By header
 
+  // Add experimental features for better error handling
+  experimental: {
+    serverComponentsExternalPackages: ['axios'],
+  },
+
+  // Add logging for debugging
+  logging: {
+    fetches: {
+      fullUrl: true,
+    },
+  },
+
   // Security headers configuration
   async headers() {
     // Generate CSP policy that allows both HTTP and HTTPS
