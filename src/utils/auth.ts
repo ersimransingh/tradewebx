@@ -412,7 +412,7 @@ export const clearAllAuthData = () => {
     removeLocalStorage('auth_token_integrity');
     removeLocalStorage('login_attempts');
     removeLocalStorage('KRAredirectedField');
-
+    localStorage.clear();
     // Clear IndexedDB
     clearIndexedDB();
 
