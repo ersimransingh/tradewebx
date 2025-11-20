@@ -1791,6 +1791,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                 onSortChange={setSortConfig}
                 isSortingAllowed={safePageData.getCurrentLevel(currentLevel)?.isShortAble !== "false"}
                 onApply={() => { }}
+                totalRecords={apiData?.length}   // <-- REQUIRED
             />
             <ConfirmationModal
                 isOpen={isConfirmationModalOpen}

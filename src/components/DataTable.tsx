@@ -1422,8 +1422,11 @@ useEffect(() => {
                         aria-label="The Actions column, press Enter, then Tab to reach the View button. Press Enter to open the popup, and use Tab to move to the Edit and Delete buttons."
                         >
                         <button
-                            tabIndex={-1}      // IMPORTANT: Prevents double-tab
-                            aria-hidden="true" // NVDA won't read this layer
+                            tabIndex={-1}      
+                            role="button"
+                            aria-label={`View details for ${row.Name || "this record"}`}
+                            onClick={() => handleAction("view", row)}
+                            onKeyDown={(e) => e.key === "Enter" && handleAction("view", row)}
                             className="view-button"
                         >
                             View
@@ -1431,8 +1434,11 @@ useEffect(() => {
 
                         <button
                             tabIndex={-1}
-                            aria-hidden="true"
+                            role="button"
+                            aria-label={`Edit details for ${row.Name || "this record"}`}
                             disabled={row?.isUpdated === "true"}
+                            onClick={() => handleAction("edit", row)}
+                            onKeyDown={(e) => e.key === "Enter" && handleAction("edit", row)}
                             className="edit-button"
                         >
                             Edit
@@ -1440,9 +1446,12 @@ useEffect(() => {
 
                         <button
                             tabIndex={-1}
-                            aria-hidden="true"
+                            role="button"
+                            aria-label={`Delete ${row.Name || "this record"}`}
                             disabled={row?.isDeleted === "true"}
-                        className="delete-button"
+                            onClick={() => handleAction("delete", row)}
+                            onKeyDown={(e) => e.key === "Enter" && handleAction("delete", row)}
+                            className="delete-button"
                         >
                             Delete
                         </button>
