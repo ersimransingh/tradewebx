@@ -45,7 +45,18 @@ const ChildEntryModal: React.FC<ChildEntryModalProps> = ({
     setDropDownOptions,
     childModalZindex
 }) => {
+
+    const modalRef = React.useRef<HTMLDivElement>(null);
+
     if (!isOpen) return null;
+
+    useEffect(() => {
+        if ( modalRef.current) {
+            setTimeout(() => {
+                modalRef.current?.focus();  // Move screen reader cursor here
+            }, 50);
+        }
+    }, [modalRef.current]);
 
     const isChildInvalid = Object.values(fieldErrors).some(error => error);
     const handleFormSubmit = () => {
@@ -90,7 +101,7 @@ const ChildEntryModal: React.FC<ChildEntryModalProps> = ({
         }
     };
     return (
-        <div className={`fixed inset-0 flex items-center justify-center ${childModalZindex}`} style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
+        <div id='child_pop_up'  ref={modalRef} tabIndex={-1} aria-modal="true" role="dialog" className={`fixed inset-0 flex items-center justify-center ${childModalZindex}`} style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
             <div className="bg-white rounded-lg p-6 w-full max-w-[80vw] overflow-y-auto min-h-[75vh] max-h-[75vh]">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-semibold">{pageName}</h2>
