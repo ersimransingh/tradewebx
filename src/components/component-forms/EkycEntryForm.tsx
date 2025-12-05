@@ -100,12 +100,14 @@ const DropdownField: React.FC<{
         const dropdownStyles = getDropdownStyles(colors, isDisabled, fieldErrors, field, isJustUpdated, "100%");
 
         return (
-            <div id={`select-${field?.wKey}-label`}  key={field?.Srno} className="mb-1">
-                <label  className="block text-sm font-medium mb-1" style={{ color: colors.text }}>
+            <div key={field?.Srno} className="mb-1">
+                <label  id={`label-${field?.wKey}`} className="block text-sm font-medium mb-1" style={{ color: colors.text }}>
                     {field?.label}
                     {isRequired && <span className="text-red-500 ml-1">*</span>}
                 </label>
                 <CreatableSelect
+                    aria-labelledby={`label-${field?.wKey}`}    // Read label  
+                    aria-describedby={`value-${field?.wKey}`}   // Read current value
                     options={visibleOptions}
                     isClearable
                     value={options.find((opt: any) => opt.value.toString() === formValues[field?.wKey]?.toString()) || null}
@@ -124,7 +126,6 @@ const DropdownField: React.FC<{
                             : "Select..."
                     }
                     className="react-select-container"
-                    aria-labelledby={`select-${field?.wKey}-label`}
                     classNamePrefix="react-select"
                     isLoading={loadingDropdowns[field?.wKey]}
                     filterOption={() => true}
@@ -530,7 +531,11 @@ const EkycEntryForm: React.FC<EntryFormProps> = ({
                 );
             case 'WDateBox':
                 return (
-                    <div key={`dateBox-${field.Srno}-${field.wKey}`} className={marginBottom}>
+                    <div 
+                    tabIndex={0}
+                    aria-labelledby={`label-${field.wKey}`}
+                    aria-readonly="true"
+                    key={`dateBox-${field.Srno}-${field.wKey}`} className={marginBottom}>
                         <label className="block text-sm font-medium mb-1" style={{ color: colors.text }}>
                             {field.label}
                             {isRequired && <span className="text-red-500 ml-1">*</span>}
@@ -574,12 +579,13 @@ const EkycEntryForm: React.FC<EntryFormProps> = ({
                 if (!viewMode && (field.redirectUrl === "true" || field.OTPRequire)) {
                     return (
                         <div key={`textBox-${field.Srno}-${field.wKey}`} className={marginBottom}>
-                            <label className="block text-sm font-medium mb-1" style={{ color: colors.text }}>
+                            <label id={`label-${field.wKey}`} className="block text-sm font-medium mb-1" style={{ color: colors.text }}>
                                 {field.label}
                                 {isRequired && <span className="text-red-500 ml-1">*</span>}
                             </label>
                             <div style={{ display: 'flex', alignItems: 'center' }}>
                                 <input
+                                    id={`input-${field.wKey}`}
                                     type="text"
                                     className={`rounded-r-none w-full px-3 py-1 border border-r-0 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${hasError ? 'border-red-500' : 'border-gray-300'}`}
                                     style={{
@@ -590,15 +596,21 @@ const EkycEntryForm: React.FC<EntryFormProps> = ({
                                         borderBottomRightRadius: 0
                                     }}
                                     value={formValues[field.wKey] || ''}
-                                    readOnly
-                                    disabled={true}
+                                    readOnly={true} 
+                                    // disabled={true}
                                     placeholder={field.label}
+                                    aria-readonly="true"
+                                    aria-disabled="true" 
+                                    aria-labelledby={`label-${field.wKey}`}  // Reads label
+                                    aria-describedby={`desc-${field.wKey}`}  // Reads helper text if any
+                                    tabIndex={0} 
                                 />
 
                                 <button
                                     type="button"
                                     className="rounded-l-none px-3 py-1 border rounded-md border-black"
                                     disabled={viewMode}
+                                    aria-label={`Modify ${field.label}`}   // <- NVDA reads full
                                     style={{
                                         backgroundColor: colors.background,
                                         color: colors.text,
@@ -633,7 +645,7 @@ const EkycEntryForm: React.FC<EntryFormProps> = ({
                 }
                 return (
                     <div key={`textBox-${field.Srno}-${field.wKey}`} className={marginBottom}>
-                        <label className="block text-sm font-medium mb-1" style={{ color: colors.text }}>
+                        <label  id={`label-${field.wKey}`} className="block text-sm font-medium mb-1" style={{ color: colors.text }}>
                             {field.label}
                             {isRequired && <span className="text-red-500 ml-1">*</span>}
                         </label>
@@ -658,7 +670,11 @@ const EkycEntryForm: React.FC<EntryFormProps> = ({
                             }}
                             onBlur={() => handleBlur(field)}
                             placeholder={field.label}
-                            disabled={!isEnabled}
+                            // disabled={!isEnabled}
+                            readOnly={!isEnabled}
+                            aria-disabled={!isEnabled}
+                            tabIndex={0}                          //  allows focus always
+                            aria-labelledby={`label-${field.wKey}`} //  NVDA reads label + value
                         />
                         {hasError && (
                             <span className="text-red-500 text-sm">{fieldErrors[field.wKey]}</span>
@@ -693,10 +709,16 @@ const EkycEntryForm: React.FC<EntryFormProps> = ({
             case 'WDisplayBox':
                 return (
                     <div key={`displayBox-${field.Srno}-${field.wKey}`} className={marginBottom}>
-                        <label className="block text-sm font-medium mb-1" style={{ color: colors.text }}>
+                        <label id={`label-${field.wKey}`} className="block text-sm font-medium mb-1" style={{ color: colors.text }}>
                             {field.label}
                         </label>
                         <div
+                            role="textbox"               // ✓ announces as text field
+                            tabIndex={0}                 // ✓ focusable with TAB
+                            aria-labelledby={`label-${field.wKey}`} // ✓ reads label
+                            aria-readonly="true"         // ✓ NVDA says "read only"
+                            aria-disabled={true}         // ✓ NVDA says "unavailable"
+                            aria-describedby={`desc-${field.wKey}`} // optional extra info
                             className="w-full px-3 py-1 border rounded-md" style={{
                                 borderColor: hasError ? 'red' : !isEnabled ? '#d1d5db' : colors.textInputBorder,
                                 backgroundColor: !isEnabled ? "#f2f2f0" : colors.textInputBackground,
@@ -729,8 +751,7 @@ const EkycEntryForm: React.FC<EntryFormProps> = ({
                             key={`fileInput-${field.Srno}-${field.wKey}`}
                             className={marginBottom}
                         >
-                            <label
-                                className="block text-sm font-medium mb-1" style={{ color: colors.text }}>
+                            <label className="block text-sm font-medium mb-1" style={{ color: colors.text }}>
                                 {field.label}
                                 {isRequired && <span className="text-red-500 ml-1">*</span>}
                             </label>

@@ -68,6 +68,10 @@ const KycBank = ({ formFields, tableData, setFieldData, setActiveTab, Settings }
                 color: row.IsInserted === "true" || row.IsModified === "true" ? 'green' : 'inherit'
               }}>
                 <input
+                  id={`chk-${field.wKey}`}
+                  role="checkbox"
+                  tabIndex={0}                 // <-- allow focus even when disabled
+                  aria-label={field.label}  
                   type="checkbox"
                   checked={row[field.wKey] === "true"}
                   readOnly
