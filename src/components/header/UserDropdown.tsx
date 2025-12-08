@@ -25,7 +25,7 @@ export default function UserDropdown() {
         className="flex items-center text-gray-700 dark:text-gray-400 dropdown-toggle"
       >
         <span className="mr-3 overflow-hidden rounded-full h-9 w-9">
-          <div className="flex items-center justify-center w-full h-full bg-blue-500 text-white rounded-full">
+          <div className="flex items-center justify-center w-full h-full bg-[#0053b3] text-white rounded-full">
             {userData?.clientName && userData.clientName !== "undefined"
               ? userData.clientName.split(' ')
                 .slice(0, 2)
