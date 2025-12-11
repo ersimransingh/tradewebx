@@ -24,6 +24,7 @@ import JSZip from "jszip";
 import { FaSpinner } from 'react-icons/fa';
 import Loader from './Loader';
 import { handleLoopThroughMultiSelectKeyHandler, handleLoopThroughMultiSelectKeyHandlerDownloadZip, handleLoopThroughMultiSelectKeyHandlerDownloadZipExcel, handleLoopThroughMultiSelectKeyHandlerExcel } from '@/utils/dataTableHelper';
+import { ensureContrastColor } from '@/utils/helper';
 
 
 
@@ -952,10 +953,19 @@ useEffect(() => {
                     const columns = colorRule.key.split(',').map((key: any) => key.trim());
                     columns.forEach((column: any) => {
                         if (newRow.hasOwnProperty(column)) {
-                            const color = getValueBasedColor(newRow[column], colorRule);
-                            if (color) {
-                                newRow[column] = <div style={{ color }}>{newRow[column]}</div>;
-                            }
+                            // const color = getValueBasedColor(newRow[column], colorRule);
+                            // if (color) {
+                            //     newRow[column] = <div style={{ color }}>{newRow[column]}</div>;
+                            // }
+                             const rawColor = getValueBasedColor(newRow[column], colorRule);
+                             if (rawColor) {
+                             const accessibleColor = ensureContrastColor(rawColor, "#e3f0ff");
+                            newRow[column] = (
+                                <div style={{ color: accessibleColor }}>
+                                    {newRow[column]}
+                                </div>
+                            );
+                          }
                         }
                     });
                 });

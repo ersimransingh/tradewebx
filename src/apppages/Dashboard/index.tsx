@@ -11,7 +11,7 @@ import { useAppDispatch, useAppSelector } from '@/redux/hooks';
 import { fetchLastTradingDate, fetchInitializeLogin } from '@/redux/features/common/commonSlice';
 import AsyncSearchDropdown from  '@/components/form/DropDown/AsyncSearchDropdown';
 import apiService from '@/utils/apiService';
-import { encryptData, getLocalStorage } from '@/utils/helper';
+import { encryptData, getLocalStorage, ensureContrastColor } from '@/utils/helper';
 
 const ReactApexChart = nextDynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -165,66 +165,14 @@ function Card({ cardData, onRefresh, selectedClient, auth }: any) {
                         )}
                     </div>
                     <div className="p-4 flex">
-                        {/* <div className="w-1/2">
+                        <div className="w-1/2">
                             <ReactApexChart
                                 options={pieOptions}
                                 series={series}
                                 type="donut"
                                 height={200}
                             />
-                        </div> */}
-                    {/* start */}
-                    <div className="w-1/2">
-                    {/* Accessible wrapper for NVDA */}
-                    <div
-                        role="img"
-                        tabIndex={0}
-                        aria-label={`${chart.name} donut chart showing distribution`}
-                        aria-describedby={`chart-desc-${index}`}
-                        style={{ outline: "none" }}
-                    >
-                        <ReactApexChart
-                        options={pieOptions}
-                        series={series}
-                        type="donut"
-                        height={200}
-                        />
-                    </div>
-
-                    {/* NVDA-readable chart summary */}
-                    <p id={`chart-desc-${index}`} className="sr-only">
-                        This chart shows:
-                        {pieItems.map((item: any) => `${item.label.text}: ${item.value.text}. `)}
-                        {totalItem ? `Total: ${totalItem.value.text}.` : ""}
-                    </p>
-
-                    {/* Screen-reader-only data table */}
-                    <table className="sr-only">
-                        <caption>{chart.name} chart data</caption>
-                        <thead>
-                        <tr>
-                            <th>Label</th>
-                            <th>Value</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {pieItems.map((item: any, i: number) => (
-                            <tr key={i}>
-                            <td>{item.label.text}</td>
-                            <td>{item.value.text}</td>
-                            </tr>
-                        ))}
-                        {totalItem && (
-                            <tr>
-                            <td>Total</td>
-                            <td>{totalItem.value.text}</td>
-                            </tr>
-                        )}
-                        </tbody>
-                    </table>
-                    </div>
-
-                        {/* end */}
+                        </div>
                         <div className="w-1/2 flex flex-col justify-center">
                             {/* Custom legend */}
                             <div className="space-y-2">
@@ -380,7 +328,8 @@ function Card({ cardData, onRefresh, selectedClient, auth }: any) {
                                                         item.label.text
                                                     )}
                                                 </span>
-                                                <span style={{ color: item.value.color }}>
+                                                {/* <span style={{ color: item.value.color }}> */}
+                                                <span style={{ color: ensureContrastColor(item.value.color) }}>
                                                     {navigateTo && item.navigateTo ? (
                                                         <Link
                                                             href={getLinkPath(item.navigateTo, {
