@@ -686,6 +686,5 @@ export function ensureContrastColor(
   while (getContrastRatio(hex, bgColor) < 4.5) {
     hex = darken(hex, 12);
   }
-
   return hex;
 }
