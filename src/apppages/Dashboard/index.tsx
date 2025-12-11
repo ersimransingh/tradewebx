@@ -11,7 +11,7 @@ import { useAppDispatch, useAppSelector } from '@/redux/hooks';
 import { fetchLastTradingDate, fetchInitializeLogin } from '@/redux/features/common/commonSlice';
 import CommonCustomDropdown from '@/components/form/DropDown/CommonDropDown';
 import apiService from '@/utils/apiService';
-import { encryptData, getLocalStorage } from '@/utils/helper';
+import { encryptData, getLocalStorage,ensureContrastColor } from '@/utils/helper';
 
 const ReactApexChart = nextDynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -251,7 +251,8 @@ function Card({ cardData, onRefresh, selectedClient, auth }: any) {
                                                 )}
                                             </span>
                                         </div>
-                                        <span style={{ color: item.value.color || colors.text }}>
+                                        {/* <span style={{ color: item.value.color || colors.text }}> */}
+                                        <span style={{ color: ensureContrastColor(item.value.color) }}>
                                             {item.navigateTo ? (
                                                 <Link
                                                     href={getLinkPath(item.navigateTo, {
