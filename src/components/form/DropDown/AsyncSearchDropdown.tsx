@@ -92,6 +92,7 @@ const AsyncSearchDropdown: React.FC<AsyncSearchDropdownProps> = ({
 
   return (
     <AsyncSelect
+      aria-label="Client Selection"
       cacheOptions
       defaultOptions={defaultOptions}
       loadOptions={loadOptions}

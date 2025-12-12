@@ -11,7 +11,7 @@ import { useAppDispatch, useAppSelector } from '@/redux/hooks';
 import { fetchLastTradingDate, fetchInitializeLogin } from '@/redux/features/common/commonSlice';
 import AsyncSearchDropdown from  '@/components/form/DropDown/AsyncSearchDropdown';
 import apiService from '@/utils/apiService';
-import { encryptData, getLocalStorage } from '@/utils/helper';
+import { encryptData, getLocalStorage,ensureContrastColor } from '@/utils/helper';
 
 const ReactApexChart = nextDynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -275,7 +275,7 @@ function Card({ cardData, onRefresh, selectedClient, auth }: any) {
                                         <span style={{ color: totalItem.label.color || colors.text, fontWeight: 'bold' }}>
                                             {totalItem.label.text}
                                         </span>
-                                        <span style={{ color: totalItem.value.color || colors.text, fontWeight: 'bold' }}>
+                                        <span style={{ color: ensureContrastColor(totalItem.value.color || colors.text), fontWeight: 'bold' }}>
                                             {totalItem.value.text}
                                         </span>
                                     </div>
@@ -380,7 +380,8 @@ function Card({ cardData, onRefresh, selectedClient, auth }: any) {
                                                         item.label.text
                                                     )}
                                                 </span>
-                                                <span style={{ color: item.value.color }}>
+                                                {/* <span style={{ color: item.value.color }}> */}
+                                                <span style={{ color: ensureContrastColor(item.value.color) }}>
                                                     {navigateTo && item.navigateTo ? (
                                                         <Link
                                                             href={getLinkPath(item.navigateTo, {

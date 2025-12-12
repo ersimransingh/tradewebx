@@ -70,6 +70,7 @@ const Input: FC<InputProps> = ({
   return (
     <div className="relative">
       <input
+        aria-label="Enter values"
         type={type}
         id={id}
         name={name}
