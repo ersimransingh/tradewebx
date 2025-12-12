@@ -6,7 +6,7 @@ import axios from 'axios';
 import { BASE_URL, PATH_URL } from '@/utils/constants';
 import moment from 'moment';
 import FilterModal from './FilterModal';
-import { FaSync, FaFilter, FaDownload, FaFileCsv, FaFilePdf, FaPlus, FaEdit, FaFileExcel, FaEnvelope, FaSearch, FaTimes, FaEllipsisV, FaRegEnvelope } from 'react-icons/fa';
+import { FaSync, FaFilter, FaDownload, FaFileCsv, FaFilePdf, FaPlus, FaEdit, FaFileExcel, FaEnvelope, FaSearch, FaTimes, FaEllipsisV, FaRegEnvelope, FaArrowsAltH } from 'react-icons/fa';
 import { useTheme } from '@/context/ThemeContext';
 import DataTable, { exportTableToCsv, exportTableToPdf, exportTableToExcel, downloadOption } from './DataTable';
 import { store } from "@/redux/store";
@@ -45,7 +45,7 @@ interface PageDataValidationResult {
 }
 
 // Utility function to safely access pageData properties
-const safePageDataAccess = (pageData: any, validationResult: PageDataValidationResult | null) => {
+const safePageDataAccess = (pageData: any, validationResult: PageDataValidationResult | null, dynamicLevels: any[] = []) => {
     if (!validationResult?.isValid || !pageData?.[0]) {
         return {
             config: null,
@@ -58,21 +58,22 @@ const safePageDataAccess = (pageData: any, validationResult: PageDataValidationR
     }
 
     const config = pageData[0];
+    const allLevels = [...(config.levels || []), ...dynamicLevels];
 
     return {
         config,
         isValid: true,
         getCurrentLevel: (currentLevel: number) => {
-            if (!config.levels || !Array.isArray(config.levels) || currentLevel >= config.levels.length) {
+            if (!allLevels || !Array.isArray(allLevels) || currentLevel >= allLevels.length) {
                 return null;
             }
-            return config.levels[currentLevel];
+            return allLevels[currentLevel];
         },
         hasFilters: () => {
             return config.filters && Array.isArray(config.filters) && config.filters.length > 0;
         },
         getLevels: () => {
-            return config.levels && Array.isArray(config.levels) ? config.levels : [];
+            return allLevels;
         },
         getSetting: (path: string) => {
             try {
@@ -249,12 +250,12 @@ const validatePageData = (pageData: any): PageDataValidationResult => {
 };
 
 const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ componentName, componentType }) => {
-    console.log("check comp names", componentName, componentType)
     const menuItems = useAppSelector(selectAllMenuItems);
     const searchParams = useSearchParams();
     const clientCodeParam = searchParams.get('clientCode');
     const clientCode = clientCodeParam ? decryptData(clientCodeParam) : null;
     const [currentLevel, setCurrentLevel] = useState(0);
+    const [dynamicLevels, setDynamicLevels] = useState<any[]>([]);
     const [apiData, setApiData] = useState<any>(null);
     const [additionalTables, setAdditionalTables] = useState<Record<string, any[]>>({});
     const [isLoading, setIsLoading] = useState(false);
@@ -289,6 +290,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
     const [hasFetchAttempted, setHasFetchAttempted] = useState(false);
     const [pageLoaded, setPageLoaded] = useState(false);
     const [isPageLoaded, setIsPageLoaded] = useState(false);
+    const [isAutoWidth, setIsAutoWidth] = useState(false);
 
     // Error handling state
     const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
@@ -327,8 +329,6 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
         responseTime: number | undefined;
         timestamp: number;
     }>>({});
-
-    console.log("check level stack",levelStack)
 
     // Function to generate cache key based on current state
     const generateCacheKey = (level: number, filters: Record<string, any>, primaryFilters: Record<string, any>) => {
@@ -386,6 +386,21 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
 
     const pageData: any = findPageData();
     const OpenedPageName = pageData?.length ? pageData[0]?.level : "Add Master From Details"
+
+    // Safe access to pageData properties with validation
+    const safePageData = safePageDataAccess(pageData, validationResult, dynamicLevels);
+
+    // Create merged page data for DataTable to support dynamic levels in exports
+    const mergedPageData = React.useMemo(() => {
+        if (!pageData?.[0]) return pageData;
+        return [{
+            ...pageData[0],
+            levels: [...(pageData[0].levels || []), ...dynamicLevels]
+        }];
+    }, [pageData, dynamicLevels]);
+
+    const showTypeList = safePageData.getSetting('levels.0.settings.showTypstFlag') || false;
+    const showFilterHorizontally = safePageData.getSetting('filterType') === "onPage";
 
     // Validate pageData whenever it changes
     useEffect(() => {
@@ -582,6 +597,21 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
             setAreFiltersInitialized(true); // Set to true to prevent blocking
         }
     }, [pageData, clientCode, validationResult]);
+    
+    // Trigger fetch when currentLevel or related dependencies change
+    useEffect(() => {
+        if (!areFiltersInitialized) return;
+
+        if (currentLevel > 0) {
+             console.warn('▶️ Fetching data for level:', currentLevel);
+             fetchData();
+        } else if (currentLevel === 0 && hasFetchedRef.current) {
+             console.warn('▶️ Refreshing main level data (Using Cache)');
+             // Use cache if available (true), otherwise fetch
+             fetchData(undefined, true);
+        }
+    }, [currentLevel, primaryKeyFilters, areFiltersInitialized]);
+
 
     // Set autoFetch based on pageData and clientCode with validation
     useEffect(() => {
@@ -601,14 +631,14 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                 }
                 const hasFilters = filters && Array.isArray(filters) && filters.length > 0;
 
-                // If we have a client code, we want to fetch data regardless of autoFetch setting
+                // Initial fetch logic
                 if (clientCode) {
-                    fetchData();
-                } else if (!newAutoFetch && hasFilters) {
+                    } else if (!newAutoFetch && hasFilters) {
                     // Only skip fetch if autoFetch is false AND there are filters to configure
                     return;
                 }
-                if (!hasFetchedRef.current) {
+                
+                if (!hasFetchedRef.current && areFiltersInitialized) {
                     fetchData();
                     hasFetchedRef.current = true; // prevent second run
                 }
@@ -655,9 +685,11 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
         }
 
         // Additional safety checks
-        if (!pageData[0] || !pageData[0].levels || !Array.isArray(pageData[0].levels) ||
-            currentLevel >= pageData[0].levels.length || !pageData[0].levels[currentLevel]) {
-            console.error('Cannot fetch data: Invalid level configuration');
+        // We need to check against ALL levels (static + dynamic)
+        const allLevels = [...(pageData[0].levels || []), ...dynamicLevels];
+
+        if (!allLevels || !Array.isArray(allLevels) ||
+            currentLevel >= allLevels.length || !allLevels[currentLevel]) {
             return;
         }
 
@@ -733,15 +765,56 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
             }
 
             // Safely get J_Ui data
-            const currentLevelConfig = pageData[0].levels[currentLevel];
-            const jUiData = currentLevelConfig.J_Ui || {};
+            const allLevels = [...(pageData[0].levels || []), ...dynamicLevels];
+            const currentLevelConfig = allLevels[currentLevel];
+            
+            if (!currentLevelConfig) {
+                 console.error('Invalid level configuration in fetchData', currentLevel);
+                 setIsLoading(false);
+                 return;
+            }
+
+            // Determine the configuration source (handle nested dsXml if present)
+            const configSource = currentLevelConfig?.dsXml || currentLevelConfig || {};
+
+            let jUiData = configSource.J_Ui;
+            
+            // Fallback for Level 0: Use MasterEntry J_Ui if not defined in level config
+            if (!jUiData && currentLevel === 0) {
+                console.warn("⚠️ Level 0 J_Ui missing, using MasterEntry fallback");
+                jUiData = pageData[0]?.Entry?.MasterEntry?.J_Ui;
+            }
+            
+            jUiData = jUiData || {};
+            
+            console.log("✅ Final J_Ui Data:", jUiData);
+
+            const sqlQuery = configSource.Sql || pageData[0].Sql || '';
+
+            // Construct J_Api
+            let jApiStr = `"UserId":"${getLocalStorage('userId')}", "UserType":"${getLocalStorage('userType')}"`;
+            
+            if (configSource.J_Api && typeof configSource.J_Api === 'object') {
+                 // Replace placeholders like <<USERID>>
+                 const apiConfig = JSON.parse(JSON.stringify(configSource.J_Api)); // clone
+                 
+                 Object.keys(apiConfig).forEach(key => {
+                     if (apiConfig[key] === '<<USERID>>') {
+                         apiConfig[key] = getLocalStorage('userId');
+                     }
+                     // Add other replacements if needed
+                 });
+
+                 const configJApi = JSON.stringify(apiConfig).slice(1, -1);
+                 jApiStr = `${configJApi}`;  
+                }
 
             const xmlData = `<dsXml>
                 <J_Ui>${JSON.stringify(jUiData).slice(1, -1)}</J_Ui>
-                <Sql>${pageData[0].Sql || ''}</Sql>
+                <Sql>${sqlQuery}</Sql>
                 <X_Filter>${filterXml}</X_Filter>
                 <X_GFilter></X_GFilter>
-                <J_Api>"UserId":"${getLocalStorage('userId')}", "UserType":"${getLocalStorage('userType')}"</J_Api>
+                <J_Api>${jApiStr}</J_Api>
             </dsXml>`;
 
             const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
@@ -787,17 +860,21 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
             let parsedJsonUpdated = null;
             let parsedRs1Settings = null;
 
+            if (response?.data?.data?.rs1?.[0]) {
+                 console.log("🔍 RS1 RAW:", response.data.data.rs1[0]);
+            }
+
             if (response?.data?.data?.rs1?.[0]?.Settings) {
                 const xmlString = response?.data?.data?.rs1[0].Settings;
                 parsedRs1Settings = parseSettingsFromXml(xmlString);
 
                 parsedJsonData = convertXmlToJson(xmlString);
                 parsedJsonUpdated = await convertXmlToJsonUpdated(xmlString);
-
-                setJsonData(parsedJsonData);
-                setJsonDataUpdated(parsedJsonUpdated);
-                setRs1Settings(parsedRs1Settings);
             }
+            
+            setJsonData(parsedJsonData);
+            setJsonDataUpdated(parsedJsonUpdated);
+            setRs1Settings(parsedRs1Settings);
 
             // Cache data for future use with current filter combination
             const cacheKey = generateCacheKey(currentLevel, currentFilters, primaryKeyFilters);
@@ -816,6 +893,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                 };
                 return cleanupCache(newCache);
             });
+            hasFetchedRef.current = true;
 
         } catch (error) {
             console.error('Error fetching data:', error);
@@ -905,35 +983,38 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
 
     // Add handleTabClick function
     const handleTabClick = (level: number, index: number) => {
-        const newStack = levelStack.slice(0, index + 1);
-        setLevelStack(newStack);
-
-        // If going back to first level (index 0), clear primary filters and check cache
+        // If going back to first level (index 0), perform full reset
         if (index === 0) {
-            const newPrimaryFilters = {};
-            setPrimaryKeyFilters(newPrimaryFilters);
+            console.log("🔄 Resetting to Main Tab (Level 0)");
+            
+            // 1. Reset Navigation State
+            setLevelStack([0]);
+            setCurrentLevel(0);
+            setDynamicLevels([]); // Clear dynamic detail levels
+            
+            // 2. Clear Data State to ensure clean slate
+            setApiData(null); // Show loading/empty
+            setJsonData(null);
+            setRs1Settings(null); // Clear dynamic columns
+            setAdditionalTables({});
+            setApiResponseTime(undefined);
+            
+            // 3. Clear Detail Filters (keep main filters)
+            setPrimaryKeyFilters({});
 
-            // Generate cache key for level 0 with current filters and empty primary filters
-            const cacheKey = generateCacheKey(level, filters, newPrimaryFilters);
-
-            // Restore cached data if available for this exact combination
-            if (dataCache[cacheKey]) {
-                console.log('Restoring cached data for first tab:', cacheKey);
-                const cachedData = dataCache[cacheKey];
-                setApiData(cachedData.data);
-                setAdditionalTables(cachedData.additionalTables);
-                setRs1Settings(cachedData.rs1Settings);
-                setJsonData(cachedData.jsonData);
-                setJsonDataUpdated(cachedData.jsonDataUpdated);
-                setApiResponseTime(cachedData.responseTime);
-
-                // Set the current level after restoring data
-                setCurrentLevel(level);
-                return; // Exit early to prevent data fetching
-            }
+            // 4. Force Fresh Fetch
+            // We set hasFetchedRef to true to allow useEffect to trigger.
+            // We DO NOT call fetchData() here directly, because standard state updates are async/batched.
+            // Calling it here would use the OLD currentLevel (e.g. 1), ensuring a wrong API call.
+            // valid useEffect will trigger once currentLevel becomes 0.
+            hasFetchedRef.current = true; 
+            
+            return;
         }
 
-        // Set the current level (this will trigger useEffect to fetch data if not cached)
+        // Standard navigation for other levels
+        const newStack = levelStack.slice(0, index + 1);
+        setLevelStack(newStack);
         setCurrentLevel(level);
     };
 
@@ -951,11 +1032,6 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
             setDownloadFilters(newFilters);
         }
     };
-
-
-    // console.log(pageData[0].levels[currentLevel].settings?.EditableColumn,'editable');
-
-
 
     const deleteMasterRecord = async () => {
         try {
@@ -1018,17 +1094,6 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
             console.log("check delete record");
         }
     }
-
-    // function to handle table actions
-    // const handleTableAction = (action: string, record: any) => {
-    //     setEntryFormData(record);
-    //     setEntryAction(action as 'edit' | 'delete' | 'view');
-    //     if (action === "edit" || action === "view") {
-    //         setIsEntryModalOpen(true);
-    //     } else {
-    //         setIsConfirmationModalOpen(true);
-    //     }
-    // }
 
 const handleTableAction = (action: string, record: any) => {
   setEntryFormData(record);
@@ -1112,6 +1177,76 @@ const handleTableAction = (action: string, record: any) => {
 
         setFilteredApiData(filtered);
     }, [apiData, searchTerm]);
+
+    const handleDetailClick = (detailConfig: any, rowData: any) => {
+        try {
+            if (!detailConfig?.DetailAPI) {
+                console.warn("No DetailAPI configuration found");
+                return;
+            }
+
+            // Clone the DetailAPI config
+            const newLevelConfig = JSON.parse(JSON.stringify(detailConfig.DetailAPI));
+            
+            const configSource = newLevelConfig.dsXml || newLevelConfig || {};
+            
+            // Check X_Filter for dynamic fields (User removed X_Filter_Multiple requirement)
+            let xFilter = configSource.X_Filter || {};
+
+            // If string, try JSON parsing
+            if (typeof xFilter === 'string') {
+                try { xFilter = JSON.parse(xFilter); } catch (e) {
+                    console.warn("Failed to parse X_Filter string", e);
+                }
+            }
+            
+            const newFilters: Record<string, any> = {};
+
+            if (xFilter && typeof xFilter === 'object') {
+                Object.entries(xFilter).forEach(([key, value]) => {
+                     let resolvedValue = value;
+                     if (typeof value === 'string' && value.startsWith('##') && value.endsWith('##')) {
+                         const fieldName = value.replace(/##/g, '');
+                         
+                         // Check Row Data first
+                         if (rowData && rowData[fieldName] !== undefined) {
+                             resolvedValue = rowData[fieldName];
+                         } 
+                         // Check Global Filters second
+                         else if (filters && filters[fieldName] !== undefined) {
+                             resolvedValue = filters[fieldName];
+                         }
+                     }
+                     newFilters[key] = resolvedValue;
+                });
+                
+                // Update primary key filters with resolved values
+                setPrimaryKeyFilters(prev => ({ ...prev, ...newFilters }));
+            }
+            
+            // Generate Dynamic Tab Name
+            let tabName = "Detail View";
+            const firstFilterKey = Object.keys(newFilters)[0];
+            if (firstFilterKey) {
+                const val = newFilters[firstFilterKey];
+                tabName = `${firstFilterKey} (${val})`;
+            }
+            
+            // Add new level and navigate
+            setDynamicLevels(prev => [...prev, { ...newLevelConfig, name: tabName }]);
+            
+            const nextLevel = (pageData[0].levels?.length || 0) + dynamicLevels.length;
+            
+            setLevelStack(prev => [...prev, nextLevel]);
+            setCurrentLevel(nextLevel);    
+            
+        } catch (error) {
+            console.error("Error in handleDetailClick:", error);
+            // toast.error("An error occurred while opening details.");
+        }
+    };
+    
+
 
     // Add search handlers
     const handleSearchToggle = () => {
@@ -1292,10 +1427,7 @@ const handleTableAction = (action: string, record: any) => {
         );
     }
 
-    // Safe access to pageData properties with validation
-    const safePageData = safePageDataAccess(pageData, validationResult);
-    const showTypeList = safePageData.getSetting('levels.0.settings.showTypstFlag') || false;
-    const showFilterHorizontally = safePageData.getSetting('filterType') === "onPage";
+
 
     return (
         <div className=""
@@ -1312,9 +1444,9 @@ const handleTableAction = (action: string, record: any) => {
                             <button
                                 key={index}
                                 style={{ backgroundColor: colors.cardBackground }}
-                                className={`px-4 py-2 text-sm rounded-t-lg font-bold ${currentLevel === level
-                                    ? `bg-${colors.primary} text-${colors.buttonText}`
-                                    : `bg-${colors.tabBackground} text-${colors.tabText}`
+                                className={`px-4 py-2 text-sm rounded-t-lg font-bold transition-all duration-200 ${currentLevel === level
+                                    ? `bg-${colors.primary} text-${colors.buttonText} border-2 border-black`
+                                    : `bg-${colors.tabBackground} text-${colors.tabText} hover:bg-gray-100`
                                     }`}
                                 onClick={() => handleTabClick(level, index)}
                             >
@@ -1426,7 +1558,7 @@ const handleTableAction = (action: string, record: any) => {
                                             {isMasterButtonEnabled('Excel') && (
                                                 <button
                                                     onClick={() => {
-                                                        exportTableToExcel(tableRef.current, jsonData, apiData, pageData, appMetadata);
+                                                        exportTableToExcel(tableRef.current, jsonData, apiData, mergedPageData, appMetadata, currentLevel);
                                                         setIsMobileMenuOpen(false);
                                                     }}
                                                     className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
@@ -1440,7 +1572,7 @@ const handleTableAction = (action: string, record: any) => {
                                             {isMasterButtonEnabled('Email') && (
                                                 <button
                                                     onClick={() => {
-                                                        setPdfParams([tableRef.current, jsonData, appMetadata, apiData, pageData, filters, currentLevel, 'email']);
+                                                        setPdfParams([tableRef.current, jsonData, appMetadata, apiData, mergedPageData, filters, currentLevel, 'email']);
                                                         setIsConfirmModalOpen(true);
                                                         setIsMobileMenuOpen(false);
                                                     }}
@@ -1455,7 +1587,7 @@ const handleTableAction = (action: string, record: any) => {
                                             {showTypeList && isMasterButtonEnabled('Download') && (
                                                 <button
                                                     onClick={() => {
-                                                        downloadOption(jsonData, appMetadata, apiData, pageData, filters, currentLevel);
+                                                        downloadOption(jsonData, appMetadata, apiData, mergedPageData, filters, currentLevel);
                                                         setIsMobileMenuOpen(false);
                                                     }}
                                                     className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
@@ -1471,7 +1603,7 @@ const handleTableAction = (action: string, record: any) => {
                                                     {isMasterButtonEnabled('CSV') && (
                                                         <button
                                                             onClick={() => {
-                                                                exportTableToCsv(tableRef.current, jsonData, apiData, pageData);
+                                                                exportTableToCsv(tableRef.current, jsonData, apiData, mergedPageData, currentLevel);
                                                                 setIsMobileMenuOpen(false);
                                                             }}
                                                             className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
@@ -1485,7 +1617,7 @@ const handleTableAction = (action: string, record: any) => {
                                                     {isMasterButtonEnabled('PDF') && (
                                                         <button
                                                             onClick={() => {
-                                                                exportTableToPdf(tableRef.current, jsonData, appMetadata, apiData, pageData, filters, currentLevel, 'download');
+                                                                exportTableToPdf(tableRef.current, jsonData, appMetadata, apiData, mergedPageData, filters, currentLevel, 'download');
                                                                 setIsMobileMenuOpen(false);
                                                             }}
                                                             className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
@@ -1616,7 +1748,7 @@ const handleTableAction = (action: string, record: any) => {
                                                 toast.warning(`Excel export allowed up to 25,000 records. You have ${apiData?.length} records.`);
                                                 return; // stop here, don't export
                                             }
-                                            exportTableToExcel(tableRef.current, jsonData, apiData, pageData, appMetadata);
+                                            exportTableToExcel(tableRef.current, jsonData, apiData, mergedPageData, appMetadata, currentLevel);
                                         }}
                                         className="p-2 rounded hover:bg-gray-100 transition-colors"
                                         style={{ color: colors.text }}
@@ -1637,7 +1769,7 @@ const handleTableAction = (action: string, record: any) => {
                                     <button
                                         className="p-2 rounded hover:bg-gray-100 transition-colors"
                                         onClick={() => {
-                                            setPdfParams([tableRef.current, jsonData, appMetadata, apiData, pageData, filters, currentLevel, 'email']);
+                                            setPdfParams([tableRef.current, jsonData, appMetadata, apiData, mergedPageData, filters, currentLevel, 'email']);
                                             setIsConfirmModalOpen(true);
                                         }}
                                         style={{ color: colors.text }}
@@ -1657,7 +1789,7 @@ const handleTableAction = (action: string, record: any) => {
                                     <button
                                         className="p-2 rounded hover:bg-gray-100 transition-colors"
                                         onClick={() => {
-                                            setPdfParams([tableRef.current, jsonData, appMetadata, apiData, pageData, filters, currentLevel, 'email']);
+                                            setPdfParams([tableRef.current, jsonData, appMetadata, apiData, mergedPageData, filters, currentLevel, 'email']);
                                             setIsConfirmModalOpen(true);
                                         }}
                                         style={{ color: colors.text }}
@@ -1676,7 +1808,7 @@ const handleTableAction = (action: string, record: any) => {
                                 <div className="relative group">
                                     <button
                                         className="p-2 rounded hover:bg-gray-100 transition-colors"
-                                        onClick={() => downloadOption(jsonData, appMetadata, apiData, pageData, filters, currentLevel)}
+                                        onClick={() => downloadOption(jsonData, appMetadata, apiData, mergedPageData, filters, currentLevel)}
                                         style={{ color: colors.text }}
                                         aria-label="Download Options"
                                     >
@@ -1694,7 +1826,7 @@ const handleTableAction = (action: string, record: any) => {
                                         <div className="relative group">
                                             <button
                                                 className="p-2 rounded hover:bg-gray-100 transition-colors"
-                                                onClick={() => exportTableToCsv(tableRef.current, jsonData, apiData, pageData)}
+                                                onClick={() => exportTableToCsv(tableRef.current, jsonData, apiData, mergedPageData, currentLevel)}
                                                 style={{ color: colors.text }}
                                                 aria-label="Export to CSV"
                                             >
@@ -1722,7 +1854,7 @@ const handleTableAction = (action: string, record: any) => {
                                                         toast.warning(`PDF export allowed up to 8,000 records. You have ${apiData?.length} records.`);
                                                         return; // stop here
                                                     }
-                                                    exportTableToPdf(tableRef.current, jsonData, appMetadata, apiData, pageData, filters, currentLevel, 'download'
+                                                    exportTableToPdf(tableRef.current, jsonData, appMetadata, apiData, mergedPageData, filters, currentLevel, 'download'
                                                     );
                                                 }}
                                                 className="p-2 rounded transition-colors flex items-center hover:bg-gray-100"
@@ -1739,6 +1871,20 @@ const handleTableAction = (action: string, record: any) => {
                                     )}
                                 </>
                             )}
+                            <div className="relative group">
+                                <button
+                                    className="p-2 rounded hover:bg-gray-100 transition-colors"
+                                    onClick={() => setIsAutoWidth(!isAutoWidth)}
+                                    style={{ color: isAutoWidth ? '#3b82f6' : colors.text }}
+                                    aria-label="Toggle Auto Width"
+                                >
+                                    <FaArrowsAltH size={20} />
+                                </button>
+                                <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                                    {isAutoWidth ? "Reset Column Widths" : "Fit Columns to Width"}
+                                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-800"></div>
+                                </div>
+                            </div>
                             {apiData && apiData?.length > 0 && (
                                 <div className="relative search-container group">
                                     <button
@@ -2042,20 +2188,28 @@ const handleTableAction = (action: string, record: any) => {
                         <DataTable
                             data={filteredApiData}
                             settings={{
+                                // 1. Base Settings from Root (Level 0 fallback)
+                                ...(currentLevel === 0 ? {
+                                    mobileColumns: pageData[0]?.mobileColumns,
+                                    tabletColumns: pageData[0]?.tabletColumns,
+                                    webColumns: pageData[0]?.webColumns,
+                                } : {}),
+
+                                // 2. Level-Specific Settings (overrides root)
                                 ...safePageData.getCurrentLevel(currentLevel)?.settings,
-                                mobileColumns: rs1Settings?.mobileColumns?.[0] || [],
-                                tabletColumns: rs1Settings?.tabletColumns?.[0] || [],
-                                webColumns: rs1Settings?.webColumns?.[0] || [],
-                                // Add level-specific settings
-                                ...(currentLevel > 0 ? {
-                                    // Override responsive columns for second level if needed
-                                    mobileColumns: rs1Settings?.mobileColumns?.[0] || [],
-                                    tabletColumns: rs1Settings?.tabletColumns?.[0] || [],
-                                    webColumns: rs1Settings?.webColumns?.[0] || []
-                                } : {})
+
+                                // 3. Dynamic API Settings (overrides static)
+                                ...(rs1Settings?.mobileColumns?.[0] ? { mobileColumns: rs1Settings.mobileColumns[0] } : {}),
+                                ...(rs1Settings?.tabletColumns?.[0] ? { tabletColumns: rs1Settings.tabletColumns[0] } : {}),
+                                ...(rs1Settings?.webColumns?.[0] ? { webColumns: rs1Settings.webColumns[0] } : {}),
+                                
+                                
+                                // Clean up any duplicate keys if strictly needed, but object spread handles it (last wins)
+                                ...(isAutoWidth ? { columnWidth: undefined, isAutoWidth: true } : {})
                             }}
                             summary={safePageData.getCurrentLevel(currentLevel)?.summary}
                             onRowClick={handleRecordClick}
+                            onDetailClick={handleDetailClick}
                             onRowSelect={handleRowSelect}
                             tableRef={tableRef}
                             isEntryForm={componentType === "entry" || componentType === "multientry"}
@@ -2064,7 +2218,7 @@ const handleTableAction = (action: string, record: any) => {
                             showViewDocument={safePageData.getCurrentLevel(currentLevel)?.settings?.ShowViewDocument}
                             buttonConfig={pageData?.[0]?.buttonConfig}
                             filtersCheck = {filters}
-                            pageData={pageData}
+                            pageData={mergedPageData}
                         />
                         {Object.keys(additionalTables).length > 0 && (
                             <div>
@@ -2089,14 +2243,15 @@ const handleTableAction = (action: string, record: any) => {
                                                         mobileColumns: rs1Settings?.mobileColumns?.[0] || [],
                                                         tabletColumns: rs1Settings?.tabletColumns?.[0] || [],
                                                         webColumns: rs1Settings?.webColumns?.[0] || []
-                                                    } : {})
+                                                    } : {}),
+                                                    ...(isAutoWidth ? { columnWidth: undefined, isAutoWidth: true } : {})
                                                 }}
                                                 summary={safePageData.getCurrentLevel(currentLevel)?.summary}
                                                 tableRef={tableRef}
                                                 fullHeight={false}
                                                 buttonConfig={pageData?.[0]?.buttonConfig}
                                                 filtersCheck = {filters}
-                                                pageData={pageData}
+                                                pageData={mergedPageData}
                                             />
                                         </div>
                                     );
