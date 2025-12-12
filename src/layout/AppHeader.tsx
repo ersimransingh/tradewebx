@@ -174,6 +174,7 @@ const AppHeader: React.FC = () => {
           <div className="flex items-center gap-2 2xsm:gap-3">
             <div className="relative">
               <Select
+                aria-label="Theme selector"
                 value={themeOptions.find(option => option.value === theme)}
                 onChange={(option) => setTheme(option?.value as ThemeType)}
                 options={themeOptions}

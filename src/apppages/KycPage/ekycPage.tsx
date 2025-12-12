@@ -10,6 +10,7 @@ import { buildTabs, TabData } from "./KycTabs";
 import { FiRefreshCcw } from "react-icons/fi";
 import { useSaveLoading } from "@/context/SaveLoadingContext";
 import apiService from "@/utils/apiService";
+import { ensureContrastColor } from "@/utils/helper";
 
 // IndexedDB setup
 const DB_NAME = 'ekycDB';
@@ -35,6 +36,7 @@ const Kyc = () => {
         _lastUpdated: null
     });
     const [db, setDb] = useState<IDBDatabase | null>(null);
+    const safeColor = ensureContrastColor(colors.secondary);
 
     // Initialize IndexedDB
     useEffect(() => {
@@ -218,7 +220,7 @@ const Kyc = () => {
             <div className="flex justify-between items-center mb-2">
                 <h1 className="text-2xl font-bold" style={{ color: colors.text }}>KYC Verification</h1>
                 <div className="flex items-center">
-                    {lastUpdated && <span className="text-sm mr-4" style={{ color: colors.secondary }}>Last updated: {new Date(lastUpdated).toLocaleString()}</span>}
+                    {lastUpdated && <span className="text-sm mr-4" style={{ color: safeColor }}>Last updated: {new Date(lastUpdated).toLocaleString()}</span>}
                     <button
                         onClick={() => fetchFormData(getLocalStorage("ekyc_viewMode_for_checker") === "true")}
                         className="px-3 py-1 text-sm rounded flex items-center"

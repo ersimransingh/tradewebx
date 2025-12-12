@@ -357,7 +357,7 @@ const AppSidebar: React.FC = () => {
         const isOpen = openSubmenus[currentPath];
         const uniqueKey = `${nav.name}-${nav.path || ''}-${currentPath}`;
         const isExternalUrl = nav.componentType === 'URL';
-        const submenuId = `submenu-${currentPath}`;
+        const submenuId = `submenu-item-${currentPath}`;
         const sanitizedId = uniqueKey.replace(/[^a-zA-Z0-9_-]/g, '');
         const accessibleId = sanitizedId || `nav-link-${currentPath}`;
 
@@ -374,7 +374,8 @@ const AppSidebar: React.FC = () => {
                     color: isOpen ? colors.buttonText : colors.text,
                   }}
                   aria-expanded={!!isOpen}
-                  aria-controls={submenuId}
+                  // aria-controls={submenuId}
+                  aria-controls={shouldShowLabels ? submenuId : undefined}   // ✔ FIXED
                 >
                   <span
                     aria-hidden="true"

@@ -607,3 +607,107 @@ export function formatTextSplitString(text: string) {
     .replace(/^./, str => str.toUpperCase())
     .trim();
 }
+
+//accessibility color-contrast functions into a common utility file and use them anywhere
+
+export function getLuminance(hex: string) {
+  hex = hex.replace("#", "");
+  if (hex.length === 3) {
+    hex = hex.split("").map((c) => c + c).join("");
+  }
+
+  const r = parseInt(hex.substring(0, 2), 16) / 255;
+  const g = parseInt(hex.substring(2, 4), 16) / 255;
+  const b = parseInt(hex.substring(4, 6), 16) / 255;
+
+  const a = [r, g, b].map((v) =>
+    v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)
+  );
+
+  return 0.2126 * a[0] + 0.7152 * a[1] + 0.0722 * a[2];
+}
+
+// Contrast ratio
+export function getContrastRatio(fg: string, bg: string) {
+  const L1 = getLuminance(fg);
+  const L2 = getLuminance(bg);
+
+  const brightest = Math.max(L1, L2);
+  const darkest = Math.min(L1, L2);
+
+  return (brightest + 0.05) / (darkest + 0.05);
+}
+
+// Darken color until it meets WCAG
+export function darken(hex: string, amount = 12) {
+  hex = hex.replace("#", "");
+  let r = parseInt(hex.substring(0, 2), 16) - amount;
+  let g = parseInt(hex.substring(2, 4), 16) - amount;
+  let b = parseInt(hex.substring(4, 6), 16) - amount;
+
+  r = Math.max(0, r);
+  g = Math.max(0, g);
+  b = Math.max(0, b);
+
+  return (
+    "#" +
+    r.toString(16).padStart(2, "0") +
+    g.toString(16).padStart(2, "0") +
+    b.toString(16).padStart(2, "0")
+  );
+}
+
+// Main WCAG fixer
+export function ensureContrastColor(
+  color: string,
+  bgColor = "#ffffff" // default white background
+) {
+  if (!color) return color;
+
+  // Convert any CSS color → hex
+  const temp = document.createElement("div");
+  temp.style.color = color;
+  document.body.appendChild(temp);
+  const computed = getComputedStyle(temp).color;
+  document.body.removeChild(temp);
+
+  const rgbMatch = computed.match(/\d+/g);
+  if (!rgbMatch) return color;
+
+  const [r, g, b] = rgbMatch.map(Number);
+
+  let hex =
+    "#" +
+    r.toString(16).padStart(2, "0") +
+    g.toString(16).padStart(2, "0") +
+    b.toString(16).padStart(2, "0");
+
+  // Continue darkening until it passes WCAG
+  while (getContrastRatio(hex, bgColor) < 4.5) {
+    hex = darken(hex, 12);
+  }
+
+  return hex;
+}
+
+//reusable function for choosing black/white text based on background brightness used in DataTable for IncomeTaxReport
+export const getReadableTextColor = (bgColor: string) => {
+  if (!bgColor) return "#ffffff";
+
+  let hex = bgColor.replace("#", "");
+
+  // convert shorthand color (#fff) → full form (#ffffff)
+  if (hex.length === 3) {
+    hex = hex.split("").map(c => c + c).join("");
+  }
+
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+
+  // luminance formula
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+
+  // If color is light → return black text
+  return brightness > 160 ? "#000000" : "#ffffff";
+};
