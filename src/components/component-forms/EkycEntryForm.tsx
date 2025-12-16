@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { getDropdownStyles } from "../common/CommonStyling";
 import CreatableSelect from 'react-select/creatable';
-import axios from 'axios';
 import "react-datepicker/dist/react-datepicker.css";
 import { BASE_URL, PATH_URL } from '@/utils/constants';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
@@ -15,8 +14,6 @@ import { getLocalStorage, handleViewFile, removeLocalStorage, storeLocalStorage 
 import OtpVerificationModal from "./formComponents/OtpVerificationComponent";
 import LoaderOverlay from "../Loaders/LoadingSpinner";
 import CustomDatePicker from "./formComponents/CustomDatePicker";
-import Flatpickr from 'react-flatpickr';
-import { FaCalendar } from "react-icons/fa";
 import apiService from "@/utils/apiService";
 
 

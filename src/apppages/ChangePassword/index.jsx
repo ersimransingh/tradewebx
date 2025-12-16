@@ -44,6 +44,9 @@ export default function ChangePassword() {
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const firstLoginFromLocalStorage = getLocalStorage('firstLogin') || '';
+    const isFirstTime = firstLoginFromLocalStorage === 'Y';
+
 
     const togglePasswordVisibility = (field) => {
         setShowPasswords(prev => ({
@@ -137,8 +140,7 @@ export default function ChangePassword() {
     return (
         <div className="min-h-screen p-6" style={{ backgroundColor: colors?.background2 || '#f0f0f0' }}>
             <div className="max-w-md mx-auto bg-white rounded-lg shadow-md p-8" style={{ backgroundColor: colors?.background || '#fff' }}>
-                <h1 className="text-2xl font-bold mb-6" style={{ color: colors.text }}>Change Password</h1>
-
+        <h1 className={`${isFirstTime ? 'text-l' : 'text-2xl'} font-bold mb-6`} style={{ color: colors.text }}> {isFirstTime ? 'Change Password (First-Time/Reset Password)': 'Change Password'} </h1>
                 {error && (
                     <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
                         {error}

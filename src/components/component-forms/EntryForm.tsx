@@ -249,6 +249,31 @@ const EntryForm: React.FC<EntryFormProps> = ({
         }
     };
 
+    // Initialize missing form values based on formData
+    useEffect(() => {
+        if (!formData || formData.length === 0) return;
+
+        const missingKeys: Record<string, any> = {};
+        let hasMissing = false;
+
+        formData.forEach((field) => {
+            if (formValues[field.wKey] === undefined) {
+                hasMissing = true;
+                if (field.type === 'WDateBox' && field.wValue) {
+                    missingKeys[field.wKey] = moment(field.wValue).format('YYYYMMDD');
+                } else if (field.type === 'WDateTimePicker' && field.wValue) {
+                    missingKeys[field.wKey] = moment(field.wValue).format('YYYYMMDD HH:mm:ss');
+                } else {
+                    missingKeys[field.wKey] = field.wValue || "";
+                }
+            }
+        });
+
+        if (hasMissing) {
+            setFormValues(prev => ({ ...prev, ...missingKeys }));
+        }
+    }, [formData, formValues]);
+
     // function called to check the validation of the field
     const handleBlur = async (field: FormField) => {
 

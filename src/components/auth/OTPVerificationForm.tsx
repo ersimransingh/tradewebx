@@ -22,7 +22,9 @@ export default function OTPVerificationForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const { companyInfo, status, encPayload } = useSelector((state: RootState) => state.common);
+  const {firstLogin} = useSelector((state:RootState) => state.auth)
   const { colors } = useTheme();
+
 
   // Check if temp_token exists on component mount
   useEffect(() => {
@@ -121,8 +123,8 @@ export default function OTPVerificationForm() {
 
         // Clean up temporary token
         storeLocalStorage('temp_token', '');
-
-        router.push('/dashboard');
+        if(firstLogin === 'Y')router.push('/changepassword');
+        else router.push('/dashboard');
       } else {
         const errorMessage = data.message || 'OTP verification failed';
         dispatch(setAuthError(errorMessage));

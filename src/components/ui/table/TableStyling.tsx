@@ -184,6 +184,27 @@ function TableStyling({ onRowClick, screenSize = 'web' }: TableStylingProps) {
         background-color: ${colors.errorText};
         color: ${colors.buttonText};
       }
+
+      /* Detail Column Styles */
+      .detail-column-cell {
+        cursor: pointer;
+      }
+
+      .detail-column-value {
+        color: #2563eb;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.2s ease;
+      }
+
+      .detail-column-value:hover {
+        text-decoration: underline;
+        color: #1d4ed8;
+      }
+
+      .detail-column-header {
+        color: #2563eb;
+      }
     `}</style>
   );
 }

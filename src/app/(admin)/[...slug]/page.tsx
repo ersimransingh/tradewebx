@@ -16,6 +16,7 @@ import Family from "@/apppages/FamilyMapping";
 import ApiConfiguration from "@/apppages/ApiChecker";
 import BodProcess from "@/apppages/BodProcess";
 import UserAccessMenu from "@/apppages/UserAccessMenu";
+import UploadFile from "@/apppages/UploadFile";
 import QueryFormPage from "@/apppages/QueryForm";
 // Define static route components
 const staticRoutes: Record<string, React.ReactNode> = {
@@ -32,7 +33,8 @@ const staticRoutes: Record<string, React.ReactNode> = {
   apisetting: <ApiConfiguration />,
   bodProcess: <BodProcess />,
   useraccess: <UserAccessMenu />,
-  queryform: <QueryFormPage/>
+  uploadFile: <UploadFile />,
+  queryform: <QueryFormPage />
 };
 
 export default function DynamicPage({ params }: { params: any | Promise<any> }) {
@@ -162,9 +164,9 @@ export default function DynamicPage({ params }: { params: any | Promise<any> }) 
 
   // For dynamic routes, convert kebab-case to PascalCase if needed
   const formattedComponentName = componentName
-      .split("-")
-      .map((part: string) => part.charAt(0).toUpperCase() + part.slice(1))
-      .join("");
+    .split("-")
+    .map((part: string) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join("");
 
   // If route is present in the static route then skip the route for dynamic part
   const isStatic = Object.keys(staticRoutes).some(
@@ -308,13 +310,15 @@ function DynamicComponentRenderer({ componentName }: { componentName: string }) 
 
   const finalComponentType =
     componentType ||
-    (componentName.toLowerCase().includes("multientry")
-      ? "multientry"
-      : componentName.toLowerCase().includes("entry")
-      ? "entry"
-      : componentName.toLowerCase().includes("report")
-      ? "report"
-      : componentType);
+    (componentName.toLowerCase().includes("import")
+      ? "import"
+      : componentName.toLowerCase().includes("multientry")
+        ? "multientry"
+        : componentName.toLowerCase().includes("entry")
+          ? "entry"
+          : componentName.toLowerCase().includes("report")
+            ? "report"
+            : componentType);
 
   return (
     <DynamicReportComponent componentName={componentName} componentType={finalComponentType} />

@@ -1,11 +1,8 @@
 "use client";
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { BASE_PATH_FRONT_END } from '@/utils/constants';
 import { getAuthToken, clearAllAuthData } from '@/utils/auth';
-import apiService from '@/utils/apiService';
 import { toast } from 'react-toastify';
-import { isAllowedHttpHost } from '@/utils/securityConfig';
 import { getLocalStorage } from '@/utils/helper';
 
 interface AuthGuardProps {

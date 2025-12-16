@@ -14,6 +14,7 @@ interface AuthState {
     loginType: string | null;
     error: string | null;
     loading: boolean;
+    firstLogin:string | null;
 }
 
 // Define a default initial state first to avoid circular reference
@@ -30,6 +31,7 @@ const defaultInitialState: AuthState = {
     loginType: null,
     error: null,
     loading: false,
+    firstLogin:null,
 };
 
 const loadInitialState = (): AuthState => {
@@ -58,6 +60,7 @@ const loadInitialState = (): AuthState => {
             loginType: null,
             error: null,
             loading: false,
+            firstLogin:null
         };
     }
 
@@ -74,6 +77,7 @@ const loadInitialState = (): AuthState => {
         loginType: getLocalStorage('loginType'),
         error: null,
         loading: false,
+        firstLogin:getLocalStorage('firstLogin'),
     };
 };
 
@@ -98,6 +102,7 @@ const authSlice = createSlice({
             clientName: string;
             userType: string;
             loginType: string;
+            firstLogin?:string;
         }>) => {
             state.userId = action.payload.userId;
             state.tempToken = action.payload.token;
@@ -107,6 +112,7 @@ const authSlice = createSlice({
             state.clientName = action.payload.clientName;
             state.userType = action.payload.userType;
             state.loginType = action.payload.loginType;
+            state.firstLogin = action.payload.firstLogin;
         },
         setFinalAuthData: (state, action: PayloadAction<{
             token: string;
@@ -115,6 +121,7 @@ const authSlice = createSlice({
             clientCode: string;
             clientName: string;
             userType: string;
+            firstLogin?:string;
         }>) => {
             state.isAuthenticated = true;
             state.authToken = action.payload.token;
@@ -126,6 +133,7 @@ const authSlice = createSlice({
             state.clientCode = action.payload.clientCode;
             state.clientName = action.payload.clientName;
             state.userType = action.payload.userType;
+            state.firstLogin = action.payload.firstLogin;
         },
         logout: (state) => {
             // Clear localStorage only

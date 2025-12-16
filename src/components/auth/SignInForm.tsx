@@ -306,6 +306,7 @@ export default function SignInForm() {
   // State for message modal
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [messageContent, setMessageContent] = useState("");
+  const [firstLogin,setFirstLogin] = useState<string>("");
 
   // Check version function inside component using useCallback to memoize
   const checkVersion = useCallback(async (token?: string) => {
@@ -394,7 +395,8 @@ export default function SignInForm() {
       storeLocalStorage('tokenExpireTime', currentLoginData.tokenExpireTime);
       storeLocalStorage('temp_token', '');
       console.log('Redirecting to dashboard');
-      router.push('/dashboard');
+      if(firstLogin === 'Y') router.push('/changepassword');
+      else router.push('/dashboard');
     }
   }, [loginData, router, dispatch]);
 
@@ -611,7 +613,7 @@ export default function SignInForm() {
         <Feature></Feature>
     </X_Data>
     <J_Api>"UserId":"", "UserType":"User"</J_Api>
-</dsXml>`;
+    </dsXml>`;
     // remove Key as requested "<Key>${LOGIN_KEY}</Key>" 
 
     console.log('Login XML Data:', xmlData);
@@ -633,6 +635,9 @@ export default function SignInForm() {
       console.log('Response status:', data.status);
       console.log('Response token:', data.token);
       console.log('Response refreshToken:', data.refreshToken);
+      const userFirstLogin = data.data[0].FirstLogin
+      setFirstLogin(userFirstLogin)
+      
 
       if (data.status) {
         // Security: Validate response integrity
@@ -694,6 +699,7 @@ export default function SignInForm() {
           clientName: clientName,
           userType: userType,
           loginType: data.data[0].LoginType,
+          firstLogin:userFirstLogin,
         }));
 
         // Security: Store tokens with integrity checks (handled by API service)
@@ -719,6 +725,7 @@ export default function SignInForm() {
         storeLocalStorage('clientName', clientName);
         storeLocalStorage('userType', userType);
         storeLocalStorage('loginType', data.data[0].LoginType);
+        storeLocalStorage('firstLogin', userFirstLogin);
         removeLocalStorage("ekyc_dynamicData");
         removeLocalStorage("ekyc_activeTab");
 
@@ -729,9 +736,10 @@ export default function SignInForm() {
           tokenExpireTime: data.tokenExpireTime,
           LoginType: data.data[0].LoginType,
           showUpdate: showUpdate, // Store showUpdate value for later use
-          userType: userType // Store userType for later use
+          userType: userType, // Store userType for later use
+          firstLogin:userFirstLogin
         };
-
+        
         setLoginData(currentLoginData);
 
         // Handle message modal first if there's a message
