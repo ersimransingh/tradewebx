@@ -1320,6 +1320,7 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
                                                                             <input
                                                                                 type="text"
                                                                                 value={value ?? ""}
+                                                                                aria-label="Enter Value"
                                                                                 onChange={(e) =>
                                                                                     handleInputChange(rowIndex, key, e.target.value)
                                                                                 }
@@ -1442,7 +1443,7 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
                                 // (showViewDocumentBtn && showViewDocumentLabel ? handleProcess :
                                 //end
                                 onClick={() => handleSave()}
-                                className="px-4 py-2 rounded ml-2 flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
+                                className="px-4 py-2 rounded ml-2 flex items-center gap-2 bg-green-700 hover:bg-green-700 text-white"
                             >
                                 {isSaving && (
                                     <svg

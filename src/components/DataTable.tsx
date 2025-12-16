@@ -1225,8 +1225,10 @@ useEffect(() => {
                                                     const textColor = numValue < 0 ? '#dc2626' :
                                                         numValue > 0 ? '#16a34a' :
                                                             colors.text;
+                                                    // Ensure WCAG contrast against background
+                                                    const contrastTextColor = ensureContrastColor(textColor, '#e3f0ff'); 
 
-                                                    formattedValue = <div style={{ color: textColor }}>{formattedNumber}</div>;
+                                                    formattedValue = <div style={{ color: contrastTextColor }}>{formattedNumber}</div>;
                                                 } else {
                                                     formattedValue = String(value);
                                                 }
@@ -1428,8 +1430,10 @@ useEffect(() => {
                             const textColor = numValue < 0 ? '#dc2626' :
                                 numValue > 0 ? '#16a34a' :
                                     colors.text;
+                            // Ensure WCAG contrast against background
+                            const contrastTextColor = ensureContrastColor(textColor, '#e3f0ff');                 
 
-                            content = <div className="numeric-value" style={{ color: textColor }}>{formattedValue}</div>;
+                            content = <div className="numeric-value" style={{ color: contrastTextColor }}>{formattedValue}</div>;
                         } else if (React.isValidElement(value)) {
                             const childValue = (value as StyledValue).props.children;
                             const childNumValue = parseFloat(childValue.toString());
@@ -1646,10 +1650,10 @@ useEffect(() => {
                         });
 
                         if (colorRule) {
-                            let color = getValueBasedColor(formattedSum, colorRule);
-                            if (color) {
-                                color = ensureContrastColor(color, "#e3f0ff");
-                                totals[column.key] = <div className="numeric-value font-bold" style={{ color }}>{formattedSum}</div>;
+                            const rawColor = getValueBasedColor(formattedSum, colorRule);
+                            if (rawColor) {
+                               const accessibleTextColor = ensureContrastColor(rawColor, "#e3f0ff");
+                                totals[column.key] = <div className="numeric-value font-bold" style={{color: accessibleTextColor}}>{formattedSum}</div>;
                                 return;
                             }
                         }

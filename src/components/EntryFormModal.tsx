@@ -3059,7 +3059,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                                 {isThereChildEntry && (
                                     <div className="flex justify-end">
                                         <button
-                                            className={`flex items-center gap-2 px-4 py-2 ${(isFormInvalid || viewMode) ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600'} text-white rounded-md`}
+                                            className={`flex items-center gap-2 px-4 py-2 ${(isFormInvalid || viewMode) ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-600'} text-white rounded-md`}
                                             onClick={handleFormSubmitWhenMasterOnly}
                                             disabled={isFormInvalid || viewMode || isFormSubmit}
                                         >
@@ -3144,6 +3144,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                                                     width: 50,
                                                     renderCell: ({row}) =>(
                                                         <input
+                                                        aria-label='checked'
                                                         type="checkbox"
                                                         className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                                                         checked={row.IsDeleted || false}
@@ -3168,7 +3169,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                                                     <div className="flex gap-1 justify-center">
                                                       {viewMode && (
                                                         <button
-                                                          className="bg-green-50 text-green-500 hover:bg-green-100 hover:text-green-700 mr-2 px-3 py-1 rounded-md transition-colors"
+                                                          className="bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-700 mr-2 px-3 py-1 rounded-md transition-colors"
                                                           onClick={() => {
                                                             setChildFormValues(row);
                                                             handleChildEditNonSavedData(row);
@@ -3181,7 +3182,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                                                         className={`mr-2 px-3 py-1 rounded-md transition-colors ${
                                                           viewMode
                                                             ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                                                            : "bg-blue-50 text-blue-500 hover:bg-blue-100 hover:text-blue-700"
+                                                            : "bg-blue-50 text-blue-700 hover:bg-blue-100 hover:text-blue-700"
                                                         }`}
                                                         onClick={() => {
                                                           setChildFormValues(row);
