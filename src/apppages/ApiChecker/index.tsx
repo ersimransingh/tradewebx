@@ -1,5 +1,5 @@
 import { useTheme } from "@/context/ThemeContext";
-import { editableColumns, getApiConfigData, viewLogApiCall } from "./apiChecker";
+import { editableColumns, getApiConfigData, getRowBgColor, viewLogApiCall } from "./apiChecker";
 import { useEffect, useState } from "react";
 import { Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
 import { toast } from "react-toastify";
@@ -8,6 +8,8 @@ import { BASE_URL, PATH_URL } from "@/utils/constants";
 import { useLocalStorage } from "@/hooks/useLocalListner";
 import Loader from "@/components/Loader";
 import { activeFlag, apiCallingTypes, ApiConfigurationRow, apiContentTypes, EditModalState, LogHeader } from "@/types/apiConfigurationTypes";
+import { FiEdit } from "react-icons/fi";
+import { HiOutlineDocumentText } from "react-icons/hi";
 
 const ApiConfiguration = () => {
   const { colors } = useTheme();
@@ -63,10 +65,19 @@ const ApiConfiguration = () => {
     }
   }, [viewLogServiceName]);
 
+  const VISIBLE_COL_COUNT = 6;
+  const visibleKeys = uniqueKeys.slice(0, VISIBLE_COL_COUNT);
+
   const handleEdit = (rowIndex: number) => {
+    // setEditIndex(rowIndex);
+    // setEditableRow({ ...apiConfigData[rowIndex] });
     setEditIndex(rowIndex);
-    setEditableRow({ ...apiConfigData[rowIndex] });
+  setEditableRow({ ...apiConfigData[rowIndex] });
+  setEditModal({ key: "__ALL__", value: "" }); // open modal
   };
+
+  console.log(colors,'colorss api setting');
+
 
   const handleInputChange = (key: string, value: string) => {
     setEditableRow((prev: any) => ({
@@ -75,6 +86,27 @@ const ApiConfiguration = () => {
     }));
   };
 
+
+  const DEFAULT_GRID_BG = "#eaf3ff";
+const DEFAULT_GRID_BORDER = "#b6d4fe";
+const DEFAULT_GRID_HEADER = "#dbeafe";
+
+const isDefaultThemeGrid = colors?.color1 === "#fffef9";
+
+const gridBorderColor = isDefaultThemeGrid
+  ? DEFAULT_GRID_BORDER
+  : colors?.color1;
+
+const gridBgColor = isDefaultThemeGrid
+  ? DEFAULT_GRID_BG
+  : colors?.textInputBackground;
+
+const gridHeaderBg = isDefaultThemeGrid
+  ? DEFAULT_GRID_HEADER
+  : colors?.primary;
+
+
+  
   const handleSave = async() => {
     setLoading(true);
     const updated = [...apiConfigData];
@@ -176,6 +208,8 @@ const ApiConfiguration = () => {
     setModalOpen(false)
   }
 
+
+
   return (
     <div
       style={{
@@ -204,215 +238,77 @@ const ApiConfiguration = () => {
       </div>
 
       <div className="overflow-x-auto mt-4">
-        <table
-          className="min-w-full text-sm border-collapse whitespace-nowrap"
-          style={{
-            border: `1px solid ${colors?.color1 || "#f0f0f0"}`,
-            backgroundColor: colors.textInputBackground
-          }}
+      <table
+  className="min-w-full text-sm border-collapse whitespace-nowrap"
+  style={{
+    border: `1px solid ${gridBorderColor}`,
+    backgroundColor: gridBgColor
+  }}
+>
+  <thead>
+    <tr>
+      <th className="px-2 py-1 border" style={{  border: `1px solid  ${gridBorderColor}`,background: colors.color3 }}>
+        Action
+      </th>
+
+      {visibleKeys.map((header) => (
+        <th
+          key={header}
+          className="px-2 py-1 border"
+          style={{ border: `1px solid  ${gridBorderColor}`,background: colors.color3 }}
         >
-          <thead>
-            <tr>
-              <th
-                className="px-2 py-1 text-left"
-                style={{
-                  border: `1px solid ${colors?.color1 || "#f0f0f0"}`,
-                  background: colors?.primary || "#f0f0f0"
-                }}
-              >
-                Action
-              </th>
-              {uniqueKeys.map((header, index) => (
-                <th
-                  key={index}
-                  className="px-2 py-1 text-left"
-                  style={{
-                    border: `1px solid ${colors?.color1 || "#f0f0f0"}`,
-                    background: colors?.primary || "#f0f0f0"
-                  }}
-                >
-                  {header}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {apiConfigData.map((row, rowIndex) => (
-              <tr key={rowIndex}>
-                <td
-                  className="px-2 py-1"
-                  style={{
-                    border: `1px solid ${colors?.color1 || "#f0f0f0"}`
-                  }}
-                >
-                  {editIndex === rowIndex ? (
-                    <button
-                      onClick={handleSave}
-                      className="w-[80px] h-auto border-2 border-green-600 rounded-[12px] bg-transparent text-green-600 mt-2.5 cursor-pointer py-2 font-medium font-poppins hover:bg-green-600 hover:text-white mr-2"
-                    >
-                      SAVE
-                    </button>
-                  ) : (
-                    <button
-                    onClick={() => handleEdit(rowIndex)}
-                    className="w-[80px] h-auto border-2 border-[#c2410c] rounded-[12px] bg-transparent text-[#c2410c] mt-2.5 cursor-pointer py-2 font-medium font-poppins hover:bg-[#c2410c] hover:text-white mr-2"
-                  >
-                    EDIT
-                  </button>
-                  
-                  )}
-                  <button
-                    onClick={() => handleViewLog(row)}
-                    className="w-[100px] h-auto border-2 border-purple-600 rounded-[12px] bg-transparent text-purple-600 mt-2.5 cursor-pointer py-2 font-medium font-poppins hover:bg-purple-600 hover:text-white"
-                  >
-                    View Logs
-                  </button>
-                </td>
-                {uniqueKeys.map((key, colIndex) => (
-                  <td
-                    key={colIndex}
-                    className="px-2 py-1"
-                    style={{
-                      border: `1px solid ${colors?.color1 || "#f0f0f0"}`
-                    }}
-                  >
-                    {editIndex === rowIndex &&
-                  editableColumns.includes(key) ? (
-                      key === "APIType" ? (
-                        <select
-                          value={editableRow[key] ?? ""}
-                          onChange={(e) =>
-                            handleInputChange(key, e.target.value)
-                          }
-                          className="w-full border px-1 py-0.5 text-sm"
-                        >
-                          <option value="">Select</option>
-                          <option value="REST">REST</option>
-                        </select>
-                      ) : key === "APICallingType" ? (
-                        <select
-                          value={editableRow[key] ?? ""}
-                          onChange={(e) =>
-                            handleInputChange(key, e.target.value)
-                          }
-                          className="w-full border px-1 py-0.5 text-sm"
-                        >
-                          <option value="">Select</option>
-                          {apiCallingTypes.map((type) => (
-                            <option key={type} value={type}>
-                              {type}
-                            </option>
-                          ))}
-                        </select>
-                      ) : key === "APIContantType" ? (
-                        <select
-                          value={editableRow[key] ?? ""}
-                          onChange={(e) =>
-                            handleInputChange(key, e.target.value)
-                          }
-                          className="w-full border px-1 py-0.5 text-sm"
-                        >
-                          <option value="">Select</option>
-                          {apiContentTypes.map((type) => (
-                            <option key={type} value={type}>
-                              {type}
-                            </option>
-                          ))}
-                        </select>
-                      ) : key === "ActiveFlag" ? (
-                        <select
-                          value={editableRow[key] ?? ""}
-                          onChange={(e) =>
-                            handleInputChange(key, e.target.value)
-                          }
-                          className="w-full border px-1 py-0.5 text-sm"
-                        >
-                          <option value="">Select</option>
-                          {activeFlag.map((type) => (
-                            <option key={type} value={type}>
-                              {type}
-                            </option>
-                          ))}
-                        </select>
-                      ) : key === "AutoAPIStartTime" || key === "AutoAPIEndTime" ? (
-                        // ✅ Special handling for HHMMSS → time input
-                        <input
-                          type="time"
-                          value={
-                            editableRow[key]
-                              ? editableRow[key].slice(0, 2) +
-                                ":" +
-                                editableRow[key].slice(2, 4)
-                              : ""
-                          }
-                          onChange={(e) => {
-                            const val =
-                              e.target.value.replace(":", "") + "00"; // HH:MM → HHMMSS
-                            handleInputChange(key, val);
-                          }}
-                          className="w-full border px-1 py-0.5 text-sm"
-                        />
-                      ) : (
-                        <>
-                          {editableRow[key] &&
-                          editableRow[key].length > 100 ? (
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="text"
-                                value={
-                                  editableRow[key].substring(0, 100) + "..."
-                                }
-                                readOnly
-                                className="w-full border px-1 py-0.5 text-sm bg-gray-100 cursor-not-allowed"
-                              />
-                              <button
-                                onClick={() =>
-                                  setEditModal({
-                                    key,
-                                    value: editableRow[key]
-                                  })
-                                }
-                                className="text-blue-600 underline text-xs hover:text-blue-800"
-                              >
-                                Edit More
-                              </button>
-                            </div>
-                          ) : (
-                            <input
-                              type="text"
-                              value={editableRow[key] ?? ""}
-                              onChange={(e) =>
-                                handleInputChange(key, e.target.value)
-                              }
-                              className="w-full border px-1 py-0.5 text-sm"
-                            />
-                          )}
-                        </>
-                      )
-                    ) : (
-                      // 🔹 VIEW MODE with truncation
-                      <>
-                        {row[key] && row[key].length > 100 ? (
-                          <div className="flex items-center gap-2">
-                            <span>{row[key].substring(0, 100)}...</span>
-                            <button
-                              onClick={() => setSelectedText(row[key])}
-                              className="text-blue-600 underline text-xs hover:text-blue-800"
-                            >
-                              View More
-                            </button>
-                          </div>
-                        ) : (
-                          row[key] ?? "-"
-                        )}
-                      </>
-                    )}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+          {header}
+        </th>
+      ))}
+    </tr>
+  </thead>
+
+  <tbody>
+    {apiConfigData.map((row, rowIndex) => (
+      <tr key={rowIndex} style={{ border: `1px solid  ${gridBorderColor}`,backgroundColor: getRowBgColor(rowIndex, gridBgColor) }}>
+        {/* ACTION COLUMN */}
+        <td
+  style={{ border: `1px solid ${gridBorderColor}` }}
+  className="px-2 py-1"
+>
+  <div className="flex items-center gap-2">
+    <button
+      onClick={() => handleEdit(rowIndex)}
+      className="flex items-center gap-2 px-3 py-1.5 text-sm
+        border border-orange-600 text-orange-600 rounded-lg
+        hover:bg-orange-600 hover:text-white transition-all duration-200"
+    >
+      <FiEdit size={16} />
+      Edit
+    </button>
+
+    <button
+      onClick={() => handleViewLog(row)}
+      className="flex items-center gap-2 px-3 py-1.5 text-sm
+        border border-purple-600 text-purple-600 rounded-lg
+        hover:bg-purple-600 hover:text-white transition-all duration-200"
+    >
+      <HiOutlineDocumentText size={16} />
+      Logs
+    </button>
+  </div>
+</td>
+
+
+
+        {/* FIRST 4 DATA COLUMNS */}
+        {visibleKeys.map((key) => (
+          <td key={key} style={{ border: `1px solid  ${gridBorderColor}`}} className="px-2 py-1 border">
+            {row[key] && row[key].length > 100
+              ? row[key].substring(0, 100) + "..."
+              : row[key] ?? "-"}
+          </td>
+        ))}
+      </tr>
+    ))}
+  </tbody>
+</table>
+
       </div>
 
       {/* Modals remain same ... */}
@@ -507,55 +403,75 @@ const ApiConfiguration = () => {
       )}
 
       {/* Long Text Edit Modal */}
-      {editModal && (
-        <Dialog
-          open={true}
-          onClose={() => setEditModal(null)}
-          className="relative z-[400]"
-        >
-          <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-          <div className="fixed inset-0 flex items-center justify-center p-4">
-            <DialogPanel className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6 max-h-[80vh] overflow-auto relative">
-              <DialogTitle className="text-xl font-bold mb-4">
-                Edit Value
-              </DialogTitle>
-              <button
-                onClick={() => setEditModal(null)}
-                className="absolute top-2 right-4 text-2xl font-bold text-gray-500 hover:text-black"
-                aria-label="Close"
-              >
-                &times;
-              </button>
+      {editModal && editIndex !== null && (
+  <Dialog open={true} onClose={() => setEditModal(null)} className="relative z-[400]">
+    <div className="fixed inset-0 bg-black/30" />
+    <div className="fixed inset-0 flex items-center justify-center p-4">
+      <DialogPanel className="bg-white rounded-lg shadow-xl max-w-4xl w-full p-6 max-h-[85vh] overflow-auto">
+        <DialogTitle className="text-xl font-bold mb-4">
+          Edit API Configuration
+        </DialogTitle>
 
-              <textarea
-                value={editModal.value}
-                onChange={(e) =>
-                  setEditModal({ ...editModal, value: e.target.value })
-                }
-                className="w-full border rounded p-2 text-sm h-60 resize-none"
-              />
+        <div className="grid grid-cols-2 gap-4">
+          {uniqueKeys.map((key) => {
+            const isEditable = editableColumns.includes(key);
 
-              <div className="mt-4 flex justify-end gap-3">
-                <button
-                  onClick={() => setEditModal(null)}
-                  className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    handleInputChange(editModal.key, editModal.value);
-                    setEditModal(null);
-                  }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                >
-                  Save
-                </button>
+            return (
+              <div key={key}>
+                <label className="text-xs font-semibold mb-1 block">
+                  {key}
+                </label>
+
+                {key === "AutoAPIStartTime" || key === "AutoAPIEndTime" ? (
+                  <input
+                    type="time"
+                    disabled={!isEditable}
+                    value={
+                      editableRow[key]
+                        ? editableRow[key].slice(0, 2) + ":" + editableRow[key].slice(2, 4)
+                        : ""
+                    }
+                    onChange={(e) =>
+                      handleInputChange(key, e.target.value.replace(":", "") + "00")
+                    }
+                    className="w-full border px-2 py-1 text-sm disabled:bg-gray-100"
+                  />
+                ) : (
+                  <textarea
+                    disabled={!isEditable}
+                    value={editableRow[key] ?? ""}
+                    onChange={(e) => handleInputChange(key, e.target.value)}
+                    className="w-full border px-2 py-1 text-sm resize-none h-20 disabled:bg-gray-100"
+                  />
+                )}
               </div>
-            </DialogPanel>
-          </div>
-        </Dialog>
-      )}
+            );
+          })}
+        </div>
+
+        <div className="flex justify-end gap-3 mt-6">
+          <button
+            onClick={() => setEditModal(null)}
+            className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+          >
+            Cancel
+          </button>
+
+          <button
+            onClick={() => {
+              setEditModal(null);
+              handleSave(); // ✅ EXISTING SAVE LOGIC
+            }}
+            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+          >
+            Save
+          </button>
+        </div>
+      </DialogPanel>
+    </div>
+  </Dialog>
+)}
+
     </div>
   );
 };
