@@ -208,6 +208,7 @@ const gridHeaderBg = isDefaultThemeGrid
     setModalOpen(false)
   }
 
+console.log(colors,'colors api checker');
 
 
   return (
@@ -404,55 +405,115 @@ const gridHeaderBg = isDefaultThemeGrid
 
       {/* Long Text Edit Modal */}
       {editModal && editIndex !== null && (
-  <Dialog open={true} onClose={() => setEditModal(null)} className="relative z-[400]">
-    <div className="fixed inset-0 bg-black/30" />
-    <div className="fixed inset-0 flex items-center justify-center p-4">
-      <DialogPanel className="bg-white rounded-lg shadow-xl max-w-4xl w-full p-6 max-h-[85vh] overflow-auto">
-        <DialogTitle className="text-xl font-bold mb-4">
-          Edit API Configuration
-        </DialogTitle>
+  <Dialog
+    open={true}
+    onClose={() => setEditModal(null)}
+    className="relative z-[400]"
+  >
+    {/* Overlay */}
+    <div className="fixed inset-0 bg-black/40" />
 
-        <div className="grid grid-cols-2 gap-4">
-          {uniqueKeys.map((key) => {
-            const isEditable = editableColumns.includes(key);
+    {/* Modal Wrapper */}
+    <div className="fixed inset-0 flex items-center justify-center p-6">
+      <DialogPanel className="bg-white w-full max-w-6xl rounded-md shadow-2xl overflow-hidden">
 
-            return (
-              <div key={key}>
-                <label className="text-xs font-semibold mb-1 block">
-                  {key}
-                </label>
+        {/* ================= HEADER ================= */}
+        <div className="flex items-center justify-between px-6 py-3 border-b bg-gray-100">
+          <DialogTitle className="text-lg font-semibold text-gray-800">
+            Edit API Configuration
+          </DialogTitle>
 
-                {key === "AutoAPIStartTime" || key === "AutoAPIEndTime" ? (
-                  <input
-                    type="time"
-                    disabled={!isEditable}
-                    value={
-                      editableRow[key]
-                        ? editableRow[key].slice(0, 2) + ":" + editableRow[key].slice(2, 4)
-                        : ""
-                    }
-                    onChange={(e) =>
-                      handleInputChange(key, e.target.value.replace(":", "") + "00")
-                    }
-                    className="w-full border px-2 py-1 text-sm disabled:bg-gray-100"
-                  />
-                ) : (
-                  <textarea
-                    disabled={!isEditable}
-                    value={editableRow[key] ?? ""}
-                    onChange={(e) => handleInputChange(key, e.target.value)}
-                    className="w-full border px-2 py-1 text-sm resize-none h-20 disabled:bg-gray-100"
-                  />
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="flex justify-end gap-3 mt-6">
           <button
             onClick={() => setEditModal(null)}
-            className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+            className="px-3 py-1 text-sm rounded bg-blue-100 text-blue-700 hover:bg-blue-200"
+          >
+            ✕ Close
+          </button>
+        </div>
+
+        {/* ================= BODY ================= */}
+        <div className="p-6 max-h-[70vh] overflow-auto">
+          <div className="grid grid-cols-3 gap-x-6 gap-y-4">
+
+            {uniqueKeys.map((key) => {
+              const isEditable = editableColumns.includes(key);
+              const value = editableRow[key] ?? "";
+              const isLongText = value.length > 50;
+
+              return (
+                <div key={key}>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">
+                    {key}
+                  </label>
+
+                  {/* ===== TIME FIELDS ===== */}
+                  {key === "AutoAPIStartTime" || key === "AutoAPIEndTime" ? (
+                    <input
+                      type="time"
+                      disabled={!isEditable}
+                      value={
+                        value
+                          ? value.slice(0, 2) + ":" + value.slice(2, 4)
+                          : ""
+                      }
+                      onChange={(e) =>
+                        handleInputChange(
+                          key,
+                          e.target.value.replace(":", "") + "00"
+                        )
+                      }
+                      className={`w-full px-2 py-1 text-sm border rounded
+                        ${!isEditable
+                          ? "bg-gray-100 cursor-not-allowed"
+                          : "bg-white"
+                        }
+                      `}
+                    />
+                  ) : isLongText ? (
+                    /* ===== TEXTAREA (>200 chars) ===== */
+                    <textarea
+                      rows={4}
+                      disabled={!isEditable}
+                      value={value}
+                      onChange={(e) =>
+                        handleInputChange(key, e.target.value)
+                      }
+                      className={`w-full px-2 py-1 text-sm border rounded resize-none
+                        ${!isEditable
+                          ? "bg-gray-100 cursor-not-allowed"
+                          : "bg-white"
+                        }
+                      `}
+                    />
+                  ) : (
+                    /* ===== INPUT (<=200 chars) ===== */
+                    <input
+                      type="text"
+                      disabled={!isEditable}
+                      value={value}
+                      onChange={(e) =>
+                        handleInputChange(key, e.target.value)
+                      }
+                      className={`w-full px-2 py-1 text-sm border rounded
+                        ${!isEditable
+                          ? "bg-gray-100 cursor-not-allowed"
+                          : "bg-white"
+                        }
+                      `}
+                    />
+                  )}
+                </div>
+              );
+            })}
+
+          </div>
+        </div>
+
+        {/* ================= FOOTER ================= */}
+        <div className="flex justify-end gap-3 px-6 py-4 border-t bg-gray-50">
+          <button
+            onClick={() => setEditModal(null)}
+            className="px-4 py-2 text-sm rounded bg-gray-300 hover:bg-gray-400"
           >
             Cancel
           </button>
@@ -462,15 +523,19 @@ const gridHeaderBg = isDefaultThemeGrid
               setEditModal(null);
               handleSave(); // ✅ EXISTING SAVE LOGIC
             }}
-            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+            className="px-5 py-2 text-sm rounded bg-blue-600 text-white hover:bg-blue-700"
           >
             Save
           </button>
         </div>
+
       </DialogPanel>
     </div>
   </Dialog>
 )}
+
+
+
 
     </div>
   );
