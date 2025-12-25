@@ -170,6 +170,14 @@ const cleanJSONStringLiteral = (str: string) => {
   //     setIsViewLogModalOpen(false);
   //   }
   // };
+
+
+  export const getRowBgColor = (rowIndex: number,gridBgColor:any) => {
+    return rowIndex % 2 === 0
+      ? gridBgColor   // themed background
+      : "#ffffff";    // white
+  };
+  
   
   
   
