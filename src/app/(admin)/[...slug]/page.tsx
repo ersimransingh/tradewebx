@@ -6,6 +6,7 @@ import DynamicReportComponent from "@/components/DynamicReportComponent";
 import ChangePassword from "@/apppages/ChangePassword";
 import ThemePage from "@/apppages/ThemePage";
 import Downloads from "@/apppages/Downloads";
+import EmailServices from "@/apppages/EmailServices";
 import { useAppSelector } from "@/redux/hooks";
 import { selectAllMenuItems, selectMenuStatus } from "@/redux/features/menuSlice";
 import KycPage from "@/apppages/KycPage";
@@ -319,6 +320,10 @@ function DynamicComponentRenderer({ componentName }: { componentName: string }) 
           : componentName.toLowerCase().includes("report")
             ? "report"
             : componentType);
+
+  if (finalComponentType?.toLowerCase() === "emailservices") {
+    return <EmailServices />;
+  }
 
   return (
     <DynamicReportComponent componentName={componentName} componentType={finalComponentType} />
