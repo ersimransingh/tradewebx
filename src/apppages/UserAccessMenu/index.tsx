@@ -11,7 +11,7 @@ import { RootState } from "@/redux/store";
 import { getLocalStorage } from "@/utils/helper";
 
 //  Import types
-import { GroupOption, AccessMaster, AccessMenu, CheckboxSummary } from "@/types/UserAccessTypes";
+import { GroupOption, AccessMaster, AccessMenu, CheckboxSummary,BoolString,GroupApiRow  } from "@/types/UserAccessTypes";
 
 const UserAccessMenu: React.FC = () => {
   const [groupOptions, setGroupOptions] = useState<GroupOption[]>([]);
@@ -33,8 +33,11 @@ const UserAccessMenu: React.FC = () => {
   };
 
   //  Helpers
-  const isBoolStr = (v: any): boolean =>
-    v === "True" || v === "False" || v === "true" || v === "false";
+  // const isBoolStr = (v: any): boolean =>
+  //   v === "True" || v === "False" || v === "true" || v === "false";
+  // Type guard (no `any`)
+const isBoolStr = (v: unknown): v is BoolString =>
+  v === "True" || v === "False" || v === "true" || v === "false";
 
   const getEligibleChecked = (rows: AccessMenu[], col: string): CheckboxSummary => {
     let eligible = 0;
@@ -69,7 +72,8 @@ const UserAccessMenu: React.FC = () => {
         const response = await apiService.postWithAuth(BASE_URL + PATH_URL, payload);
 
         if (response?.success && response?.data?.data?.rs0) {
-          const mappedOptions = response.data.data.rs0.map((item: any) => ({
+          // const mappedOptions = response.data.data.rs0.map((item: any) => ({
+          const mappedOptions : GroupOption[] = (response.data.data.rs0 as GroupApiRow[]).map((item) => ({
             value: item?.Value?.trim(),
             label: item?.DisplayName?.trim(),
           }));

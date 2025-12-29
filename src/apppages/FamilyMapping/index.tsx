@@ -9,7 +9,7 @@ import { toast } from "react-toastify";
 import CryptoJS from "crypto-js";
 import { useTheme } from "@/context/ThemeContext";
 import { getLocalStorage, decodeFernetToken } from "@/utils/helper";
-import { FamilyRow, LoginData } from "@/types/FamilyTypes";
+import { FamilyRow, LoginData, FamilyApiRow } from "@/types/FamilyTypes";
 import { BASE_URL, OTP_VERIFICATION_URL, PRODUCT, ACTION_NAME, PATH_URL, ENABLE_FERNET } from "@/utils/constants";
 import apiService from "@/utils/apiService";
 import { otpApi } from "@/utils/auth";
@@ -114,7 +114,7 @@ export default function Family() {
       const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
 
       if (response.data?.data?.rs0?.length) {
-        const formattedRows: FamilyRow[] = response.data.data.rs0.map((item: any, idx: number) => ({
+        const formattedRows: FamilyRow[] = response.data.data.rs0.map((item: FamilyApiRow, idx: number): FamilyRow => ({
           id: idx + 1,
           FamilyHead: item.FamilyHead?.trim() || "",
           ClientCode: item.ClientCode?.trim() || "",

@@ -4,6 +4,13 @@ export interface GroupOption {
     value: string;
     label: string;
   }
+
+// API row for GROUPCODE dropdown
+export interface GroupApiRow {
+  Value?: string;
+  DisplayName?: string;
+}
+
   
   // Master record (rs0)
   export interface AccessMaster {
@@ -27,3 +34,5 @@ export interface GroupOption {
     checked: number;
   }
   
+  // Allowed boolean string values from API
+export type BoolString = "True" | "False" | "true" | "false";

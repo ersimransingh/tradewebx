@@ -5,11 +5,14 @@ import MultiFileUploadQueue from '@/components/upload/MultiFileUploadQueue';
 import { UploadQueueStats } from '@/types/upload';
 import { FaInfoCircle } from 'react-icons/fa';
 
+type ApiRecord = Record<string, unknown>;
+
 const UploadFile = () => {
     const { colors } = useTheme();
     // Start with empty array - files won't be matched, but can still be uploaded
     // User can configure the API endpoint separately if needed
-    const [apiRecords] = useState<any[]>([]);
+    // const [apiRecords] = useState<any[]>([]);
+    const [apiRecords, _setApiRecords] = useState<ApiRecord[]>([]);
 
     const handleQueueUpdate = (stats: UploadQueueStats) => {
         // Queue stats updated - can be used for analytics or UI updates

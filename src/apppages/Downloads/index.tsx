@@ -17,6 +17,14 @@ import Loader from '@/components/Loader';
 import { useAppSelector } from '@/redux/hooks';
 import { selectAllMenuItems } from '@/redux/features/menuSlice';
 
+interface DownloadFilterValues {
+  fromDate: Date | string;
+  toDate: Date | string;
+  DocumentType?: string;
+  segment: string;
+  ClientCode?: string;
+}
+
 const Downloads = () => {
     const [downloads, setDownloads] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -41,12 +49,13 @@ const Downloads = () => {
     const pageData: any = findPageData(menuItems, "Downloads");
     // console.log('userData', userData);
 
-    const getDownloads = async (isReload = false, values?: any) => {
+    const getDownloads = async (isReload = false, values?: DownloadFilterValues) => {
         if (isReload) {
             setLoading(true);
         }
         // console.log('filterValues', filterValues);
-        const filterValuesLocal = values || filterValues;
+        // const filterValuesLocal = values || filterValues;
+        const filterValuesLocal: DownloadFilterValues = values ?? filterValues;
         const startTime = performance.now();
 
         const fromDateStr = moment(filterValuesLocal.fromDate).format('YYYYMMDD');
@@ -244,7 +253,7 @@ const Downloads = () => {
         setFilterValues(formattedValues);
     };
 
-    const handleApplyFilters = (values?: any) => {
+    const handleApplyFilters = (values?: DownloadFilterValues) => {
         console.log('values FOR FILTER', values);
         // setFilterValues(values);
         setTimeout(() => {

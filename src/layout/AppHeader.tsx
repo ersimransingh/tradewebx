@@ -12,6 +12,12 @@ import Select, { StylesConfig } from "react-select";
 import { HiMenuAlt2 } from "react-icons/hi";
 import { IoClose } from "react-icons/io5";
 
+/* ---------- TYPES ---------- */
+type ThemeOption = {
+  value: ThemeType;
+  label: string;
+};
+
 const AppHeader: React.FC = () => {
   const dispatch = useAppDispatch();
   const { theme, setTheme, availableThemes, colors, fonts } = useTheme();
@@ -54,12 +60,12 @@ const AppHeader: React.FC = () => {
       .join(' ');
   };
 
-  const themeOptions = availableThemes.map((themeName) => ({
+  const themeOptions : ThemeOption[] = availableThemes.map((themeName) => ({
     value: themeName,
     label: formatThemeName(themeName),
   }));
 
-  const customStyles: StylesConfig<any, false> = {
+  const customStyles: StylesConfig<ThemeOption, false> = {
     control: (provided) => ({
       ...provided,
       backgroundColor: colors.textInputBackground,
@@ -173,7 +179,7 @@ const AppHeader: React.FC = () => {
         >
           <div className="flex items-center gap-2 2xsm:gap-3">
             <div className="relative">
-              <Select
+              <Select<ThemeOption, false>
                 aria-label="Theme selector"
                 value={themeOptions.find(option => option.value === theme)}
                 onChange={(option) => setTheme(option?.value as ThemeType)}
