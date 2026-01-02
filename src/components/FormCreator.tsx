@@ -2,9 +2,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
-import Select from 'react-select';
 import moment from 'moment';
-import axios from 'axios';
 import { BASE_URL, PATH_URL } from '@/utils/constants';
 import { useTheme } from '@/context/ThemeContext';
 import { FaCalendarAlt } from 'react-icons/fa';
@@ -148,13 +146,13 @@ const FormCreator: React.FC<FormCreatorProps> = ({
         { id: "lastfinancialyear", text: "Last Financial Year" },
     ];
 
-    const getFinancialYear = (date: moment.Moment) => {
-        const financialYearStart = date.month() >= 3 ? date.year() : date.year() - 1;
-        return [
-            moment(`${financialYearStart}-04-01`),
-            moment(`${financialYearStart + 1}-03-31`),
-        ];
-    };
+    // const getFinancialYear = (date: moment.Moment) => {
+    //     const financialYearStart = date.month() >= 3 ? date.year() : date.year() - 1;
+    //     return [
+    //         moment(`${financialYearStart}-04-01`),
+    //         moment(`${financialYearStart + 1}-03-31`),
+    //     ];
+    // };
 
       const handlePresetSelection = (
       presetId: string,

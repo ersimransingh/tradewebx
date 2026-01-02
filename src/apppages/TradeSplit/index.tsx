@@ -12,7 +12,7 @@ import ConfirmationModal from './ConfirmationModal';
 
 import { toast } from 'react-toastify';
 
-const TradeSplit: React.FC<TradeSplitProps> = ({ data, settings, filters, isAutoWidth }) => {
+const TradeSplit: React.FC<TradeSplitProps> = ({ data, isAutoWidth }) => {
     const { colors, fonts } = useTheme();
     const [rows, setRows] = useState<TradeRow[]>([]);
     const [isEditing, setIsEditing] = useState(false);
@@ -67,7 +67,7 @@ const TradeSplit: React.FC<TradeSplitProps> = ({ data, settings, filters, isAuto
         // Group rows by Unique Trade Identifier
         const groups = _.groupBy(rows, (r) => `${r.SerialNo}-${r.Scrip}-${r.BuySell}`);
 
-        Object.entries(groups).forEach(([key, groupRows]) => {
+        Object.entries(groups).forEach(([, groupRows]) => {
             const firstRow = groupRows[0];
             const isSell = firstRow.BuySell === 'S';
             
@@ -137,6 +137,7 @@ const TradeSplit: React.FC<TradeSplitProps> = ({ data, settings, filters, isAuto
             // Build Payload (Include all columns)
             const payloadData = rowsToSave.map(row => {
                 const { _id, ...rest } = row; // Exclude internal ID
+                console.log(_id)
                 return {
                     ...rest,
                     Client: row.Client || row.ClientName || "",

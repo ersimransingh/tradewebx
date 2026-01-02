@@ -99,10 +99,10 @@ export default function AuthGuard({ children }: AuthGuardProps) {
           if (isCriticalRoute) {
             // Skip server-side validation for localhost and development
             const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-            const isDevelopment = process.env.NODE_ENV === 'development' ||
-              hostname === 'localhost' ||
-              hostname === '127.0.0.1' ||
-              hostname === '0.0.0.0';
+            // const isDevelopment = process.env.NODE_ENV === 'development' ||
+            //   hostname === 'localhost' ||
+            //   hostname === '127.0.0.1' ||
+            //   hostname === '0.0.0.0';
 
 
           }

@@ -21,7 +21,7 @@ export default function MarginPledgeOnline() {
   const [dematId, setDematId] = useState([]);
   const [selectedDemat, setSelectedDemat] = useState<{ DPAccountNo: string; DPType: string } | null>(null);
   const [tableHeaders, setTableHeaders] = useState<string[]>([]);
-  const [tableRows, setTableRows] = useState<any[]>([]);
+  // const [tableRows, setTableRows] = useState<any[]>([]);
   const [tableVisible, setTableVisible] = useState<boolean>(false);
   const [pledgeRedirectData, setPledgeRedirectData] = useState<any>([]);
   const [buttonDisable, setButtonDisable] = useState<boolean>(true);
@@ -36,7 +36,7 @@ export default function MarginPledgeOnline() {
   useEffect(() => {
     const fetchTableBody = async () => {
       await tableApiCall(selectedDemat, setTableHeaders, (rows) => {
-        setTableRows(rows);
+        // setTableRows(rows);
         const enrichedRows = rows.map(row => ({
           ...row,
           ReqValue: '',

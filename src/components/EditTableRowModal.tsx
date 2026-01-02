@@ -3,7 +3,6 @@ import React, { useState, useEffect } from "react";
 import { Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import axios from 'axios';
 import { toast } from 'react-toastify';
 import { ACTION_NAME, BASE_URL, PATH_URL } from '@/utils/constants';
 import CustomDropdown from './form/CustomDropdown';
@@ -11,7 +10,6 @@ import { useTheme } from '@/context/ThemeContext';
 import EntryFormModal from './EntryFormModal';
 import KycPage from "@/apppages/KycPage";
 import { clearMakerSates, displayAndDownloadFile, dynamicXmlGenratingFn, getLocalStorage, sanitizeValueSpecialChar, storeLocalStorage } from "@/utils/helper";
-import { getFileTypeFromBase64 } from "@/utils/helper";
 import apiService from "@/utils/apiService";
 import AccountClosure from "@/apppages/KycPage/account-closure";
 
@@ -100,7 +98,6 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
     title,
     tableData,
     pageName,
-    isTabs,
     wPage,
     settings,
     showViewDocument = false,
@@ -1056,7 +1053,7 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
         try {
             const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
             const base64 = response?.data?.data?.rs0?.Base64PDF;
-            const fileName = response?.data?.data?.rs0?.PDFName
+            // const fileName = response?.data?.data?.rs0?.PDFName
             console.log(response?.data?.data?.rs0, 'response?.data?.data?.rs0?');
 
             if (base64) {

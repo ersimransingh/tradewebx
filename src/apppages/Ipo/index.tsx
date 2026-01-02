@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
 import { useTheme } from '@/context/ThemeContext';
-import { DYNAMIC_DETAILS, IPO_SELECTED, IPO_url, checkStatusFs, configDetails, fetchUPIType, handleBidChange, handleCheckboxChange, handleCutOffBlur, handleDecrement, handleDelete, handleFocus, handleIncrement, handleTermsChange, handleTextBoxChange, onSubmitBtn } from './IpoHelper';
+import { DYNAMIC_DETAILS, IPO_SELECTED, checkStatusFs, configDetails, fetchUPIType, handleBidChange, handleCheckboxChange, handleCutOffBlur, handleDecrement, handleDelete, handleFocus, handleIncrement, handleTermsChange, handleTextBoxChange, onSubmitBtn } from './IpoHelper';
 import { useLocalStorage } from '@/hooks/useLocalListner';
 import { ACTION_NAME, BASE_URL, PATH_URL } from '@/utils/constants';
 import apiService from '@/utils/apiService';
@@ -31,8 +31,6 @@ const Ipo = () => {
   const [termsAccepted, setTermsAccepted] = useState<boolean>(false); // Track terms checkbox state
   const [disableCutOff2, setDisableCutOff2] = useState<boolean>(false); // Disable cutoff input
   const [disableCutOff3, setDisableCutOff3] = useState<boolean>(false); // Disable cutoff input
-  const [upi, setUpi] = useState<"" | any>("")
-  const [selectedUpiSelect, setSelectedUpiSelect] = useState<"" | any>("");
   const [status, setStatus] = useState<boolean>(false);
 
   const [clientCode] = useLocalStorage('clientCode', null);
@@ -51,12 +49,12 @@ const Ipo = () => {
     if (typeof window === 'undefined') return;
 
 
-    const config = {
-      headers: {
-        Authorization: `Bearer ${authToken}`,
-        "Content-Type": "application/xml",
-      },
-    };
+    // const config = {
+    //   headers: {
+    //     Authorization: `Bearer ${authToken}`,
+    //     "Content-Type": "application/xml",
+    //   },
+    // };
 
     const xmlDataIPO = `
       <dsXml>
@@ -113,12 +111,12 @@ const Ipo = () => {
 
 
     // ✅ Set Bid 1 to minimum order and Cutoff to max price
-    const minOrder = ipo.minimumOrder
-    // console.log();
-    setBid1('');
-    setCutOff('');
-    setDisableCutOff(false);
-    setIsChecked(false);
+    // const minOrder = ipo.minimumOrder
+    // // console.log();
+    // setBid1('');
+    // setCutOff('');
+    // setDisableCutOff(false);
+    // setIsChecked(false);
 
 
 

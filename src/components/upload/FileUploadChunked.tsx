@@ -1,10 +1,9 @@
 "use client";
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { FaUpload, FaFile, FaCheck, FaTimes, FaPause, FaPlay, FaRedo, FaDownload, FaEye } from 'react-icons/fa';
+import { FaUpload, FaFile, FaCheck, FaTimes, FaRedo, FaDownload, FaEye } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import {
-  UploadConfig,
   UploadProgress,
   ChunkData,
   ChunkResult,
@@ -524,7 +523,7 @@ const FileUploadChunked: React.FC<FileUploadChunkedProps> = ({
 
     // Clear allDataRef to free up memory for large files (data is now in chunks)
     // We keep a reference count instead
-    const totalRecordsCount = allDataRef.current.length;
+    // const totalRecordsCount = allDataRef.current.length;
     allDataRef.current = []; // Free memory
 
     const onChunkComplete = (result: ChunkResult) => {

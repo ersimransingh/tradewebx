@@ -16,7 +16,7 @@ export default function AuthLayout({
 }) {
   const dispatch = useAppDispatch();
   const pathname = usePathname();
-  const { companyInfo, status, error } = useSelector((state: RootState) => state.common);
+  const { companyInfo, error } = useSelector((state: RootState) => state.common);
 
   useEffect(() => {
     // Skip initialization API call for SSO page - it will handle its own authentication

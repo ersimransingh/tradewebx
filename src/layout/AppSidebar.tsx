@@ -28,8 +28,6 @@ import {
   FaSearch
 } from 'react-icons/fa';
 
-import { PATH_URL } from "@/utils/constants";
-import { BASE_URL } from "@/utils/constants";
 import { fetchInitializeLogin } from "@/redux/features/common/commonSlice";
 import { getLocalStorage } from "@/utils/helper";
 

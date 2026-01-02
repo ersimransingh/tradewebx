@@ -1,7 +1,6 @@
 import { THEME_COLORS_STORAGE_KEY, THEME_STORAGE_KEY } from "@/context/ThemeContext";
 import { APP_METADATA_KEY, SECURE_STORAGE_KEY, SECURITY_LIBRARY, ACTION_NAME, BASE_URL, PATH_URL } from "./constants";
 import { toast } from "react-toastify";
-import { log } from "node:console";
 //@ts-ignore
 import { Token, Secret } from 'fernet';
 import CryptoJS from 'crypto-js';
@@ -74,6 +73,7 @@ export function handleViewFile(base64Data: string, fieldType: string = 'file') {
             document.body.removeChild(link);
         }
     } catch (error) {
+        console.log(error)
         alert("Unable to preview file.");
     }
 }
@@ -183,7 +183,7 @@ export const clearIndexedDB = () => {
         };
 
         request.onerror = (event) => {
-            console.error("Error deleting IndexedDB:", request.error);
+            console.error("Error deleting IndexedDB:", request.error,event);
             reject(request.error);
         };
 
@@ -227,6 +227,7 @@ export const parseXmlValue = (xmlString: string, tag: string): string => {
     return match ? match[1] : '';
 };
 export const parseHeadings = (xmlString: string): any => {
+    console.log(xmlString)
     // Implement heading parsing logic if needed
     return {};
 };
@@ -367,7 +368,7 @@ export const decodeFernetToken = (data: string) => {
 
 export const normalizeEncryptedParam = (param: string | null): string | null => {
     if(param){
-        const trimmedString = param?.trim();
+        // const trimmedString = param?.trim();
         const finalParam = param.replace(/ /g, '+');
         return finalParam;
     } else{

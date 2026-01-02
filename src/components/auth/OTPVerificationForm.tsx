@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import axios from 'axios';
 import { useDispatch, useSelector } from 'react-redux';
 import { setFinalAuthData, setError as setAuthError } from '@/redux/features/authSlice';
-import { ACTION_NAME, BASE_PATH_FRONT_END, BASE_URL, ENABLE_FERNET, OTP_VERIFICATION_URL } from "@/utils/constants";
+import { ACTION_NAME, BASE_URL, ENABLE_FERNET, OTP_VERIFICATION_URL } from "@/utils/constants";
 import { useTheme } from "@/context/ThemeContext";
 
 import Image from "next/image";
@@ -21,7 +21,7 @@ export default function OTPVerificationForm() {
   const [otp, setOtp] = useState<any>("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const { companyInfo, status, encPayload } = useSelector((state: RootState) => state.common);
+  const { companyInfo, encPayload } = useSelector((state: RootState) => state.common);
   const {firstLogin} = useSelector((state:RootState) => state.auth)
   const { colors } = useTheme();
 

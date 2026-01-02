@@ -7,10 +7,10 @@ import apiService from "@/utils/apiService";
 import { BASE_URL, PATH_URL } from "@/utils/constants";
 import { useLocalStorage } from "@/hooks/useLocalListner";
 import Loader from "@/components/Loader";
-import { activeFlag, apiCallingTypes, ApiConfigurationRow, apiContentTypes, EditModalState, LogHeader } from "@/types/apiConfigurationTypes";
+import { ApiConfigurationRow, EditModalState, LogHeader } from "@/types/apiConfigurationTypes";
 import { FiEdit } from "react-icons/fi";
 import { HiOutlineDocumentText } from "react-icons/hi";
-import { MdArrowBack, MdClose, MdSave } from "react-icons/md";
+import { MdClose, MdSave } from "react-icons/md";
 import Button from "@/components/ui/button/Button";
 
 const ApiConfiguration = () => {
@@ -109,9 +109,9 @@ const gridBgColor = isDefaultThemeGrid
   ? DEFAULT_GRID_BG
   : colors?.textInputBackground;
 
-const gridHeaderBg = isDefaultThemeGrid
-  ? DEFAULT_GRID_HEADER
-  : colors?.primary;
+// const gridHeaderBg = isDefaultThemeGrid
+//   ? DEFAULT_GRID_HEADER
+//   : colors?.primary;
 
 
   

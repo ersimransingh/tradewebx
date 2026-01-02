@@ -1,8 +1,8 @@
 "use client";
 import React, { useState } from 'react';
 import { FaTimes, FaCheckCircle, FaExclamationTriangle, FaDownload, FaFileAlt } from 'react-icons/fa';
-import { useTheme } from '@/context/ThemeContext';
-import { FileImportErrors, ImportFilterErrorRecord } from '@/types/upload';
+// import { useTheme } from '@/context/ThemeContext';
+import { FileImportErrors } from '@/types/upload';
 import { downloadAsCSV } from '@/utils/fileParser';
 
 interface ImportErrorsModalProps {
@@ -18,7 +18,7 @@ const ImportErrorsModal: React.FC<ImportErrorsModalProps> = ({
     fileErrors,
     hasErrors,
 }) => {
-    const { colors } = useTheme();
+    // const { colors } = useTheme();
     const [activeTab, setActiveTab] = useState(0);
 
     // Prevent body scroll when modal is open

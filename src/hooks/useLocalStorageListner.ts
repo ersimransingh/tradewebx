@@ -1,6 +1,6 @@
 // Create a new file hooks/useLocalStorage.ts
 import { useState, useEffect } from 'react';
-import { getLocalStorage, storeLocalStorage } from '@/utils/helper';
+import { getLocalStorage } from '@/utils/helper';
 
 
 export function useLocalStorageListener(key: string, initialValue: any) {

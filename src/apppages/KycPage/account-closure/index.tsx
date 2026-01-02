@@ -2,7 +2,7 @@
 import { selectAllMenuItems } from "@/redux/features/menuSlice";
 import { useAppSelector } from "@/redux/hooks";
 import { ACTION_NAME, BASE_URL, PATH_URL } from "@/utils/constants";
-import { displayAndDownloadPDF, findPageData, displayAndDownloadFile, getLocalStorage, storeLocalStorage, removeLocalStorage, escapeXmlChars, sanitizePayload } from "@/utils/helper";
+import { displayAndDownloadPDF, findPageData, displayAndDownloadFile, getLocalStorage, storeLocalStorage, removeLocalStorage, sanitizePayload } from "@/utils/helper";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { useTheme } from "@/context/ThemeContext";

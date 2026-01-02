@@ -2,7 +2,7 @@ import axios, { AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 import { ACTION_NAME, BASE_PATH_FRONT_END, BASE_URL, ENABLE_FERNET, OTP_VERIFICATION_URL } from './constants';
 import { toast } from 'react-toastify';
 import CryptoJS from 'crypto-js';
-import { SECURITY_CONFIG, isAllowedHttpHost } from './securityConfig';
+import { SECURITY_CONFIG } from './securityConfig';
 import { clearAllAuthData } from './auth';
 import { decodeFernetToken, getLocalStorage, storeLocalStorage } from './helper';
 import { store } from '@/redux/store';
@@ -721,7 +721,7 @@ class ApiService {
                 console.log("IndexedDB deleted successfully");
             };
 
-            request.onerror = (event) => {
+            request.onerror = () => {
                 console.error("Error deleting IndexedDB:", request.error);
             };
 
@@ -761,7 +761,7 @@ class ApiService {
                 },
                 body: JSON.stringify(logData)
             });
-        } catch (loggingError) {}
+        } catch {}
     }
 }
 

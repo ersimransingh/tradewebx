@@ -135,7 +135,7 @@ const authSlice = createSlice({
             state.userType = action.payload.userType;
             state.firstLogin = action.payload.firstLogin;
         },
-        logout: (state) => {
+        logout: () => {
             // Clear localStorage only
             clearLocalStorage();
             clearIndexedDB();

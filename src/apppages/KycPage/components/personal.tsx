@@ -9,7 +9,7 @@ import { useSaveLoading } from '@/context/SaveLoadingContext';
 import { getLocalStorage } from '@/utils/helper';
 
 
-const Personal = ({ formFields, tableData, fieldErrors, setFieldData, setActiveTab, Settings }: EkycComponentProps) => {
+const Personal = ({ formFields, tableData, setFieldData, setActiveTab, Settings }: EkycComponentProps) => {
 
     const { colors } = useTheme();
     const viewMode = getLocalStorage("ekyc_viewMode") === "true" || getLocalStorage("ekyc_viewMode_for_checker") === "true";

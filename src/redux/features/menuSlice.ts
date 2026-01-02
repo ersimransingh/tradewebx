@@ -1,5 +1,4 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
 import type { RootState } from '../store';
 import { ACTION_NAME, BASE_URL, PATH_URL, BASE_PATH_FRONT_END } from '@/utils/constants';
 import apiService from '@/utils/apiService';
@@ -258,8 +257,10 @@ export const fetchMenuItems = createAsyncThunk(
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify(logData)
-                }).catch(err => {});
-            } catch (loggingError) {}
+                }).catch(() => {});
+            } catch (loggingError) {
+                console.error(loggingError)
+            }
 
             // Try to load menu from sessionStorage as fallback
             const cachedMenu = loadMenuFromSessionStorage();
