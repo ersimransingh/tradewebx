@@ -132,8 +132,8 @@ export const handleLoopThroughMultiSelectKeyHandlerExcel = async (setIsLoading,f
 
     const collectedExcels: { excelName: string; base64: string }[] = [];
     const failedRows: string[] = [];
-    const clientCodeMatch = filterXml.match(/<ClientCode>(.*?)<\/ClientCode>/);
-    const clientCode = clientCodeMatch ? clientCodeMatch[1].trim() : "";
+    // const clientCodeMatch = filterXml.match(/<ClientCode>(.*?)<\/ClientCode>/);
+    // const clientCode = clientCodeMatch ? clientCodeMatch[1].trim() : "";
     const emailSendingCaptionTxt = pageData?.[0]?.level || '';
 
     try {
@@ -364,8 +364,8 @@ export const handleLoopThroughMultiSelectKeyHandlerDownloadZipExcel = async (sel
   const excelFolder = zip.folder(zipFolderName);
 
   // Extract client code from filterXml
-  const clientCodeMatch = filterXml.match(/<ClientCode>(.*?)<\/ClientCode>/);
-  const clientCode = clientCodeMatch ? clientCodeMatch[1].trim() : "";
+  // const clientCodeMatch = filterXml.match(/<ClientCode>(.*?)<\/ClientCode>/);
+  // const clientCode = clientCodeMatch ? clientCodeMatch[1].trim() : "";
 
   const rowsToProcess = Array.isArray(selectedRows) ? [...selectedRows] : [];
   const failedRows: { id: string; index: number; reason: string }[] = [];

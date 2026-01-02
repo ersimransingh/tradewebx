@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useAppSelector } from '@/redux/hooks';
 import { selectAllMenuItems } from '@/redux/features/menuSlice';
-import axios from 'axios';
 import { BASE_URL, PATH_URL } from '@/utils/constants';
 import moment from 'moment';
 import FilterModal from './FilterModal';
@@ -377,6 +376,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
         try {
             return JSON.parse(getLocalStorage(APP_METADATA_KEY))
         } catch (err) {
+            console.error(err)
             return store.getState().common
         }
     })();
@@ -1244,7 +1244,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
             console.log("response of delete api", response)
 
         } catch (error) {
-            console.error(`Error fetching options for   `);
+            console.error(`Error fetching options for   `,error);
         } finally {
             console.log("check delete record");
         }

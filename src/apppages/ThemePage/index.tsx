@@ -42,7 +42,7 @@ const ThemePage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [applyMessage, setApplyMessage] = useState<string>("");
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   // 🟢 Store NEW colors user edits
   const [editedColors, setEditedColors] = useState<ThemeColors>(colors);
 
@@ -134,6 +134,7 @@ const ThemePage = () => {
       }
 
     } catch (error) {
+      console.error(error)
       toast.error("Something went wrong. Please refresh and try again.");
       setIsConfirmModalOpen(false);
       setIsModalOpen(false);
@@ -264,6 +265,7 @@ const ThemePage = () => {
                 </button>
                 <button
                   onClick={handleSubmit}
+                  disabled={isLoading}
                   style={{
                     padding: "8px 16px",
                     background: colors.primary,
@@ -274,7 +276,9 @@ const ThemePage = () => {
                     fontSize: "12px",
                   }}
                 >
-                  Submit
+                  {
+                    isLoading ? "Submitting..." : "Submit"
+                  }
                 </button>
                 {applyMessage && (
                   <p className="text-green-600 text-sm mt-2 text-right">{applyMessage}</p>

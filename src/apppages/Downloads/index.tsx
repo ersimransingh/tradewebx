@@ -36,7 +36,7 @@ const Downloads = () => {
     const [downloadingFile, setDownloadingFile] = useState<string | null>(null);
     const [isAutoWidth, setIsAutoWidth] = useState(false);
 
-    const { colors, fonts } = useTheme();
+    const { colors } = useTheme();
     const userData = useSelector((state: RootState) => state.auth);
     const menuItems = useAppSelector(selectAllMenuItems);
     const pageData: any = findPageData(menuItems, "Downloads");

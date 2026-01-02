@@ -3,7 +3,7 @@ import React, { useEffect, useState, useCallback, Suspense, useLayoutEffect, use
 import { useRouter, useSearchParams } from 'next/navigation'
 import axios from 'axios'
 import { logout, setAuthData, setError as setAuthError, setFinalAuthData } from '@/redux/features/authSlice'
-import { BASE_URL, PRODUCT, LOGIN_KEY, LOGIN_AS, SSO_URL, OTP_VERIFICATION_URL, ACTION_NAME } from "@/utils/constants"
+import { BASE_URL, OTP_VERIFICATION_URL, ACTION_NAME } from "@/utils/constants"
 import { clearIndexedDB, removeLocalStorage, storeLocalStorage, decodeFernetToken } from '@/utils/helper'
 import { fetchMenuItems } from '@/redux/features/menuSlice'
 import { fetchInitializeLogin } from '@/redux/features/common/commonSlice'

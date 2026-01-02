@@ -191,7 +191,7 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const newToken = await refreshAuthToken();
+        // const newToken = await refreshAuthToken();
 
         // Wait a moment to ensure token is fully stored in encrypted localStorage
         await new Promise(resolve => setTimeout(resolve, 100));

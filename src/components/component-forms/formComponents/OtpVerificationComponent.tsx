@@ -1,7 +1,6 @@
 // components/OtpVerificationModal.tsx
 import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import axios from 'axios';
 import { BASE_URL, PATH_URL } from '@/utils/constants';
 import apiService from '@/utils/apiService';
 
@@ -26,7 +25,7 @@ const OtpVerificationModal: React.FC<OtpVerificationModalProps> = ({
   masterValues,
   type,
   oldValue,
-  setFieldErrors
+  // setFieldErrors
 }) => {
   const [currentStep, setCurrentStep] = useState<'enterNewValue' | 'verifyOldOtp' | 'verifyNewOtp'>('enterNewValue');
   const [newValue, setNewValue] = useState('');
@@ -83,7 +82,7 @@ const OtpVerificationModal: React.FC<OtpVerificationModalProps> = ({
       Object.entries(X_Filter_Multiple).forEach(([key, placeholder]) => {
         let fieldValue;
         if (typeof placeholder === 'string' && placeholder.startsWith('##') && placeholder.endsWith('##')) {
-          const formKey = placeholder.slice(2, -2);
+          // const formKey = placeholder.slice(2, -2);
           fieldValue = newValue;
         } else {
           fieldValue = newValue;

@@ -217,8 +217,8 @@ const KycBank = ({ formFields, tableData, setFieldData, setActiveTab, Settings }
           // If current is unchecked
           newTableData = updatedTableData.map((entry, index) => {
             if (index === editingIndex) {
-              const wasPreviouslyDefault = entry.IsDefault === "true";
-              const isOld = !!entry.BankID;
+              // const wasPreviouslyDefault = entry.IsDefault === "true";
+              // const isOld = !!entry.BankID;
 
               const modifiedEntry = {
                 ...currentFormData,

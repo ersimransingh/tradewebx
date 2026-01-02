@@ -152,7 +152,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [theme, setTheme] = useState<ThemeType>('light');
   const [themes, setThemes] = useState<Record<ThemeType, ThemeColors>>(initialThemes);
   const [fonts, setFonts] = useState<FontSettings>(defaultFonts);
-  const [isLoading, setIsLoading] = useState(true);
+  // const [isLoading, setIsLoading] = useState(true);
   const themeFetchInFlight = useRef(false);
   const [hasFetchedTheme, setHasFetchedTheme] = useState(false);
   const { userId: UserId, userType: UserType, isAuthenticated } = useSelector((state: RootState) => state.auth)
@@ -228,6 +228,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             storeLocalStorage(THEME_COLORS_STORAGE_KEY, JSON.stringify(parsedThemeSettings));
           }
         } catch (err) {
+          console.error(err)
           storeLocalStorage(THEME_COLORS_STORAGE_KEY, JSON.stringify(parsedThemeSettings));
         }
       }
@@ -269,7 +270,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       } catch (error) {
         console.error('Failed to load theme:', error);
       } finally {
-        setIsLoading(false);
+        // setIsLoading(false);
       }
     };
 

@@ -25,7 +25,6 @@ const AsyncSearchDropdown: React.FC<AsyncSearchDropdownProps> = ({
   value,
   onChange,
   colors,
-  formData,
   formValues,
   handleFormChange,
   fetchDependentOptions,

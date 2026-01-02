@@ -4,7 +4,6 @@ import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import { DataGrid, Column } from "react-data-grid";
 import { Modal } from "@/components/ui/modal";
-import axios from "axios";
 import { toast } from "react-toastify";
 import CryptoJS from "crypto-js";
 import { useTheme } from "@/context/ThemeContext";
@@ -14,26 +13,33 @@ import { BASE_URL, OTP_VERIFICATION_URL, PRODUCT, ACTION_NAME, PATH_URL, ENABLE_
 import apiService from "@/utils/apiService";
 import { otpApi } from "@/utils/auth";
 import { storeTempOtpToken } from "@/utils/auth";
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { RootState } from "@/redux/store";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import ConfirmationModal from "@/components/Modals/ConfirmationModal";
 
 const passKey = "TradeWebX1234567";
 
+interface IpifyResponse {
+  ip: string;
+}
+
+interface IpApiResponse {
+  ip: string;
+}
+
 export default function Family() {
   const { colors } = useTheme();
 
   // --- States ---
   const [rows, setRows] = useState<FamilyRow[]>([]);
-  const [isUccModalOpen, setIsUccModalOpen] = useState<boolean>(false);
-  const [ucc, setUcc] = useState<string>("");
+  // const [isUccModalOpen, setIsUccModalOpen] = useState<boolean>(false);
+  // const [ucc, setUcc] = useState<string>("");
   const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);
   const [loginData, setLoginData] = useState<LoginData>({ userId: "", password: "" });
   const [otp, setOtp] = useState<string>("");
   const [otpRequired, setOtpRequired] = useState<boolean>(false);
   const [loginMessage, setLoginMessage] = useState<string>("");
-  const [tempToken, setTempToken] = useState<string | null>(null);
   const [error, setError] = useState<string>("");
   const [otpError, setOtpError] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -82,15 +88,20 @@ export default function Family() {
     try {
       const res = await fetch("https://api.ipify.org?format=json");
       if (!res.ok) throw new Error("Ipify failed");
-      const data = await res.json();
+      // const data = await res.json();
+      // return data.ip;
+      const data: IpifyResponse = await res.json();
       return data.ip;
     } catch {
       toast.error(" Ipify lookup failed, using backup service...");
       try {
         const backupRes = await fetch("https://ipapi.co/json/");
         if (!backupRes.ok) throw new Error("ipapi failed");
-        const backupData = await backupRes.json();
-        toast.success(" Backup API worked!");
+        // const backupData = await backupRes.json();
+        // toast.success(" Backup API worked!");
+        // return backupData.ip;
+        const backupData: IpApiResponse = await backupRes.json();
+        toast.success("Backup API worked!");
         return backupData.ip;
       } catch {
         toast.error("All IP lookups failed!");
@@ -132,12 +143,12 @@ export default function Family() {
   }, []);
 
   // --- Modal Handlers ---
-  const openUccModal = () => setIsUccModalOpen(true);
-  const closeUccModal = () => {
-    setUcc("");
-    setError("");        // optional: clears validation error
-    setIsUccModalOpen(false);
-  };
+  // const openUccModal = () => setIsUccModalOpen(true);
+  // const closeUccModal = () => {
+  //   setUcc("");
+  //   setError("");        // optional: clears validation error
+  //   setIsUccModalOpen(false);
+  // };
 
 
   const openLoginModal = () => setIsLoginModalOpen(true);
@@ -149,18 +160,18 @@ export default function Family() {
     setError("");
     setOtpError("");
     setLoginData({ userId: "", password: "" });
-    setUcc("");
+    // setUcc("");
   };
 
-  const handleUccNext = () => {
-    if (!ucc.trim()) {
-      setError("UCC Code is required.");
-      return;
-    }
-    setError("");
-    closeUccModal();
-    openLoginModal();
-  };
+  // const handleUccNext = () => {
+  //   if (!ucc.trim()) {
+  //     setError("UCC Code is required.");
+  //     return;
+  //   }
+  //   setError("");
+  //   closeUccModal();
+  //   openLoginModal();
+  // };
 
   // --- Login API ---
   const handleLogin = async (): Promise<void> => {
@@ -204,7 +215,7 @@ export default function Family() {
       } else {
         await saveUccData(loginData.userId); //  latest value
         fetchFamilyMapping();
-        setUcc("");
+        // setUcc("");
         setOtp("");
         setOtpRequired(false);
         closeLoginModal();
@@ -219,7 +230,6 @@ export default function Family() {
   const handleOTPVerify = async (): Promise<void> => {
     if (!otp.trim()) return setOtpError("OTP is required.");
     if (!/^\d{4}$/.test(otp)) return setOtpError("OTP must be 4 digits.");
-    const authToken = tempTokenRef.current;
     setIsLoading(true);
     try {
       const xmlData = `<dsXml>
@@ -250,7 +260,7 @@ export default function Family() {
       if (data?.status === true) {
         await saveUccData(loginData.userId); //  always latest
         fetchFamilyMapping();
-        setUcc("");
+        // setUcc("");
         setOtp("");
         setOtpRequired(false);
         closeLoginModal();
@@ -282,7 +292,7 @@ export default function Family() {
       if (response?.data?.success === true) {
         toast.success(response?.data?.message?.replace(/<[^>]+>/g, "") || "Family Mapped successfully");
         fetchFamilyMapping();
-        setUcc("");
+        // setUcc("");
         setOtp("");
         setOtpRequired(false);
         setLoginData({ userId: "", password: "" });

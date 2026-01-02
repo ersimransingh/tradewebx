@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
-import { APP_METADATA_KEY, ACTION_NAME, BASE_URL, OTP_VERIFICATION_URL, PATH_URL, ENABLE_FERNET } from '@/utils/constants';
+import { APP_METADATA_KEY, ACTION_NAME, BASE_URL, OTP_VERIFICATION_URL, PATH_URL} from '@/utils/constants';
 import apiService from '@/utils/apiService';
 import { getLocalStorage, storeLocalStorage } from '@/utils/helper';
 

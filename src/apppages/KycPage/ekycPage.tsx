@@ -6,7 +6,7 @@ import { selectAllMenuItems } from "@/redux/features/menuSlice";
 import { ACTION_NAME, BASE_URL, PATH_URL } from "@/utils/constants";
 import { findPageData, getLocalStorage, storeLocalStorage } from "@/utils/helper";
 import Loader from "@/components/Loader";
-import { buildTabs, TabData } from "./KycTabs";
+import { buildTabs } from "./KycTabs";
 import { FiRefreshCcw } from "react-icons/fi";
 import { useSaveLoading } from "@/context/SaveLoadingContext";
 import apiService from "@/utils/apiService";

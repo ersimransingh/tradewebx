@@ -1,22 +1,20 @@
 "use client";
-import NotificationDropdown from "@/components/header/NotificationDropdown";
 import UserDropdown from "@/components/header/UserDropdown";
 import { useSidebar } from "@/context/SidebarContext";
 import { ThemeType, useTheme } from "@/context/ThemeContext";
-import { setTableStyle } from "@/redux/features/common/commonSlice";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useState, useEffect, useRef } from "react";
-import { useAppDispatch, useAppSelector } from "@/redux/hooks";
+import { useAppSelector } from "@/redux/hooks";
 import Select, { StylesConfig } from "react-select";
 import { HiMenuAlt2 } from "react-icons/hi";
 import { IoClose } from "react-icons/io5";
 
 const AppHeader: React.FC = () => {
-  const dispatch = useAppDispatch();
+  // const dispatch = useAppDispatch();
   const { theme, setTheme, availableThemes, colors, fonts } = useTheme();
-  const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
-  const { companyLogo, companyName, companyInfo } = useAppSelector((state) => state.common);
+  const [isApplicationMenuOpen] = useState(false);
+  const { companyLogo, companyInfo } = useAppSelector((state) => state.common);
   const { isExpanded, isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
   const handleToggle = () => {
     if (window.innerWidth >= 991) {
@@ -26,9 +24,9 @@ const AppHeader: React.FC = () => {
     }
   };
 
-  const toggleApplicationMenu = () => {
-    setApplicationMenuOpen(!isApplicationMenuOpen);
-  };
+  // const toggleApplicationMenu = () => {
+  //   setApplicationMenuOpen(!isApplicationMenuOpen);
+  // };
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {

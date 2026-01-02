@@ -39,13 +39,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import axios from 'axios';
 import { useDispatch, useSelector } from 'react-redux';
 import { setAuthData, setError as setAuthError, setLoading } from '@/redux/features/authSlice';
-import { BASE_URL, LOGIN_AS, PRODUCT, LOGIN_KEY, LOGIN_URL, BASE_PATH_FRONT_END, OTP_VERIFICATION_URL, VERSION, ACTION_NAME, ENABLE_CAPTCHA, ENABLE_FERNET, NEXT_PUBLIC_FULL_URL } from "@/utils/constants";
+import { BASE_URL, PRODUCT, OTP_VERIFICATION_URL, VERSION, ACTION_NAME, ENABLE_CAPTCHA, ENABLE_FERNET, NEXT_PUBLIC_FULL_URL } from "@/utils/constants";
 import Image from "next/image";
 import { RootState } from "@/redux/store";
 import { clearAuthStorage } from '@/utils/auth';
 import Link from "next/link";
 import CryptoJS from 'crypto-js';
-import { isAllowedHttpHost, SECURITY_CONFIG } from '@/utils/securityConfig';
+import { SECURITY_CONFIG } from '@/utils/securityConfig';
 import CaptchaComponent, { CaptchaComponentRef } from './CaptchaComponent';
 import { decodeFernetToken, getLocalStorage, removeLocalStorage, storeLocalStorage } from "@/utils/helper";
 import AccessibleModal from "../a11y/AccessibleModal";
@@ -291,7 +291,7 @@ export default function SignInForm() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const { companyInfo, status, encPayload } = useSelector((state: RootState) => state.common);
+  const { companyInfo, encPayload } = useSelector((state: RootState) => state.common);
 
   // State for version update modal
   const [showVersionModal, setShowVersionModal] = useState(false);

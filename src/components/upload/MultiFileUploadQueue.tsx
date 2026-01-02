@@ -4,7 +4,7 @@ import { useDropzone } from 'react-dropzone';
 import {
   FaUpload,
   FaCheck,
-  FaTimes,
+  // FaTimes,
   FaPause,
   FaPlay,
   FaRedo,
@@ -21,7 +21,7 @@ import { toast } from 'react-toastify';
 import { useTheme } from '@/context/ThemeContext';
 import { getUploadManager } from '@/utils/backgroundUploadService';
 import { FileQueueItem, UploadQueueStats, FileImportErrors } from '@/types/upload';
-import { formatFileSize, formatDuration, downloadAsCSV } from '@/utils/fileParser';
+import { formatFileSize, downloadAsCSV } from '@/utils/fileParser';
 import ImportErrorsModal from './ImportErrorsModal';
 
 interface MultiFileUploadQueueProps {
