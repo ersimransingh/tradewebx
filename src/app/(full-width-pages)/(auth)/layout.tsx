@@ -21,7 +21,6 @@ export default function AuthLayout({
   useEffect(() => {
     // Skip initialization API call for SSO page - it will handle its own authentication
     if (pathname?.startsWith('/sso')) {
-      console.log('SSO page detected - skipping fetchInitializeLogin to prevent premature API calls');
       return;
     }
 
@@ -38,7 +37,6 @@ export default function AuthLayout({
   // You can use this to log the company info when it's loaded
   useEffect(() => {
     if (companyInfo) {
-      console.log('Company Info from Redux:', companyInfo);
     }
     if (error) {
       console.error('Error loading company info:', error);

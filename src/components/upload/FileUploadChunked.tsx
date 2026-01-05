@@ -355,7 +355,7 @@ const FileUploadChunked: React.FC<FileUploadChunkedProps> = ({
         const userId = metadata.selectedRecord?.UserId || 'SA';
         const fileName = metadata.selectedRecord?.FileName || fileMetadata?.name || 'Unknown File';
 
-        console.log('📤 Calling UpdateImportSeqFilter after successful upload...');
+
 
         const updateResult = await callUpdateImportSeqFilter(
           updateApiEndpoint,
@@ -414,11 +414,11 @@ const FileUploadChunked: React.FC<FileUploadChunkedProps> = ({
             toast.success('Import completed successfully!');
           }
 
-          console.log('✅ UpdateImportSeqFilter completed:', {
-            filesWithErrors: fileErrorsList.length,
-            totalErrorCount: totalErrors,
-            processStatus: updateResult.processStatus
-          });
+          // console.log('✅ UpdateImportSeqFilter completed:', {
+          //   filesWithErrors: fileErrorsList.length,
+          //   totalErrorCount: totalErrors,
+          //   processStatus: updateResult.processStatus
+          // });
         } else {
           toast.warning(`Upload completed but failed to update import filter: ${updateResult.error}`);
           console.warn('⚠️ UpdateImportSeqFilter failed:', updateResult.error);
@@ -428,7 +428,7 @@ const FileUploadChunked: React.FC<FileUploadChunkedProps> = ({
         console.error('❌ Error calling UpdateImportSeqFilter:', error);
       }
     } else if (failedChunks.length > 0) {
-      console.log('⚠️ Skipping UpdateImportSeqFilter due to failed chunks');
+      // console.log('⚠️ Skipping UpdateImportSeqFilter due to failed chunks');
     }
 
     if (onUploadComplete) {
@@ -595,7 +595,7 @@ const FileUploadChunked: React.FC<FileUploadChunkedProps> = ({
           const userId = metadata.selectedRecord?.UserId || 'SA';
           const fileName = metadata.selectedRecord?.FileName || fileMetadata?.name || 'Unknown File';
 
-          console.log('📤 Calling UpdateImportSeqFilter after successful Excel upload...');
+
 
           const updateResult = await callUpdateImportSeqFilter(
             updateApiEndpoint,
@@ -654,11 +654,11 @@ const FileUploadChunked: React.FC<FileUploadChunkedProps> = ({
               toast.success('Import completed successfully!');
             }
 
-            console.log('✅ UpdateImportSeqFilter completed:', {
-              filesWithErrors: fileErrorsList.length,
-              totalErrorCount: totalErrors,
-              processStatus: updateResult.processStatus
-            });
+            // console.log('✅ UpdateImportSeqFilter completed:', {
+            //   filesWithErrors: fileErrorsList.length,
+            //   totalErrorCount: totalErrors,
+            //   processStatus: updateResult.processStatus
+            // });
           } else {
             toast.warning(`Upload completed but failed to update import filter: ${updateResult.error}`);
             console.warn('⚠️ UpdateImportSeqFilter failed:', updateResult.error);
@@ -668,7 +668,7 @@ const FileUploadChunked: React.FC<FileUploadChunkedProps> = ({
           console.error('❌ Error calling UpdateImportSeqFilter:', error);
         }
       } else if (stats.failedChunks > 0) {
-        console.log('⚠️ Skipping UpdateImportSeqFilter due to failed chunks');
+        // console.log('⚠️ Skipping UpdateImportSeqFilter due to failed chunks');
       }
 
       if (onUploadComplete) {

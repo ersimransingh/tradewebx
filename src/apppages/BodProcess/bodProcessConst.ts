@@ -44,7 +44,7 @@ export const bodProcessIndividualApiCall = async (rowValue, showValidationMessag
 
     try {
         const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData)
-        console.log(response, 'bodProcessIndividualApiCall')
+
         const apiData = response?.data?.data?.rs0[0]
         const errorMessage = apiData?.["Error Message"];
         const flagStatus = apiData?.ErrorFlag

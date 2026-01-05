@@ -21,7 +21,7 @@ export default function ExampleFormTwo() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Form submitted:");
+
   };
 
   const optionsGender = [
@@ -40,12 +40,12 @@ export default function ExampleFormTwo() {
     { value: "canada", label: "Canada" },
   ];
   const handleSelectGender = (value: string) => {
-    console.log("Selected value:", value);
+
   };
 
   const handleRadioChange = (value: string) => {
     setSelectedOption(value);
-    console.log("Selected:", value);
+
   };
   return (
     <ComponentCard title="Example Form">

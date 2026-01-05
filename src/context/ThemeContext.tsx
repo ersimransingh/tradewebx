@@ -209,7 +209,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             }
           } catch (error) {
             console.error('Error parsing font settings:', error);
-            console.log('Invalid JSON:', response.data.data.rs1[0].LevelSetting1);
+
             // Continue using default or previously saved font settings
           }
         }
@@ -325,7 +325,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     // Skip theme fetch if we're on SSO page (pathname check)
     if (typeof window !== 'undefined' && window.location.pathname.includes('/sso')) {
-      console.log('SSO page detected - skipping theme fetch to prevent premature API calls');
+
       return;
     }
 

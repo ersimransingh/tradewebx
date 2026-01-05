@@ -20,7 +20,7 @@ otpApi.interceptors.request.use(
    if (tempToken) {
       // Attach as Bearer token
       config.headers.Authorization = `Bearer ${tempToken}`;
-      console.log('Temp OTP token attached as Bearer:', tempToken.substring(0, 25) + '...');
+
     } else {
       console.warn('Temp OTP token missing');
     }
@@ -43,7 +43,7 @@ api.interceptors.request.use(
     const token = getAuthToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.log('🔑 [auth.ts] Token injected in request interceptor:', token.substring(0, 20) + '...');
+
     } else {
       console.warn('⚠️ [auth.ts] No token available for request to:', config.url);
     }
@@ -91,7 +91,6 @@ const refreshAuthToken = async (): Promise<string> => {
     <J_Api>"UserId":"${userId}", "UserType":"${userType}"</J_Api>
 </dsXml>`;
 
-  console.log('Attempting to refresh token...');
 
   try {
     // Create a new axios instance to bypass interceptors for refresh token requests
@@ -108,31 +107,24 @@ const refreshAuthToken = async (): Promise<string> => {
       }
     );
 
-    console.log('Refresh token API response:', response.status, response.data);
+
 
     // Check both ENABLE_FERNET constant and encPayload from Redux state
     const shouldDecode = ENABLE_FERNET && store.getState().common.encPayload;
     const data = shouldDecode ? decodeFernetToken(response.data.data) : response.data;
 
-    console.log('Refresh token decoded data:', data);
+
 
     if (data.success && data.data.rs0.length > 0) {
       const tokenData = data.data.rs0[0];
 
-      // Update tokens in localStorage using the helper functions
-      console.log('💾 [auth.ts] Storing new access token:', tokenData.AccessToken.substring(0, 30) + '...');
-      console.log('💾 [auth.ts] Storing new refresh token:', tokenData.RefreshToken.substring(0, 20) + '...');
-
+     
       storeLocalStorage('auth_token', tokenData.AccessToken);
       storeLocalStorage('refreshToken', tokenData.RefreshToken);
 
       // Verify tokens were stored correctly
       const storedAccessToken = getLocalStorage('auth_token');
       const storedRefreshToken = getLocalStorage('refreshToken');
-
-      console.log('✅ [auth.ts] Tokens refreshed and stored successfully');
-      console.log('🔍 [auth.ts] Verification - stored access token:', storedAccessToken ? storedAccessToken.substring(0, 30) + '...' : 'null');
-      console.log('🔍 [auth.ts] Verification - stored refresh token:', storedRefreshToken ? storedRefreshToken.substring(0, 20) + '...' : 'null');
 
       return tokenData.AccessToken;
     } else {
@@ -141,8 +133,7 @@ const refreshAuthToken = async (): Promise<string> => {
     }
   } catch (error: any) {
     console.error('🚨 [auth.ts] Token refresh failed:', error);
-    console.log('📊 [auth.ts] Error status:', error.response?.status);
-    console.log('📊 [auth.ts] Error data:', error.response?.data);
+
 
     // Handle different types of refresh token errors
     const errorStatus = error.response?.status;
@@ -179,7 +170,7 @@ api.interceptors.response.use(
         }).then(() => {
           // Log token before retrying queued request
           const queuedToken = getAuthToken();
-          console.log('🔄 [auth.ts] Retrying queued request with token:', queuedToken ? queuedToken.substring(0, 30) + '...' : 'null');
+         
           // The request interceptor will automatically inject the fresh token
           return api(originalRequest);
         }).catch(err => {
@@ -202,13 +193,13 @@ api.interceptors.response.use(
 
         // If we still have the old token, wait a bit more (up to 500ms total)
         while (retryCount < 4 && (!verifyToken || verifyToken === originalRequest.headers?.['Authorization']?.replace('Bearer ', ''))) {
-          console.log(`🔄 [auth.ts] Waiting for new token to be available... (attempt ${retryCount + 1})`);
+        
           await new Promise(resolve => setTimeout(resolve, 100));
           verifyToken = getAuthToken();
           retryCount++;
         }
 
-        console.log('🔄 [auth.ts] About to retry request with token:', verifyToken ? verifyToken.substring(0, 30) + '...' : 'null');
+      
 
         processQueue(null);
 
@@ -217,7 +208,7 @@ api.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError);
         // Show session expired popup and logout if refresh fails
-        console.log('🚨 [auth.ts] Refresh token failed, showing session expired popup');
+       
         showSessionExpiredPopup();
         return Promise.reject(refreshError);
       } finally {
@@ -378,7 +369,7 @@ export const isAuthenticated = () => {
 
 export const getAuthToken = () => {
   const token = getLocalStorage('auth_token');
-  console.log('🔑 [auth.ts] getAuthToken called, token:', token ? token.substring(0, 30) + '...' : 'null');
+ 
   return token;
 };
 
@@ -460,6 +451,6 @@ export const clearAllAuthData = () => {
     //Removed TempOTP
     removeLocalStorage('temp_otp_token');
     
-    console.log('All authentication data cleared successfully');
+
   }
 };

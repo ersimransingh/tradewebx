@@ -26,7 +26,7 @@ export default function MarginPledgeOnline() {
   const [pledgeRedirectData, setPledgeRedirectData] = useState<any>([]);
   const [buttonDisable, setButtonDisable] = useState<boolean>(true);
 
-  console.log(colors, 'colors');
+
 
 
   useEffect(() => {
@@ -151,7 +151,7 @@ export default function MarginPledgeOnline() {
         setPledgeRedirectData(request.data.data.rs0);
       }
     } catch (error) {
-      console.log(error);
+      console.error(error);
     }
   };
 

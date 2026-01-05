@@ -44,7 +44,7 @@ export function middleware(request: NextRequest) {
 
         // This is a simplified rate limiting - in production, use Redis or similar
         // For now, we'll just log suspicious activity
-        console.log('API request from IP:', ip, 'to:', request.nextUrl.pathname);
+
     }
 
     // Check if we're on an auth page or root path

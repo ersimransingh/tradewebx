@@ -14,7 +14,7 @@ export default function DefaultInputs() {
     { value: "development", label: "Development" },
   ];
   const handleSelectChange = (value: string) => {
-    console.log("Selected value:", value);
+
   };
   return (
     <ComponentCard title="Default Inputs">

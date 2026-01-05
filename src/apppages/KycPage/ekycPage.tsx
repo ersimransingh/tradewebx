@@ -137,7 +137,7 @@ const Kyc = () => {
         setIsLoading(true);
         try {
             const { MasterEntry = {} } = pageData && pageData[0]?.Entry || {};
-            console.log("Check data", MasterEntry, pageData);
+
             const userData = getLocalStorage("rekycRowData_viewMode");
             const parsedUserData = userData ? JSON.parse(userData) : null;
             const isKeysPresent = Object.keys(MasterEntry || {}).length > 0;

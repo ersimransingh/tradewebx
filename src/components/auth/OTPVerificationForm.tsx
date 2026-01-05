@@ -32,7 +32,7 @@ export default function OTPVerificationForm() {
     const userId = getLocalStorage('userId');
 
     if (!tempToken || !userId) {
-      console.log('Missing authentication data, redirecting to signin');
+
       router.replace('/signin');
       return;
     }
@@ -48,11 +48,11 @@ export default function OTPVerificationForm() {
     const userId = getLocalStorage('userId');
     const userType = getLocalStorage('userType');
 
-    console.log('OTP Verification Debug:', {
-      tempToken: tempToken ? 'Available' : 'Missing',
-      userId,
-      userType
-    });
+    // console.log('OTP Verification Debug:', {
+    //   tempToken: tempToken ? 'Available' : 'Missing',
+    //   userId,
+    //   userType
+    // });
 
     if (!tempToken) {
       setError('Authentication token not found. Please try logging in again.');
@@ -92,9 +92,7 @@ export default function OTPVerificationForm() {
         const clientName = data.data[0].ClientName || data.data[0].UserName || '';
 
         // Debug logging to help identify field mapping issues
-        console.log('OTP verification response data:', data.data[0]);
-        console.log('Mapped clientCode:', clientCode);
-        console.log('Mapped clientName:', clientName);
+    
 
         // Validate that we have the required data
         if (!clientCode || !clientName) {

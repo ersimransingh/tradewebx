@@ -41,16 +41,16 @@ const ColumnFilterDropdown: React.FC<{
 
     // Enhanced data type detection
     const columnDataType = useMemo(() => {
-        console.log('Column Type Detection for:', column);
+
 
         // Force date type for columns with "date" in the name
         if (column.toLowerCase().includes('date')) {
-            console.log('Detected as date column (name contains date)');
+
             return 'date';
         }
 
         if (!data || data.length === 0) {
-            console.log('No data, defaulting to text');
+
             return 'text';
         }
 
@@ -63,7 +63,7 @@ const ColumnFilterDropdown: React.FC<{
         let pureTextCount = 0;
         let validValuesCount = 0;
 
-        console.log('Analyzing sample data for column:', column, 'Sample size:', sampleSize);
+
 
         for (const row of sample) {
             const value = row[column];
@@ -81,7 +81,7 @@ const ColumnFilterDropdown: React.FC<{
             validValuesCount++;
             const strValue = String(actualValue).trim();
 
-            console.log('Sample value:', strValue, 'from row:', row[column]);
+
 
             // Check if it's a date (but this is now secondary to name-based detection)
             const momentDate = moment(strValue, ['YYYYMMDD', 'DD-MM-YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD'], true);
@@ -100,7 +100,7 @@ const ColumnFilterDropdown: React.FC<{
             const numericPattern = /^[₹$€£¥]?-?[\d,]+\.?\d*[₹$€£¥]?$/;
 
             if (!isNaN(numValue) && isFinite(numValue) && numericPattern.test(strValue.replace(/\s/g, ''))) {
-                console.log('Detected as numeric:', strValue, '-> parsed:', numValue);
+
                 numericCount++;
                 continue;
             }
@@ -126,7 +126,7 @@ const ColumnFilterDropdown: React.FC<{
 
         // Determine data type based on majority
         if (validValuesCount === 0) {
-            console.log('No valid values, returning none');
+
             return 'none'; // No valid data - no filter
         }
 
@@ -134,37 +134,25 @@ const ColumnFilterDropdown: React.FC<{
         const datePercentage = dateCount / validValuesCount;
         const pureTextPercentage = pureTextCount / validValuesCount;
 
-        console.log('Column analysis results:', {
-            column,
-            validValuesCount,
-            numericCount,
-            dateCount,
-            pureTextCount,
-            numericPercentage,
-            datePercentage,
-            pureTextPercentage
-        });
-
         // If 70% or more is dates, treat as date column
         if (datePercentage >= 0.7) {
-            console.log('Detected as date column');
             return 'date';
         }
 
         // If 70% or more is numeric, treat as numeric column
         if (numericPercentage >= 0.7) {
-            console.log('Detected as number column');
+
             return 'number';
         }
 
         // If 80% or more is pure text/very short/alphanumeric codes, don't show filter
         if (pureTextPercentage >= 0.6) {
-            console.log('Detected as none (too much text/codes)');
+
             return 'none'; // Reduced from 0.8 to 0.6 to be more strict
         }
 
         // Mixed data - allow text filtering
-        console.log('Detected as text (mixed data)');
+
         return 'text';
     }, [data, column]);
 
@@ -222,7 +210,7 @@ const ColumnFilterDropdown: React.FC<{
 
     // Debug: Track isOpen state changes
     useEffect(() => {
-        // console.log('📊 isOpen state changed for column', column, ':', isOpen);
+
     }, [isOpen, column]);
 
     // Don't render filter dropdown if data type is 'none'
@@ -231,16 +219,16 @@ const ColumnFilterDropdown: React.FC<{
     }
 
     const handleApplyFilter = () => {
-        console.log('Apply Filter Debug:', {
-            column,
-            filterType,
-            columnDataType,
-            isNumericColumn,
-            localFilterValue: localFilter.value,
-            localFilterOperator: localFilter.operator,
-            localFilterFromDate: localFilter.fromDate,
-            localFilterToDate: localFilter.toDate
-        });
+        // console.log('Apply Filter Debug:', {
+        //     column,
+        //     filterType,
+        //     columnDataType,
+        //     isNumericColumn,
+        //     localFilterValue: localFilter.value,
+        //     localFilterOperator: localFilter.operator,
+        //     localFilterFromDate: localFilter.fromDate,
+        //     localFilterToDate: localFilter.toDate
+        // });
 
         // Check if filter has valid values
         const hasValue = localFilter.operator === 'dateRange'
@@ -248,7 +236,7 @@ const ColumnFilterDropdown: React.FC<{
             : (localFilter.value !== null && localFilter.value !== '' && localFilter.value !== undefined); // Other filters need value
 
         if (!hasValue) {
-            console.log('No valid filter values, clearing filter');
+
             onFilterChange(column, null);
         } else {
             // For number filters, ensure the value is stored as a number for comparison
@@ -263,7 +251,7 @@ const ColumnFilterDropdown: React.FC<{
                 filterToApply.type = filterType as 'number' | 'text' | 'date';
             }
 
-            console.log('Final filter being applied:', filterToApply);
+
 
             if (filterType === 'number' && localFilter.value !== '' && localFilter.operator !== 'dateRange') {
                 const numValue = parseFloat(localFilter.value as string);
@@ -271,7 +259,7 @@ const ColumnFilterDropdown: React.FC<{
                     filterToApply.value = numValue;
                 }
             }
-            console.log('About to call onFilterChange with:', column, filterToApply);
+
             onFilterChange(column, filterToApply);
         }
         setIsOpen(false);
@@ -291,7 +279,6 @@ const ColumnFilterDropdown: React.FC<{
 
     const filterType = getFilterType();
 
-    // console.log('🔧 ColumnFilterDropdown render for column:', column, 'isOpen:', isOpen, 'filter:', filter);
 
     return (
         <div className="relative inline-block">
@@ -587,7 +574,7 @@ function downloadFile(fileName: string, data: Blob) {
 }
 
 export function downloadPdf(fileName, base64Data) {
-    console.log(fileName)
+
     // Decode Base64 into raw binary data held in a string
     const byteCharacters = atob(base64Data);
     const byteNumbers = new Array(byteCharacters.length);
@@ -718,12 +705,12 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, onRow
 
                 switch (filter.operator) {
                     case 'equals':
-                        console.log('EQUALS Filter Debug:', {
-                            columnKey,
-                            filterType: filter.type,
-                            filterValue: filter.value,
-                            stringValue
-                        });
+                        // console.log('EQUALS Filter Debug:', {
+                        //     columnKey,
+                        //     filterType: filter.type,
+                        //     filterValue: filter.value,
+                        //     stringValue
+                        // });
 
                         // Runtime date detection: if column name contains 'date' or value looks like a date, treat as date
                         const isDateColumn = columnKey.toLowerCase().includes('date');
@@ -769,16 +756,16 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, onRow
                             const filterValue = parseFloat(cleanFilterValue);
 
                             // Temporary debug for number filtering issue
-                            console.log('GTE Number filter:', {
-                                original: stringValue,
-                                cleaned: cleanCellValue,
-                                numValue,
-                                filterInput: filter.value,
-                                filterCleaned: cleanFilterValue,
-                                filterValue,
-                                comparison: `${numValue} >= ${filterValue}`,
-                                result: numValue >= filterValue
-                            });
+                            // console.log('GTE Number filter:', {
+                            //     original: stringValue,
+                            //     cleaned: cleanCellValue,
+                            //     numValue,
+                            //     filterInput: filter.value,
+                            //     filterCleaned: cleanFilterValue,
+                            //     filterValue,
+                            //     comparison: `${numValue} >= ${filterValue}`,
+                            //     result: numValue >= filterValue
+                            // });
 
                             return !isNaN(numValue) && !isNaN(filterValue) && numValue >= filterValue;
                         } else {
@@ -797,16 +784,16 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, onRow
                         }
 
                     case 'dateRange':
-                        console.log('📅 DATE RANGE FILTER STARTING');
+           
                         const cellDate = moment(stringValue, ['DD-MM-YYYY', 'YYYYMMDD', 'MM/DD/YYYY', 'YYYY-MM-DD', 'DD/MM/YYYY'], true);
-                        console.log('📅 Cell date parsing:', {
-                            stringValue,
-                            cellDate: cellDate.isValid() ? cellDate.format('YYYY-MM-DD') : 'Invalid',
-                            isValid: cellDate.isValid()
-                        });
+                        // console.log('📅 Cell date parsing:', {
+                        //     stringValue,
+                        //     cellDate: cellDate.isValid() ? cellDate.format('YYYY-MM-DD') : 'Invalid',
+                        //     isValid: cellDate.isValid()
+                        // });
 
                         if (!cellDate.isValid()) {
-                            console.log('❌ Cell date invalid, filtering out');
+
                             return false;
                         }
 
@@ -814,31 +801,31 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, onRow
                         const toDate = filter.toDate ? moment(filter.toDate, ['DD-MM-YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD', 'DD/MM/YYYY'], true) : null;
 
                         // Debug logging for date range filtering
-                        console.log('📅 Date range filter debug:', {
-                            cellValue: stringValue,
-                            cellDate: cellDate.isValid() ? cellDate.format('YYYY-MM-DD') : 'Invalid',
-                            fromDate: fromDate && fromDate.isValid() ? fromDate.format('YYYY-MM-DD') : 'Invalid/Null',
-                            toDate: toDate && toDate.isValid() ? toDate.format('YYYY-MM-DD') : 'Invalid/Null',
-                            filterFromDate: filter.fromDate,
-                            filterToDate: filter.toDate
-                        });
+                        // console.log('📅 Date range filter debug:', {
+                        //     cellValue: stringValue,
+                        //     cellDate: cellDate.isValid() ? cellDate.format('YYYY-MM-DD') : 'Invalid',
+                        //     fromDate: fromDate && fromDate.isValid() ? fromDate.format('YYYY-MM-DD') : 'Invalid/Null',
+                        //     toDate: toDate && toDate.isValid() ? toDate.format('YYYY-MM-DD') : 'Invalid/Null',
+                        //     filterFromDate: filter.fromDate,
+                        //     filterToDate: filter.toDate
+                        // });
 
                         let rangeResult = false;
                         if (fromDate && toDate) {
                             rangeResult = cellDate.isBetween(fromDate, toDate, 'day', '[]');
-                            console.log('📅 Between check:', rangeResult, `(${cellDate.format('YYYY-MM-DD')} between ${fromDate.format('YYYY-MM-DD')} and ${toDate.format('YYYY-MM-DD')})`);
+                           
                         } else if (fromDate) {
                             rangeResult = cellDate.isSameOrAfter(fromDate, 'day');
-                            console.log('📅 Same or after check:', rangeResult, `(${cellDate.format('YYYY-MM-DD')} >= ${fromDate.format('YYYY-MM-DD')})`);
+                           
                         } else if (toDate) {
                             rangeResult = cellDate.isSameOrBefore(toDate, 'day');
-                            console.log('📅 Same or before check:', rangeResult, `(${cellDate.format('YYYY-MM-DD')} <= ${toDate.format('YYYY-MM-DD')})`);
+                           
                         } else {
                             rangeResult = true;
-                            console.log('📅 No date range specified, returning true');
+                          
                         }
 
-                        console.log('📅 Date range final result:', rangeResult);
+
                         return rangeResult;
 
                     default:
@@ -1044,24 +1031,24 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, onRow
 
         if (settings?.mobileColumns && screenSize === 'mobile') {
             columnsToShow = settings.mobileColumns;
-            console.log('Using mobile columns:', columnsToShow);
+
         } else if (settings?.tabletColumns && screenSize === 'tablet') {
             columnsToShow = settings.tabletColumns;
-            console.log('Using tablet columns:', columnsToShow);
+    
         } else if (settings?.webColumns) {
             columnsToShow = settings.webColumns;
-            console.log('Using web columns:', columnsToShow);
+ 
         }
 
         // If no responsive columns are defined, show all columns
         if (columnsToShow.length === 0) {
             columnsToShow = availableColumns;
-            console.log('No responsive columns defined, using all columns:', columnsToShow);
+
         }
 
         // Filter out columns that don't exist in the actual data
         columnsToShow = columnsToShow.filter(key => availableColumns.includes(key));
-        console.log('Filtered columns to only include existing ones:', columnsToShow);
+
 
         // Filter out hidden columns
         columnsToShow = columnsToShow.filter(key => !columnsToHide.includes(key));
@@ -1101,7 +1088,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, onRow
             : [];
 
 
-        console.log(selectedRows, 'selectedRows');
+
 
 
 
@@ -2216,7 +2203,7 @@ export const exportTableToPdf = async (
     const rightAlignedKeys: string[] = jsonData?.RightList?.[0] || [];
     const normalizedRightAlignedKeys = rightAlignedKeys.map(k => k.replace(/\s+/g, ''));
     const reportHeader = (jsonData?.ReportHeader?.[0] || '').replace(/\\n/g, '\n');
-    console.log(reportHeader, 'reportHeaderreportHeader');
+
 
     let fileTitle = 'Report';
     let dateRange = '';
@@ -2407,7 +2394,7 @@ export const exportTableToPdf = async (
         const userType = getLocalStorage('userType') || '';
 
         const filterXml = buildFilterXml(filters, userId);
-        console.log(filterXml, 'filterXml email');
+    
 
 
         const sendEmail = async (base64Data: string, pdfName: string) => {
@@ -2441,7 +2428,7 @@ export const exportTableToPdf = async (
         };
 
         try {
-            console.log(filterXml, 'filterXml typst');
+
 
             if (showTypes) {
                 const fetchXml = `
@@ -2494,7 +2481,7 @@ export const downloadOption = async (
     const userId = getLocalStorage('userId') || '';
 
     const filterXml = buildFilterXml(filters, userId);
-    console.log(filterXml, 'filterXml');
+
 
 
     const xmlData1 = ` 

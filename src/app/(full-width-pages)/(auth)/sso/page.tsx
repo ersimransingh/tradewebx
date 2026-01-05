@@ -26,7 +26,6 @@ const SSOContent = () => {
     const handleSSOLogin = useCallback(async () => {
         // Prevent duplicate API calls
         if (hasAttemptedLogin.current) {
-            console.log('SSO Login already in progress or completed, skipping duplicate call');
             return;
         }
 
@@ -44,7 +43,7 @@ const SSOContent = () => {
                 xDataContent += `<${key}>${value}</${key}>`
             })
 
-            console.log('SSO Login request with all query params:', queryParams)
+
 
             // Check if we have any parameters
             if (Object.keys(queryParams).length === 0) {
@@ -66,7 +65,7 @@ const SSOContent = () => {
                             </dsXml>`
 
             requestData = xmlData
-            console.log('SSO Login XML request:', xmlData)
+
             // PUT THIS 3 SECONDS IF IT IS NOT WORKING CHAGNE BY SIMRAN SINGH
             await new Promise(resolve => setTimeout(resolve, 200))
             // Call SSO Login API
@@ -79,7 +78,7 @@ const SSOContent = () => {
                 data: requestData
             })
 
-            console.log('SSO Login raw response:', response.data)
+
 
             // Handle encrypted response if needed
             let data = response.data
@@ -87,16 +86,16 @@ const SSOContent = () => {
             // For SSO, we don't know in advance if data is encrypted
             // Check if response.data.data is a string - if so, it's encrypted and needs decryption
             if (typeof data.data === 'string') {
-                console.log('Encrypted response detected (data is string), decoding...')
+
                 try {
                     data = decodeFernetToken(data.data)
-                    console.log('Decrypted SSO Login response:', data)
+
                 } catch (error) {
                     console.error('Failed to decrypt SSO response:', error)
                     throw new Error('Failed to decrypt encrypted response')
                 }
             } else {
-                console.log('SSO Login response (unencrypted):', data)
+
             }
 
             if (data.status && data.status_code === 200) {
@@ -140,13 +139,13 @@ const SSOContent = () => {
 
                 // Wait for critical initialization to complete before navigating
                 // This ensures SSO remains standalone and dashboard doesn't load prematurely
-                console.log('Fetching company initialization data...')
+
                 await dispatch(fetchInitializeLogin()).unwrap();
 
-                console.log('Fetching menu items...')
+
                 await dispatch(fetchMenuItems()).unwrap();
 
-                console.log('SSO authentication complete, navigating to dashboard')
+
                 // Navigate directly to dashboard (no OTP for SSO)
                 router.push('/dashboard')
             } else {

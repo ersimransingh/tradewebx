@@ -73,7 +73,7 @@ export function handleViewFile(base64Data: string, fieldType: string = 'file') {
             document.body.removeChild(link);
         }
     } catch (error) {
-        console.log(error)
+        console.error(error)
         alert("Unable to preview file.");
     }
 }
@@ -178,7 +178,7 @@ export const clearIndexedDB = () => {
         const request = indexedDB.deleteDatabase("ekycDB");
 
         request.onsuccess = () => {
-            console.log("IndexedDB deleted successfully");
+
             resolve(true);
         };
 
@@ -227,7 +227,7 @@ export const parseXmlValue = (xmlString: string, tag: string): string => {
     return match ? match[1] : '';
 };
 export const parseHeadings = (xmlString: string): any => {
-    console.log(xmlString)
+
     // Implement heading parsing logic if needed
     return {};
 };
@@ -331,11 +331,11 @@ export const decodeFernetToken = (data: string) => {
         if (SECURITY_LIBRARY === 'cryptojssdk') {
             // Use CryptoJS decryption
             const decodedString = Decryption(data);
-            console.log('Decoded string (CryptoJS):', decodedString);
+
 
             // Parse the decoded string as JSON
             const parsedData = JSON.parse(decodedString);
-            console.log('Parsed JSON (CryptoJS):', parsedData);
+
 
             return parsedData;
         } else if (SECURITY_LIBRARY === 'fernetsdk') {
@@ -350,11 +350,11 @@ export const decodeFernetToken = (data: string) => {
             });
 
             const decodedString = token.decode();
-            console.log('Decoded string (Fernet):', decodedString);
+
 
             // Parse the decoded string as JSON
             const parsedData = JSON.parse(decodedString);
-            console.log('Parsed JSON (Fernet):', parsedData);
+
 
             return parsedData;
         } else {
@@ -485,11 +485,11 @@ export const storeLocalStorage = (key: string, value: string): void => {
 
         // Debug logging for token storage
         if (key === 'auth_token') {
-            console.log(`💾 [helper] Stored ${key}:`, value.substring(0, 30) + '...');
+
 
             // Immediately verify it was stored correctly
             const verification = getLocalStorage(key);
-            console.log(`🔍 [helper] Verification of stored ${key}:`, verification ? verification.substring(0, 30) + '...' : 'null');
+          
         }
     } catch (error) {
         console.error('Error storing data securely:', error);
@@ -504,7 +504,7 @@ export const getLocalStorage = (key: string): string | null => {
 
         // Debug logging for token retrieval
         if (key === 'auth_token' && value) {
-            console.log(`🔍 [helper] Retrieved ${key}:`, value.substring(0, 30) + '...');
+
         }
 
         return value;

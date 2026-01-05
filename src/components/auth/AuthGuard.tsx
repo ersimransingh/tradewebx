@@ -46,7 +46,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
           // SSO page handles its own navigation after completing initialization
           // Don't redirect from SSO page to prevent interrupting its flow
           if (pathname?.startsWith('/sso')) {
-            console.log('SSO page detected with token - allowing SSO to complete its own navigation');
+
             setIsChecking(false);
             setIsAuthenticated(true);
             return;
@@ -74,13 +74,13 @@ export default function AuthGuard({ children }: AuthGuardProps) {
             if (expireDate < now) {
               // Token has expired, but we have refresh token logic in apiService
               // Let the apiService handle token refresh automatically on next API call
-              console.log('Token expired - will be refreshed automatically on next API call');
+
 
               // Don't logout immediately - let the API interceptor handle token refresh
               // Only logout if refresh token is also missing
               const refreshToken = getLocalStorage('refreshToken');
               if (!refreshToken) {
-                console.log('No refresh token available - clearing all authentication data');
+
                 clearAllAuthData();
                 toast.error('Session expired. Please login again.');
                 const signInUrl = '/signin';
@@ -145,10 +145,10 @@ export default function AuthGuard({ children }: AuthGuardProps) {
           const now = new Date();
 
           if (expireDate < now) {
-            console.log('Periodic check: Token expired - checking for refresh token');
+
             const refreshToken = getLocalStorage('refreshToken');
             if (!refreshToken) {
-              console.log('No refresh token available - clearing all authentication data');
+
               clearAllAuthData();
               toast.error('Session expired. Please login again.');
               router.replace('/signin');
@@ -180,10 +180,10 @@ export default function AuthGuard({ children }: AuthGuardProps) {
           const now = new Date();
 
           if (expireDate < now) {
-            console.log('Visibility change: Token expired - checking for refresh token');
+
             const refreshToken = getLocalStorage('refreshToken');
             if (!refreshToken) {
-              console.log('No refresh token available - clearing all authentication data');
+
               clearAllAuthData();
               toast.error('Session expired. Please login again.');
               router.replace('/signin');

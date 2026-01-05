@@ -19,8 +19,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Log chunk info (for debugging)
-    console.log(`Processing chunk - FileSeqNo: ${FileSeqNo}, BatchNo: ${BatchNo}`);
-    console.log(`InputJson keys:`, Object.keys(InputJson));
+
 
     // Forward request to external API
     const apiUrl = `${BASE_URL}/TPLUSNARIMAN/api/ThirdPartyService/ImportLargeFile`;

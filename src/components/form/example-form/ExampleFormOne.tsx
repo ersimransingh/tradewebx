@@ -13,7 +13,7 @@ export default function ExampleFormOne() {
   const [message, setMessage] = useState<string>("");
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Form submitted:");
+
   };
   const options = [
     { value: "marketing", label: "Option 1" },
@@ -21,12 +21,12 @@ export default function ExampleFormOne() {
     { value: "development", label: "Option 3" },
   ];
   const handleSelectChange = (value: string) => {
-    console.log("Selected value:", value);
+
   };
 
   const handleTextareaChange = (value: string) => {
     setMessage(value);
-    console.log("Message:", value);
+
   };
   return (
     <ComponentCard title="Example Form">

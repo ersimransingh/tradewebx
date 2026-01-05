@@ -141,7 +141,7 @@ const processNodeForPdf = (data: any[], level = 0): any => {
 };
 
 export const generatePdf = async (data: any[], headerData: any, appMetadata: any) => {
-    console.log("headerData---->", headerData,appMetadata);
+
     let logoImage = '';
     if (appMetadata?.companyLogo) {
         try {

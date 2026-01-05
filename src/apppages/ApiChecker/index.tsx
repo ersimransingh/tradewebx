@@ -49,7 +49,7 @@ const ApiConfiguration = () => {
       getApiConfigData(setApiConfigData, userId,setLoading)
         .finally(() => setLoading(false)); // ✅ hide loader when done
     } else {
-      console.log("userId or userType is null, skipping API call");
+
     }
   }, [userId]);
 
@@ -84,7 +84,7 @@ const ApiConfiguration = () => {
   setEditModal({ key: "__ALL__", value: "" }); // open modal
   };
 
-  console.log(colors,'colorss api setting');
+
 
 
   const handleInputChange = (key: string, value: string) => {
@@ -125,7 +125,7 @@ const gridBgColor = isDefaultThemeGrid
     setEditIndex(null);
   
     // ✅ Log values
-    console.log(Object.entries(editableRow).map((ele) => ele[1]), "editTableRow");
+
 
     const formatTime = (time: string) => {
       if (!time) return "";
@@ -185,11 +185,11 @@ const gridBgColor = isDefaultThemeGrid
         <J_Api>"UserId":"Admin"</J_Api>
       </dsXml>
     `;
-    console.log(data, "data in save");
+
 
     try {
       const response = await apiService.postWithAuth(BASE_URL + PATH_URL,data)
-      console.log(response.data?.data?.rs0[0].RowsAffected,'response1');
+
       if(response.data?.data?.rs0[0].RowsAffected) {
         toast.success("Update Sucessfully")
         getApiConfigData(setApiConfigData,userId,setLoading);
@@ -216,7 +216,7 @@ const gridBgColor = isDefaultThemeGrid
     setModalOpen(false)
   }
 
-console.log(colors,'colors api checker');
+
 
 
   return (

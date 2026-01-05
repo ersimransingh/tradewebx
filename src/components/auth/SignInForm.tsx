@@ -310,7 +310,7 @@ export default function SignInForm() {
 
   // Check version function inside component using useCallback to memoize
   const checkVersion = useCallback(async (token?: string) => {
-    console.log('checkVersion function called with token:', token ? 'Present' : 'Not provided');
+
     try {
       const xmlData = `
         <dsXml>
@@ -325,8 +325,7 @@ export default function SignInForm() {
         </dsXml>
       `;
 
-      console.log('Sending version check request to:', BASE_URL + OTP_VERIFICATION_URL);
-      console.log('Version check XML data:', xmlData);
+
 
       const headers: any = {
         'Content-Type': 'application/xml',
@@ -335,7 +334,7 @@ export default function SignInForm() {
       // Add token to headers if provided
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
-        console.log('Token added to version check request headers');
+
       }
 
       const response = await axios({
@@ -345,10 +344,10 @@ export default function SignInForm() {
         headers: headers
       });
 
-      console.log('Version check response:', response.data);
+
       const shouldDecode = ENABLE_FERNET && encPayload;
       const data = shouldDecode ? decodeFernetToken(response.data.data) : response.data;
-      console.log('Version check decoded data:', data);
+
       return data;
     } catch (error) {
       console.error('Version check error:', error);
@@ -362,11 +361,11 @@ export default function SignInForm() {
     if (!currentLoginData) return;
 
     // Debug: Log the navigation flow
-    console.log('proceedAfterVersionCheck called:', {
-      loginType: currentLoginData.LoginType,
-      forceLogout,
-      hasTempToken: !!getLocalStorage('temp_token')
-    });
+    // console.log('proceedAfterVersionCheck called:', {
+    //   loginType: currentLoginData.LoginType,
+    //   forceLogout,
+    //   hasTempToken: !!getLocalStorage('temp_token')
+    // });
 
     // If forceLogout is true (mandatory update for non-admin users), clear everything and stay on login
     if (forceLogout) {
@@ -383,7 +382,7 @@ export default function SignInForm() {
     }
 
     if (currentLoginData.LoginType === "2FA") {
-      console.log('Redirecting to OTP verification');
+
       router.push('/otp-verification');
     } else {
       // Set localStorage only
@@ -394,7 +393,7 @@ export default function SignInForm() {
       }
       storeLocalStorage('tokenExpireTime', currentLoginData.tokenExpireTime);
       storeLocalStorage('temp_token', '');
-      console.log('Redirecting to dashboard');
+
       const isFirstLogin = currentLoginData.firstLogin === 'Y';
       if(isFirstLogin) router.push('/changepassword');
       else router.push('/dashboard');
@@ -403,12 +402,12 @@ export default function SignInForm() {
 
   // Function to perform version check after successful login
   const performVersionCheckAfterLogin = useCallback(async (currentLoginData: any) => {
-    console.log('performVersionCheckAfterLogin called with:', currentLoginData);
+
     try {
-      console.log('Calling checkVersion API...');
+
       // Get token from loginData or from localStorage (temp_token or auth_token)
       const token = currentLoginData?.token || getLocalStorage('temp_token') || getLocalStorage('auth_token');
-      console.log('Using token for version check:', token ? 'Present' : 'Not found');
+
       const result = await checkVersion(token);
 
       // Check if the API returned success: false
@@ -428,7 +427,7 @@ export default function SignInForm() {
           setLoginData(null);
         } else {
           // For 2FA users, allow them to proceed even if version check fails
-          console.log('Version check failed for 2FA user, but allowing to proceed to OTP verification');
+
           proceedAfterVersionCheck(currentLoginData);
         }
         return; // Don't proceed to next page
@@ -458,7 +457,7 @@ export default function SignInForm() {
         setLoginData(null);
       } else {
         // For 2FA users, allow them to proceed even if version check fails
-        console.log('Version check error for 2FA user, but allowing to proceed to OTP verification');
+
         proceedAfterVersionCheck(currentLoginData);
       }
     }
@@ -473,10 +472,10 @@ export default function SignInForm() {
     if (loginData) {
       // Check for version updates if UserType is 'branch' (regardless of ShowUpdate value)
       if (loginData.userType && loginData.userType.toLowerCase() === 'branch') {
-        console.log('Message modal closed, UserType is branch, checking for version updates');
+ 
         performVersionCheckAfterLogin(loginData);
       } else {
-        console.log('Message modal closed, UserType is not branch, proceeding directly');
+
         proceedAfterVersionCheck(loginData);
       }
     }
@@ -490,7 +489,7 @@ export default function SignInForm() {
     try {
       // Get token from loginData or from localStorage (temp_token or auth_token)
       const token = loginData?.token || getLocalStorage('temp_token') || getLocalStorage('auth_token');
-      console.log('Using token for version update:', token ? 'Present' : 'Not found');
+
 
       const xmlData = `
         <dsXml>
@@ -512,11 +511,9 @@ export default function SignInForm() {
       // Add token to headers if provided
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
-        console.log('Token added to version update request headers');
+
       }
 
-      console.log('Sending version update request to:', BASE_URL + OTP_VERIFICATION_URL);
-      console.log('Version update XML data:', xmlData);
 
       const response = await axios({
         method: 'post',
@@ -525,7 +522,6 @@ export default function SignInForm() {
         headers: headers
       });
 
-      console.log('Version update response:', response.data);
 
       // Check if update was successful
       const shouldDecode = ENABLE_FERNET && encPayload;
@@ -617,7 +613,7 @@ export default function SignInForm() {
     </dsXml>`;
     // remove Key as requested "<Key>${LOGIN_KEY}</Key>" 
 
-    console.log('Login XML Data:', xmlData);
+
 
     try {
       const response = await axios({
@@ -632,10 +628,7 @@ export default function SignInForm() {
       // Check both ENABLE_FERNET constant and encPayload from Redux state
       const shouldDecode = ENABLE_FERNET && encPayload;
       const data = shouldDecode ? decodeFernetToken(response.data.data) : response.data;
-      console.log('Login Response:', data);
-      console.log('Response status:', data.status);
-      console.log('Response token:', data.token);
-      console.log('Response refreshToken:', data.refreshToken);
+
       const userFirstLogin = data.data[0].FirstLogin
       setFirstLogin(userFirstLogin)
       
@@ -657,11 +650,7 @@ export default function SignInForm() {
         const message = data.data[0].Message;
 
 
-        console.log('Login response fields:', {
-          showUpdate,
-          message,
-          userType
-        });
+
 
         // Refresh token should be available for all users in the login response
         // For 2FA users, refresh token will also be available after OTP verification
@@ -678,11 +667,8 @@ export default function SignInForm() {
         const clientCode = data.data[0].ClientCode || data.data[0].UserCode || '';
         const clientName = data.data[0].ClientName || data.data[0].UserName || '';
 
-        // Debug logging to help identify field mapping issues
-        console.log('Login response data:', data.data[0]);
-        console.log('UserType:', userType);
-        console.log('Mapped clientCode:', clientCode);
-        console.log('Mapped clientName:', clientName);
+
+
 
         // Validate that we have the required data
         if (!clientCode || !clientName) {
@@ -708,17 +694,12 @@ export default function SignInForm() {
         storeLocalStorage('userId', userId);
         storeLocalStorage('temp_token', data.token);
 
-        // Debug: Log token storage
-        console.log('Token stored for 2FA:', {
-          tempToken: data.token ? 'Stored' : 'Missing',
-          loginType: data.data[0].LoginType,
-          userType: userType
-        });
+
 
         // Store refreshToken if it exists (for all users)
         if (data.refreshToken) {
           storeLocalStorage('refreshToken', data.refreshToken);
-          console.log('Refresh token stored successfully:', data.refreshToken);
+
         } else {
           console.warn('No refresh token in login response');
         }
@@ -746,7 +727,7 @@ export default function SignInForm() {
 
         // Handle message modal first if there's a message
         if (message && message.trim() !== '') {
-          console.log('Showing message modal with content:', message);
+
           setMessageContent(message);
           setShowMessageModal(true);
           return; // Don't proceed with version check or navigation yet
@@ -754,10 +735,10 @@ export default function SignInForm() {
 
         // Check for version updates if UserType is 'branch' (regardless of ShowUpdate value)
         if (userType.toLowerCase() === 'branch') {
-          console.log('UserType is branch, checking for version updates');
+
           await performVersionCheckAfterLogin(currentLoginData);
         } else {
-          console.log('UserType is not branch, proceeding directly without version check');
+
           // No version check needed, proceed directly
           proceedAfterVersionCheck(currentLoginData);
         }
@@ -765,18 +746,14 @@ export default function SignInForm() {
         dispatch(setAuthError(data.message || 'Login failed'));
         setError(data.message || 'Login failed');
 
-        // Refresh CAPTCHA on login failure
-        console.log('Login failed, checking CAPTCHA refresh conditions:', {
-          ENABLE_CAPTCHA,
-          hasCaptchaRef: !!captchaRef.current
-        });
+  
         if (ENABLE_CAPTCHA && captchaRef.current) {
-          console.log('Refreshing CAPTCHA after login failure');
+
           captchaRef.current.refreshCaptcha();
         }
       }
     } catch (err) {
-      console.log(err);
+      console.error(err);
       const errorMessage = axios.isAxiosError(err)
         ? err.response?.data?.message || 'An error occurred during login'
         : 'An error occurred during login';
@@ -785,12 +762,12 @@ export default function SignInForm() {
       setError(errorMessage);
 
       // Refresh CAPTCHA on login error
-      console.log('Login error, checking CAPTCHA refresh conditions:', {
+      console.error('Login error, checking CAPTCHA refresh conditions:', {
         ENABLE_CAPTCHA,
         hasCaptchaRef: !!captchaRef.current
       });
       if (ENABLE_CAPTCHA && captchaRef.current) {
-        console.log('Refreshing CAPTCHA after login error');
+
         captchaRef.current.refreshCaptcha();
       }
     } finally {

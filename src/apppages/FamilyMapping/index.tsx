@@ -353,7 +353,7 @@ export default function Family() {
     </dsXml>`;
 
       const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
-      console.log("delete", response)
+
       if (response?.data?.success === true) {
         toast.success(
           response?.data?.message?.replace(/<[^>]+>/g, "") ||

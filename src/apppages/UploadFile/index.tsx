@@ -13,7 +13,7 @@ const UploadFile = () => {
 
     const handleQueueUpdate = (stats: UploadQueueStats) => {
         // Queue stats updated - can be used for analytics or UI updates
-        console.log('Queue stats updated:', stats);
+
     };
 
     return (

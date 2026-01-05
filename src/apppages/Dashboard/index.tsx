@@ -452,11 +452,6 @@ function Dashboard() {
             }, []);
 
     const getDashboardData = async () => {
-        console.log('🔍 getDashboardData called with:', {
-            selectedClient: selectedClient?.value,
-            isInitialLoad,
-            dropdownChanged
-        });
 
         // Check if we have cached data for this client in sessionStorage
         if (selectedClient && !dropdownChanged && !isInitialLoad) {
@@ -464,7 +459,7 @@ function Dashboard() {
             const cachedData = sessionStorage.getItem(cachedDataKey);
 
             if (cachedData) {
-                console.log('📦 Found cached dashboard data for client:', selectedClient.value);
+
                 try {
                     const parsedData = JSON.parse(cachedData);
                     setDashboardData(parsedData);
@@ -495,19 +490,9 @@ function Dashboard() {
                 <J_Api>"UserId":"${getLocalStorage('userId')}", "UserType":"${getLocalStorage('userType')}"</J_Api>
             </dsXml>`;
 
-            // Log curl equivalent for debugging
-            console.log(`curl -X POST "${BASE_URL}${PATH_URL}" \\`);
-            console.log(`  -H "Content-Type: application/xml" \\`);
-            console.log(`  -H "Authorization: Bearer ${getLocalStorage('token')}" \\`);
-            console.log(`  -d '${xmlData.replace(/'/g, "'\\''")}'`);
-
             const startTime = Date.now();
             const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
             const endTime = Date.now();
-
-            console.log('📥 Dashboard API Response received in', endTime - startTime, 'ms');
-            console.log('📥 Full dashboard response:', response);
-            console.log('📊 Dashboard data:', response.data.data.rs0);
 
             const newData = response.data.data.rs0 || [];
             setDashboardData(newData);
@@ -545,7 +530,7 @@ function Dashboard() {
                 // Validate that the client data has the required structure
                 if (parsedClient && parsedClient.value && parsedClient.label) {
                     setSelectedClient(parsedClient);
-                    console.log('📦 Restored selected client from sessionStorage:', parsedClient);
+
                 } else {
                     console.warn('Invalid client data structure in sessionStorage, clearing...');
                     sessionStorage.removeItem('selectedDashboardClient');
@@ -558,16 +543,11 @@ function Dashboard() {
     }, []);
 
     useEffect(() => {
-        console.log('🔄 useEffect triggered with auth.userType:', auth.userType);
-        console.log('🔍 Checking conditions:');
-        console.log('- auth.userType === "branch":', auth.userType === 'branch');
-        console.log('- auth.userType === "user":', auth.userType === 'user');
-        console.log('- Combined condition:', auth.userType === 'branch' || auth.userType === 'user');
 
         if (auth.userType === 'branch' || auth.userType === 'user') {
-            console.log('✅ Calling getUserDashboardData()');
+
         } else {
-            console.log('❌ getUserDashboardData() NOT called - userType condition not met');
+
             // For non-branch users, set initial load to true and get data
             setIsInitialLoad(true);
             getDashboardData();
@@ -640,7 +620,7 @@ function Dashboard() {
 
     // Function to clear session data on logout
     const clearSessionData = useCallback(() => {
-        console.log('🧹 Clearing session data on logout...');
+
         sessionStorage.removeItem('userDashboardOptions');
         sessionStorage.removeItem('selectedDashboardClient');
         // Clear all dashboard data cache
@@ -654,7 +634,6 @@ function Dashboard() {
 
     // Clear sessionStorage cache on mount and auth changes to ensure fresh data after login
     useEffect(() => {
-        console.log('🔄 Clearing dashboard sessionStorage cache on mount/auth change...');
         clearSessionData();
         // Note: We don't clear the dashboard data cache here as it's handled in the data fetching logic
     }, [auth.userId, clearSessionData]); // Clear cache when user ID changes (login/logout)

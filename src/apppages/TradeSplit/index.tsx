@@ -137,7 +137,6 @@ const TradeSplit: React.FC<TradeSplitProps> = ({ data, isAutoWidth }) => {
             // Build Payload (Include all columns)
             const payloadData = rowsToSave.map(row => {
                 const { _id, ...rest } = row; // Exclude internal ID
-                console.log(_id)
                 return {
                     ...rest,
                     Client: row.Client || row.ClientName || "",
@@ -155,7 +154,7 @@ const TradeSplit: React.FC<TradeSplitProps> = ({ data, isAutoWidth }) => {
     <J_Api>"UserId":"${getLocalStorage('userId')}", "UserType":"${getLocalStorage('userType')}"</J_Api>
 </dsXml>`;
             
-            console.log("Saving Payload:", xmlPayload);
+
             const response: any = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlPayload);
             const responseData = response?.data?.data?.rs0?.[0]; // Access first record of rs0
             

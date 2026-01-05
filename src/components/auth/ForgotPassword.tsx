@@ -89,12 +89,12 @@ export default function ForgotPasswordForm() {
             const data = shouldDecode ? decodeFernetToken(response.data.data) : response.data;
 
             if (data.success) {
-                console.log(clientCode, '1212121');
+
 
                 setCurrentStep(2);
 
                 toast.success(data.data.rs0[0].Message);
-                console.log(clientCode, 'client 221');
+
             } else {
                 setError(response.data.message || 'Failed to process request');
             }

@@ -343,10 +343,10 @@ export const callUpdateImportSeqFilter = async (
       UserId: userId,
     };
 
-    console.log('📤 Calling UpdateImportSeqFilter API:', {
-      endpoint: apiEndpoint,
-      payload
-    });
+    // console.log('📤 Calling UpdateImportSeqFilter API:', {
+    //   endpoint: apiEndpoint,
+    //   payload
+    // });
 
     const response = await fetch(apiEndpoint, {
       method: 'POST',
@@ -385,10 +385,10 @@ export const callUpdateImportSeqFilter = async (
       message: rs0.Column2 || 'Process Completed'
     };
 
-    console.log('✅ UpdateImportSeqFilter API success:', {
-      processStatus,
-      errorRecordsCount: rs1.length
-    });
+    // console.log('✅ UpdateImportSeqFilter API success:', {
+    //   processStatus,
+    //   errorRecordsCount: rs1.length
+    // });
 
     return {
       success: true,

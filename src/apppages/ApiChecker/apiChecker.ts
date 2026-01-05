@@ -129,7 +129,7 @@ const cleanJSONStringLiteral = (str: string) => {
   
   //   try {
   //     const response = await apiService.postWithAuth(BASE_URL + PATH_URL, viewLogXML);
-  //     console.log(response, 'response config data');
+
   
   //     const data = response?.data?.data?.rs0;
   

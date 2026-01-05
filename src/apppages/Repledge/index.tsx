@@ -32,7 +32,7 @@ const Repledge = () => {
     if (checked) {
       // Add to selected
       setSelectedRows((prev) => [...prev, row]);
-      console.log(selectedRows,'selectedRowsss1');
+
     } else {
       // Remove from selected
       setSelectedRows((prev) =>
@@ -41,7 +41,7 @@ const Repledge = () => {
 
     }
 
-    console.log(selectedRows,'selectedRowsssMAIN');
+
   };
 
   return (

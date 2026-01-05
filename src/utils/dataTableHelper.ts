@@ -228,7 +228,7 @@ export const handleLoopThroughMultiSelectKeyHandlerDownloadZip = async (selected
   const zip = new JSZip();
   const pdfFolder = zip.folder(zipFolderName);
 
-  console.log(filterXml,'filterXml22');
+
 
   // Extract client code from filterXml (e.g., <ClientCode>M000024</ClientCode>)
 const clientCodeMatch = filterXml.match(/<ClientCode>(.*?)<\/ClientCode>/);
@@ -281,7 +281,7 @@ const clientCode = clientCodeMatch ? clientCodeMatch[1].trim() : "";
           // Ensure file ends with .pdf
           if (!pdfName.toLowerCase().endsWith(".pdf")) pdfName += ".pdf";
 
-          console.log(pdfName,'pdfName');
+
           
           // return
           
@@ -333,7 +333,7 @@ const clientCode = clientCodeMatch ? clientCodeMatch[1].trim() : "";
       console.warn("No PDFs were generated, so ZIP download is skipped.");
     }
 
-    console.log(`✅ ZIP created. PDFs: ${pdfCount}, Failures: ${failedRows?.length}`);
+
     // Display aggregate toast
     if (pdfCount > 0 && failedRows?.length === 0) {
       toast.success(`ZIP created with ${pdfCount} PDF(s).`);
@@ -401,7 +401,7 @@ export const handleLoopThroughMultiSelectKeyHandlerDownloadZipExcel = async (sel
               const emailPayloadXmlSend = await apiService.postWithAuth(BASE_URL + PATH_URL, emailPayloadXML);
               const emailResponseData = emailPayloadXmlSend?.data?.data?.rs0?.[0];
 
-              console.log(emailResponseData,'emailResponseData');
+
               
 
               // Check for Base64XLSX instead of Base64PDF
@@ -459,7 +459,7 @@ export const handleLoopThroughMultiSelectKeyHandlerDownloadZipExcel = async (sel
           console.warn("No Excel files were generated, so ZIP download is skipped.");
       }
 
-      console.log(`✅ ZIP created. Excels: ${excelCount}, Failures: ${failedRows?.length}`);
+
 
       if (excelCount > 0 && failedRows?.length === 0) {
           toast.success(`ZIP created with ${excelCount} Excel file(s).`);

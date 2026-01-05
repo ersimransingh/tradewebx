@@ -16,7 +16,7 @@ import Button from "../../ui/button/Button";
 export default function ExampleFormWithIcon() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Form submitted:");
+
   };
 
   const [isChecked, setIsChecked] = useState(false);

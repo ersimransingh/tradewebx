@@ -228,12 +228,12 @@ const AccountClosure: React.FC<AccountClosureProps> = ({
   };
 
   const handleGetData = async () => {
-    console.log(pageData, 'pageData[0].levels[0]');
+
 
     const currentPage = accountClouserOpen ? accountClouserDataPass : pageData?.[0]?.levels?.[0];
     if (!currentPage) return;
 
-    console.log(pageData?.[0]?.levels?.[0], 'pageData?.[0]?.levels?.[0]');
+
 
 
     setLoading(true);
@@ -341,7 +341,7 @@ const AccountClosure: React.FC<AccountClosureProps> = ({
         return
       }
       const cleanBase64 = base64CRMI.replace(/^data:\w+\/\w+;base64,/, "");
-      console.log("check cleaned base64", cleanBase64)
+
       const payload = {
         ClientCode: data?.ClientCode || "",
         DPAcNo: data?.DPAcno || "",
@@ -508,7 +508,7 @@ const AccountClosure: React.FC<AccountClosureProps> = ({
         } else {
           toast.error(message);
         }
-        console.log("PDF Data:", response.data.data.rs0);
+
       } else {
         toast.error(`Failed to generate ${reportName} PDF`);
       }

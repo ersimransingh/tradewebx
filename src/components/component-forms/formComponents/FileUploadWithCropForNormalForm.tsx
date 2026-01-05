@@ -43,7 +43,7 @@ const FileUploadWithCropForNormalForm: React.FC<FileUploadWithCropProps> = ({
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const acceptedTypes = field.FileType ? field.FileType.split(',').map(ext => `.${ext.trim().toLowerCase()}`).join(',') : '';
 
-  console.log("check file type ", acceptedTypes)
+
   const isRequired = field.isMandatory === "true"
 
   const onSelectFile = (e: React.ChangeEvent<HTMLInputElement>) => {

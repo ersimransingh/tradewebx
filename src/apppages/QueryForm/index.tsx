@@ -273,7 +273,7 @@ export default function QueryFormPage() {
   /* ------------------ clear auth on route change ------------------ */
   useEffect(() => {
   return () => {
-    console.log("Route changed");
+    console.error("Route changed");
     handleLogout()
   };
 }, []);
@@ -282,7 +282,7 @@ export default function QueryFormPage() {
         try {
             return JSON.parse(getLocalStorage(APP_METADATA_KEY))
         } catch (err) {
-            console.log(err)
+            console.error(err)
             return store.getState().common
         }
     })();

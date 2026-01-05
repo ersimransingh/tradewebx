@@ -195,7 +195,7 @@ const Documents = ({ formFields, tableData, fieldErrors, setFieldData, setActive
 
     const handleSubmit = async () => {
         const storedFormData = await getFromDB('dynamicData');
-        console.log("check data", storedFormData)
+
         const constructPayload: any = {
             RekycJson: [
                 {
@@ -560,7 +560,7 @@ const Documents = ({ formFields, tableData, fieldErrors, setFieldData, setActive
                     toast.error(message);
                 }
 
-                console.log("PDF Data:", response.data.data.rs0);
+
             } else {
                 toast.error(`Failed to generate ${reportName} PDF`);
             }

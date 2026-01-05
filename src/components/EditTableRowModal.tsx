@@ -211,15 +211,14 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
                 <J_Api>"UserId":"${getLocalStorage('userId') || 'ADMIN'}","AccYear":"${getLocalStorage('accYear') || '24'}","MyDbPrefix":"${getLocalStorage('myDbPrefix') || 'undefined'}","MemberCode":"${getLocalStorage('memberCode') || ''}","SecretKey":"${getLocalStorage('secretKey') || ''}","MenuCode":"${getLocalStorage('menuCode') || 27}","ModuleID":"${getLocalStorage('moduleID') || '27'}","MyDb":"${getLocalStorage('myDb') || 'undefined'}","DenyRights":"${getLocalStorage('denyRights') || ''}"</J_Api>
             </dsXml>`;
 
-            console.log('Fetching page data for EntryFormModal:', xmlData);
+
 
             const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
 
             const EditTablePageData = response.data.data.rs0; // Form field configuration
             const ChildEntryData = response.data.data.rs1 || []; // Child entry data records
 
-            console.log('Master Form Configuration (rs0):', EditTablePageData);
-            console.log('Child Entry Data Records (rs1):', ChildEntryData);
+
 
             // Create ChildEntry configuration structure
             // rs0 contains form field configuration, rs1 contains actual child entry data
@@ -232,7 +231,7 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
             const hasChildEntryData = ChildEntryData && Array.isArray(ChildEntryData) && ChildEntryData.length > 0;
 
             if (hasChildEntryData || hasChildEntryFields) {
-                console.log('Child entry data/fields found, creating ChildEntry configuration');
+
 
                 // Create child entry configuration similar to how it's done in DynamicReportComponent
                 const baseStructure = {
@@ -267,9 +266,9 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
                     childEntryStructure.formFields = EditTablePageData;
                 }
 
-                console.log('Created child entry structure:', childEntryStructure);
+
             } else {
-                console.log('No child entry data or configuration found in API response');
+
             }
 
             // Create a mock pageData structure that EntryFormModal expects
@@ -298,7 +297,7 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
                     ChildEntry: childEntryStructure // Use child entry data from API response
                 }
             }];
-            console.log(mockPageData, 'mockPageData');
+
 
             setPageData(mockPageData);
             setEntryFormData(rowData);
@@ -313,10 +312,7 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
     };
 
     const handleViewRow = (rowData: RowData, rowIndex: number) => {
-        console.log('=== View Row Clicked ===');
-        console.log('Row Data:', rowData);
-        console.log('Row Index:', rowIndex);
-        console.log('wPage:', wPage);
+
 
         const entryName = rowData?.EntryName?.trim().toLowerCase();
 
@@ -377,7 +373,7 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
     // Initialize dependent fields when modal opens and tableData is available
     useEffect(() => {
         if (isOpen && localData.length > 0) {
-            console.log('EditTableRowModal: Initializing dependent fields for table data:', localData);
+
 
             // Initialize dependent fields for each row
             localData.forEach((row, rowIndex) => {
@@ -412,7 +408,7 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
                         }
 
                         if (shouldInitialize) {
-                            console.log(`EditTableRowModal: Initializing dependent field ${column.wKey} for row ${rowIndex} with parent value:`, parentFieldValue);
+                           
                             fetchDependentOptions(column, parentFieldValue, rowIndex);
                         }
                     }
@@ -424,21 +420,16 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
     // Console log EntryFormModal data when modal opens
     useEffect(() => {
         if (isEntryModalOpen && pageData) {
-            console.log('=== EntryFormModal Data from EditTableRowModal ===', {
-                isOpen: isEntryModalOpen,
-                pageData: pageData,
-                editData: entryFormData,
-                action: 'view',
-                wPage: wPage,
-                timestamp: new Date().toISOString()
-            });
+            // console.log('=== EntryFormModal Data from EditTableRowModal ===', {
+            //     isOpen: isEntryModalOpen,
+            //     pageData: pageData,
+            //     editData: entryFormData,
+            //     action: 'view',
+            //     wPage: wPage,
+            //     timestamp: new Date().toISOString()
+            // });
 
-            console.log('isEntryModalOpen:', isEntryModalOpen);
-            console.log('pageData:', pageData);
-            console.log('entryFormData:', entryFormData);
-            console.log('action: view');
-            console.log('wPage:', wPage);
-            console.log('pageData[0]?.Entry:', pageData?.[0]?.Entry);
+
         }
     }, [isEntryModalOpen, pageData, entryFormData, wPage]);
 
@@ -793,15 +784,14 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
 
         // Log for debugging
         if (columnsToHide.length > 0) {
-            console.log('EditTableRowModal - Columns to hide:', columnsToHide);
-            console.log('EditTableRowModal - All available columns:', dataKeys);
+
         }
 
         // Filter out hidden columns from dataKeys
         const visibleDataKeys = dataKeys.filter(key => !columnsToHide.includes(key));
 
         if (columnsToHide.length > 0) {
-            console.log('EditTableRowModal - Visible columns after filtering:', visibleDataKeys);
+
         }
 
         const editableKeys = editableColumns.map(col => col.wKey);
@@ -851,7 +841,7 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
                 <J_Api>${jApi},"UserType":"${getLocalStorage('userType')}"</J_Api>
             </dsXml>`;
 
-            console.log('Dropdown request XML:', xmlData);
+
 
             const response = await apiService.postWithAuth(
                 BASE_URL + PATH_URL,
@@ -876,7 +866,7 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
                 value: dataItem[valueField]
             }));
 
-            console.log(`Fetched ${options.length} options for ${column.wKey}:`, options);
+
 
             setDropdownOptions(prev => ({
                 ...prev,
@@ -916,7 +906,7 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
                 [`${column.wKey}_${rowIndex}`]: true
             }));
 
-            console.log(`Fetching dependent options for ${column.wKey} based on:`, parentValue);
+
 
             let jUi, jApi;
 
@@ -973,11 +963,11 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
                 <J_Api>${jApi},"UserType":"${getLocalStorage('userType')}"</J_Api>
             </dsXml>`;
 
-            console.log('Dependent dropdown request XML:', xmlData);
+
 
             const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
 
-            console.log('Dependent dropdown response:', response.data);
+
 
             const rs0Data = response.data?.data?.rs0;
             if (!Array.isArray(rs0Data)) {
@@ -997,7 +987,7 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
                 value: dataItem[valueField]
             }));
 
-            console.log(`Got ${options.length} options for ${column.wKey} at row ${rowIndex}:`, options);
+
 
             setDropdownOptions(prev => ({
                 ...prev,
@@ -1054,7 +1044,7 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
             const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
             const base64 = response?.data?.data?.rs0?.Base64PDF;
             // const fileName = response?.data?.data?.rs0?.PDFName
-            console.log(response?.data?.data?.rs0, 'response?.data?.data?.rs0?');
+
 
             if (base64) {
                 displayAndDownloadFile(base64)
@@ -1519,7 +1509,7 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
                     <EntryFormModal
                         isOpen={isEntryModalOpen}
                         onClose={() => {
-                            console.log('EntryFormModal onClose called from EditTableRowModal');
+
                             setIsEntryModalOpen(false);
                             setEntryFormData(null);
                             setPageData(null);
@@ -1528,13 +1518,13 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
                         editData={entryFormData}
                         action="view"
                         setEntryEditData={(data) => {
-                            console.log('setEntryEditData called from EditTableRowModal with:', data);
+
                             setEntryFormData(data);
                         }}
                         pageName={pageName}
                         isTabs={formType === "multientry"}
                         refreshFunction={() => {
-                            console.log('EntryFormModal refreshFunction called from EditTableRowModal');
+
                             // Refresh the main table data if needed
                         }}
                         childModalZindex="z-500"

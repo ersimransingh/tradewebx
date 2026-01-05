@@ -10,7 +10,7 @@ import apiService from '@/utils/apiService';
 
 const Ipo = () => {
   const { colors } = useTheme();
-  console.log(colors,'colors');
+
   
   const authToken = useSelector((state: RootState) => state.auth.authToken);
   const [ipoData, setIpoData] = useState<any[]>([]);
@@ -81,7 +81,7 @@ const Ipo = () => {
       fetchIpo();
       fetchUPIType(setUpiSelect, authToken);
     } else {
-      console.log("clientCode is null, skipping API call");
+
     }
 
   }, [clientCode]);
@@ -107,7 +107,7 @@ const Ipo = () => {
     const maxPrice = parseFloat(maxPriceStr || minPriceStr); // fallback to min if only one price
     const minPrice = ipo.min_order
 
-    // console.log(ipo,'minPrice');
+
 
 
     // ✅ Set Bid 1 to minimum order and Cutoff to max price
@@ -185,7 +185,7 @@ const Ipo = () => {
   };
 
 
-  // console.log(selectedIpo,'selectedIpo');
+
 
 
   const clearFn = () => {

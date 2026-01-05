@@ -213,7 +213,7 @@ export const fetchMenuItems = createAsyncThunk(
 
             const fetchWithRetry = async (retryCount: number): Promise<any> => {
                 const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
-                console.log("check menu response", response)
+
                 const responseItem = response?.data?.data?.rs0 || [];
 
                 if (!responseItem || responseItem.length === 0) {

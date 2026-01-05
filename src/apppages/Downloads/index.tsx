@@ -40,13 +40,13 @@ const Downloads = () => {
     const userData = useSelector((state: RootState) => state.auth);
     const menuItems = useAppSelector(selectAllMenuItems);
     const pageData: any = findPageData(menuItems, "Downloads");
-    // console.log('userData', userData);
+
 
     const getDownloads = async (isReload = false, values?: any) => {
         if (isReload) {
             setLoading(true);
         }
-        // console.log('filterValues', filterValues);
+
         const filterValuesLocal = values || filterValues;
         const startTime = performance.now();
 
@@ -100,7 +100,7 @@ const Downloads = () => {
                 while ((match = headingsRegex.exec(xmlString)) !== null) {
                     extractedHeadings.push(match[1]);
                 }
-                console.log(extractedHeadings, 'extractedHeadings');
+
 
                 setHeadings(extractedHeadings);
             }
@@ -204,7 +204,7 @@ const Downloads = () => {
 
 
     const handleDownload = async (record) => {
-        console.log(record, 'record');
+
 
         setDownloadingFile(record['Document No']);
 
@@ -242,7 +242,7 @@ const Downloads = () => {
     };
 
     const handleFilterChange = (values) => {
-        console.log('values', values);
+
         // Format dates if they are in ISO format
         const formattedValues = {
             ...values,
@@ -254,7 +254,7 @@ const Downloads = () => {
     };
 
     const handleApplyFilters = (values?: any) => {
-        console.log('values FOR FILTER', values);
+
         // setFilterValues(values);
         setTimeout(() => {
             getDownloads(true, values);

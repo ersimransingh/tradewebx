@@ -347,7 +347,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
     const [finalTabSubmitSuccess, setFinalTabSubmitSuccess] = useState(false);
     const [filtersValueObject,setFiltersValueObject] = useState<Record<string,any>>({});
 
-    console.log("check tabs data===>", tabTableData, tabFormValues, tabsData, masterFormValues)
+
 
     const childEntryPresent = pageData[0]?.Entry?.ChildEntry;
     const isThereChildEntry = !isTabs && (!childEntryPresent || Object.keys(childEntryPresent).length === 0);
@@ -525,7 +525,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                             }
 
                             if (shouldInitialize) {
-                                console.log(`Initializing dependent master field ${field.wKey} with parent value:`, parentFieldValue);
+                               
                                 fetchDependentOptions(field, parentFieldValue);
                             }
                         }
@@ -625,7 +625,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                             }
 
                             if (shouldInitialize) {
-                                console.log(`Initializing dependent tab field ${field.wKey} with parent value:`, parentFieldValue);
+                               
                                 fetchTabsDependentOptions(field, tabKey,initialTabFormValues,initialMasterValues);
                             }
                         }
@@ -1393,7 +1393,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                         }
 
                         if (shouldInitialize) {
-                            console.log(`Initializing dependent field ${field.wKey} with parent value:`, parentFieldValue);
+                           
                             await fetchDependentOptions(field, parentFieldValue);
                         }
                     }
@@ -1607,7 +1607,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                         }
 
                         if (shouldInitialize) {
-                            console.log(`Initializing dependent child field ${field.wKey} with parent value:`, parentFieldValue);
+
                             await fetchDependentOptions(field, parentFieldValue, true);
                         }
                     }
@@ -1675,18 +1675,18 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
     };
 
     useEffect(() => {
-        console.log('EntryFormModal useEffect triggered:', { isOpen, isEdit, editData, isTabs });
+
         if (isOpen && !isEdit && (!editData || Object.keys(editData).length === 0)) {
-            console.log('Conditions met, calling fetch function. isTabs:', isTabs);
+
             if (isTabs) {
-                console.log('Calling fetchTabsData for multientry...');
+
                 fetchTabsData();
             } else {
-                console.log('Calling fetchMasterEntryData for regular entry...');
+        
                 fetchMasterEntryData();
             }
         } else {
-            console.log('Conditions not met:', { isOpen, isEdit, editDataExists: !!editData, editDataLength: Object.keys(editData || {}).length });
+           
         }
     }, [isOpen, pageData, isTabs]);
 
@@ -1793,7 +1793,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                   } catch (error) {
                     console.error("Error deleting child records:", error);
                   } finally {
-                    console.log("check delete record");
+              
                   }
                 };
 
@@ -2180,7 +2180,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
 
 
     const submitTabsFormData = async () => {
-        console.log("check active tab index",activeTabIndex)
+
         const currentTab = tabsData[activeTabIndex];
         const currentTabKey = `tab_${activeTabIndex}`;
         const currentTabFormValues = tabFormValues[currentTabKey] || {};

@@ -102,7 +102,7 @@ export default function ChangePassword() {
             const response = await apiService.postWithAuth(apiUrl, xmlData);
 
             if (response.data.success && response.data.data.rs0) {
-                console.log('inside 11');
+  
                 const result = response.data.data.rs0
 
                 if (result.Flag === 'S') {

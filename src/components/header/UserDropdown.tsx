@@ -12,7 +12,7 @@ export default function UserDropdown() {
     e.stopPropagation();
     setIsOpen((prev) => !prev);
   }
-  // console.log(userData, 'userData');
+
   function closeDropdown() {
     setIsOpen(false);
   }

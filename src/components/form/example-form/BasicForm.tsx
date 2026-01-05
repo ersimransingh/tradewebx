@@ -8,7 +8,7 @@ import Button from "../../ui/button/Button";
 export default function BasicForm() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Form submitted:");
+
   };
   return (
     <ComponentCard title="Basic Form">

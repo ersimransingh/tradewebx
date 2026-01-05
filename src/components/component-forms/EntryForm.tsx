@@ -469,7 +469,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
                              const finalObject = convertXmlToModifiedFormData(response, {
                                  preserveLeadingZeros: true
                              }); 
-                             console.log("check final Object",finalObject);
+           
                              validationMethodToModifyTabsForm(finalObject);
 
                         } else {
