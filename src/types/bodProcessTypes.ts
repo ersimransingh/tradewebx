@@ -11,7 +11,7 @@ export interface ValidationModalState {
   export interface BodProcessRow {
     ProcessName?: string;
     LastUpdated?: string;
-    [key: string]: any; // fallback for dynamic keys
+    [key: string]: string | number | boolean | null | undefined; // fallback for dynamic keys
   }
 
   export type CheckedRowsType = boolean[];

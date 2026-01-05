@@ -13,9 +13,9 @@ const Ipo = () => {
   console.log(colors,'colors');
   
   const authToken = useSelector((state: RootState) => state.auth.authToken);
-  const [ipoData, setIpoData] = useState<any[]>([]);
-  const [selectedIpo, setSelectedIpo] = useState<any | null>(null);
-  const [upiSelect, setUpiSelect] = useState<any[]>([]);
+  const [ipoData, setIpoData] = useState<string[]>([]);
+  const [selectedIpo, setSelectedIpo] = useState<string[] | null>(null);
+  const [upiSelect, setUpiSelect] = useState<string[]>([]);
   const [selectedUpi, setSelectedUpi] = useState('');
   const [upiId, setUpiId] = useState('');
   const [bid1, setBid1] = useState<number | "" | any>(""); // Allow empty string for initial state
@@ -31,8 +31,8 @@ const Ipo = () => {
   const [termsAccepted, setTermsAccepted] = useState<boolean>(false); // Track terms checkbox state
   const [disableCutOff2, setDisableCutOff2] = useState<boolean>(false); // Disable cutoff input
   const [disableCutOff3, setDisableCutOff3] = useState<boolean>(false); // Disable cutoff input
-  const [upi, setUpi] = useState<"" | any>("")
-  const [selectedUpiSelect, setSelectedUpiSelect] = useState<"" | any>("");
+  // const [upi, setUpi] = useState<"" | any>("")
+  // const [selectedUpiSelect, setSelectedUpiSelect] = useState<"" | any>("");
   const [status, setStatus] = useState<boolean>(false);
 
   const [clientCode] = useLocalStorage('clientCode', null);
