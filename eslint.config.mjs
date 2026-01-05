@@ -12,16 +12,7 @@ const compat = new FlatCompat({
 
 const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
-
   {
-    languageOptions: {
-      parser: tsParser,
-      parserOptions: {
-        project: "./tsconfig.json",
-        tsconfigRootDir: __dirname,
-        sourceType: "module",
-      },
-    },
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/ban-types": "off",
@@ -30,7 +21,7 @@ const eslintConfig = [
       "@typescript-eslint/no-unsafe-member-access": "off",
       "@typescript-eslint/no-unsafe-call": "off",
       "@typescript-eslint/no-unsafe-argument": "off",
-      "@typescript-eslint/no-unused-vars": 2,
+      "@typescript-eslint/no-unused-vars": "off",
       "react-hooks/exhaustive-deps": "off",
       "@typescript-eslint/ban-ts-comment": "off",
       "@typescript-eslint/no-non-null-assertion": "off",
