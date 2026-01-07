@@ -41,6 +41,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
     const [childFormData, setChildFormData] = useState<FormField[]>([]);
     const [childFormValues, setChildFormValues] = useState<Record<string, any>>({});
     const [childDropdownOptions, setChildDropdownOptions] = useState<Record<string, any[]>>({});
+    const [childRowDropdownOptions, setChildRowDropdownOptions] = useState<Record<string, Record<string, any[]>>>({});
     const [childLoadingDropdowns, setChildLoadingDropdowns] = useState<Record<string, boolean>>({});
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
     const [isEdit, setIsEdit] = useState<boolean>(false);
@@ -1002,6 +1003,135 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
 
     }
 
+    const fetchRowDependentOptions = async (field: FormField, parentValues: Record<string, any>) => {
+        if (!field.dependsOn) return;
+        
+        // Generate a unique key for this combination of parent values
+        const dependencyKey = JSON.stringify(parentValues);
+
+        // Check if we already have options for this combination
+        if (childRowDropdownOptions[field.wKey]?.[dependencyKey]) {
+            return;
+        }
+
+        try {
+            const jUi = Object.entries(field.dependsOn.wQuery.J_Ui)
+                .map(([key, value]) => `"${key}":"${value}"`)
+                .join(',');
+
+            const jApi = Object.entries(field.dependsOn.wQuery.J_Api)
+                .map(([key, value]) => `"${key}":"${value}"`)
+                .join(',');
+
+            let xFilter = '';
+            if (field.dependsOn.wQuery.X_Filter_Multiple) {
+                if (Array.isArray(field.dependsOn.field)) {
+                    field.dependsOn.field.forEach(fieldName => {
+                        // Check if fieldName is actually a comma-separated string
+                        if (typeof fieldName === 'string' && fieldName.includes(',')) {
+                             // Split the string into individual field names
+                             const fieldNames = fieldName.split(',').map(name => name.trim());
+                             fieldNames.forEach(individualField => {
+                                 const val = parentValues[individualField] || masterFormValues[individualField] || '';
+                                 xFilter += `<${individualField}>${val}</${individualField}>`;
+                             });
+
+                        } else {
+                            const val = parentValues[fieldName] || masterFormValues[fieldName] || '';
+                            xFilter += `<${fieldName}>${val}</${fieldName}>`;
+                        }
+                    });
+                } else {
+                     const fieldName = field.dependsOn.field;
+                     const val = parentValues[fieldName] || masterFormValues[fieldName] || '';
+                     xFilter += `<${fieldName}>${val}</${fieldName}>`;
+                }
+            } else {
+                 // Fallback for simple filters
+                 const fieldName = typeof field.dependsOn.field === 'string' ? field.dependsOn.field : field.dependsOn.field[0];
+                 const val = parentValues[fieldName] || masterFormValues[fieldName] || '';
+                 xFilter = `<${fieldName}>${val}</${fieldName}>`;
+            }
+
+            const xmlData = `<dsXml>
+                <J_Ui>${jUi}</J_Ui>
+                <Sql>${field.dependsOn.wQuery.Sql || ''}</Sql>
+                <X_Filter></X_Filter>
+                <X_Filter_Multiple>${xFilter}</X_Filter_Multiple>
+                <J_Api>${jApi}</J_Api>
+            </dsXml>`;
+
+            const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
+
+            const options = response.data?.data?.rs0?.map((item: any) => ({
+                label: item[field.wDropDownKey?.key || 'DisplayName'],
+                value: item[field.wDropDownKey?.value || 'Value']
+            }));
+
+            setChildRowDropdownOptions(prev => ({
+                ...prev,
+                [field.wKey]: {
+                    ...(prev[field.wKey] || {}),
+                    [dependencyKey]: options
+                }
+            }));
+
+        } catch (error) {
+            console.error(`Error fetching dependent options for row ${field.wKey}:`, error);
+        }
+    };
+
+    // Effect to fetch dependent options for child table rows
+    useEffect(() => {
+        if (childEntriesTable.length > 0 && childFormData.length > 0) {
+            childFormData.forEach(field => {
+                if (field.type === 'WDropDownBox' && field.dependsOn && !field.wQuery) {
+                    // Process each row to find unique parent value combinations
+                    const parentValuesSet = new Set<string>();
+                    
+                    childEntriesTable.forEach(row => {
+                        const parentValues: Record<string, any> = {};
+                        let hasAllParents = true;
+
+                        if (Array.isArray(field.dependsOn.field)) {
+                            field.dependsOn.field.forEach(fieldName => {
+                                 if (typeof fieldName === 'string' && fieldName.includes(',')) {
+                                     const fieldNames = fieldName.split(',').map(name => name.trim());
+                                     fieldNames.forEach(f => {
+                                         const val = row[f] || masterFormValues[f];
+                                          // if (!val) hasAllParents = false; // Allow empty values if backend handles it, or strict?
+                                          // For now, let's treat it as valid to pass empty string
+                                         parentValues[f] = val;
+                                     })
+                                 } else {
+                                    const val = row[fieldName] || masterFormValues[fieldName];
+                                     // if (!val) hasAllParents = false;
+                                    parentValues[fieldName] = val;
+                                 }
+                            });
+                        } else {
+                            const fieldName = field.dependsOn.field;
+                            const val = row[fieldName] || masterFormValues[fieldName];
+                             // if (!val) hasAllParents = false;
+                            parentValues[fieldName] = val;
+                        }
+
+                        if (hasAllParents) {
+                             const key = JSON.stringify(parentValues);
+                             if (!parentValuesSet.has(key)) {
+                                 parentValuesSet.add(key);
+                                 // Check if we need to fetch
+                                 if (!childRowDropdownOptions[field.wKey]?.[key]) {
+                                     fetchRowDependentOptions(field, parentValues);
+                                 }
+                             }
+                        }
+                    });
+                }
+            });
+        }
+    }, [childEntriesTable, childFormData]);
+
     const handleMasterDropdownChange = (field: any) => {
         // Find dependent fields and update them
         if (field.dependsOn) {
@@ -1400,6 +1530,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
 
             // THEN: Process validations sequentially
             for (const field of response.data?.data?.rs0 || []) {
+                console.log("check this ------>",field,isEditData,!isViewMode,editData,masterFormValues);
                 if (Object.keys(field?.ValidationAPI|| {}).length > 0 && isEditData && !isViewMode) {
                     await handleValidationForDisabledField(
                         field,
@@ -2698,6 +2829,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                                                 columnWidthMap={columnWidthMap}
                                                 childFormData={childFormData}
                                                 childDropdownOptions={childDropdownOptions}
+                                                childRowDropdownOptions={childRowDropdownOptions}
                                             />
                                         )}
                                 </div>

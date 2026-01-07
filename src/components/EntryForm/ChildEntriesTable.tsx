@@ -10,6 +10,7 @@ interface ChildEntriesTableProps {
     columnWidthMap?: Record<string, number | string>;
     childFormData?: any[];
     childDropdownOptions?: Record<string, any[]>;
+    childRowDropdownOptions?: Record<string, Record<string, any[]>>;
 }
 
 const ChildEntriesTable: React.FC<ChildEntriesTableProps> = ({
@@ -20,7 +21,8 @@ const ChildEntriesTable: React.FC<ChildEntriesTableProps> = ({
     handleChildEditNonSavedData,
     columnWidthMap = {},
     childFormData = [],
-    childDropdownOptions = {}
+    childDropdownOptions = {},
+    childRowDropdownOptions = {}
 }) => {
     return (
         <div className="flex flex-col">
@@ -96,11 +98,45 @@ const ChildEntriesTable: React.FC<ChildEntriesTableProps> = ({
                                         
                                         // Check if this key corresponds to a dropdown field
                                         const field = childFormData?.find((f) => f.wKey === key);
-                                        if (field && field.type === 'WDropDownBox' && childDropdownOptions?.[key]) {
-                                            const option = childDropdownOptions[key].find((opt: any) => String(opt.value) === String(row[key]));
-                                            if (option) {
-                                                value = option.label;
+                                        
+                                        if (field && field.type === 'WDropDownBox') {
+                                            let options: any[] = [];
+
+                                            if (field.dependsOn && !field.wQuery) {
+                                                // Dependent dropdown logic
+                                                const parentValues: Record<string, any> = {};
+
+                                                if (Array.isArray(field.dependsOn.field)) {
+                                                    field.dependsOn.field.forEach((fieldName: any) => {
+                                                         if (typeof fieldName === 'string' && fieldName.includes(',')) {
+                                                             const fieldNames = fieldName.split(',').map((name: string) => name.trim());
+                                                             fieldNames.forEach((f: string) => {
+                                                                 const val = row[f]; 
+                                                                 parentValues[f] = val;
+                                                             })
+                                                         } else {
+                                                            const val = row[fieldName];
+                                                            parentValues[fieldName] = val;
+                                                         }
+                                                    });
+                                                } else {
+                                                    const fieldName = field.dependsOn.field;
+                                                    const val = row[fieldName];
+                                                    parentValues[fieldName] = val;
+                                                }
+                                                
+                                                const dependencyKey = JSON.stringify(parentValues);
+                                                options = childRowDropdownOptions?.[key]?.[dependencyKey] || [];
+
+                                            } else {
+                                                // Standard (non-dependent) dropdown
+                                                options = childDropdownOptions?.[key] || [];
                                             }
+
+                                             const option = options.find((opt: any) => String(opt.value) === String(row[key]));
+                                             if (option) {
+                                                 value = option.label;
+                                             }
                                         }
 
                                         return (
