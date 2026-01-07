@@ -661,6 +661,21 @@ class ApiService {
         return this.makeRequest('POST', url, data, config);
     }
 
+    // NSDL form-style POST (x-www-form-urlencoded)
+            async postNsdl(
+                url: string,
+                fields: Record<string, string>
+            ): Promise<ApiResponse> {
+                const body = new URLSearchParams();
+                Object.entries(fields).forEach(([key, value]) => {
+                body.append(key, value);
+                });
+            
+                return this.makeRequest('POST', url, body.toString(), {
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                });
+            }
+
     // Generic GET request
     async get<T>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
         return this.makeRequest('GET', url, undefined, config);

@@ -25,6 +25,7 @@ export interface TabSettings {
     IsChildEntryAllowed?: string;
     ChildEntryAPI?: any;
     maxAllowedRecords: string;
+    EditValidate?: any;
     SaveNextAPI: {
         J_Ui: {
             ActionName: string;

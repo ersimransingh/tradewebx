@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BASE_URL, PATH_URL } from '@/utils/constants';
 import moment from 'moment';
 import { FaPlus, FaSave, FaTrash } from 'react-icons/fa';
@@ -7,302 +7,26 @@ import { toast } from 'react-toastify';
 import ConfirmationModal from './Modals/ConfirmationModal';
 import CaseConfirmationModal from './Modals/CaseConfirmationModal';
 import { MdArrowBack, MdOutlineClose } from "react-icons/md";
-import { ApiResponse, EntryFormModalProps, FormField, ChildEntryModalProps, TabData, GroupedFormData, GuardianEntryModalProps } from '@/types';
+import { EntryFormModalProps, FormField, ChildEntryModalProps, TabData, GroupedFormData, GuardianEntryModalProps } from '@/types';
 import EntryForm from './component-forms/EntryForm';
 import { handleValidationForDisabledField } from './component-forms/form-helper';
 import apiService from '@/utils/apiService';
 import SaveConfirmationModal from './Modals/SaveConfirmationModal';
-import { extractTagsForTabsDisabling, generateUniqueId, getFieldValue, groupFormData, parseXMLStringToObject, validateForm } from './component-forms/form-helper/utils';
-import { formatTextSplitString, getLocalStorage, sanitizeValueSpecialChar, escapeXmlChars, sanitizePayload } from '@/utils/helper';
+import { extractTagsForTabsDisabling, generateUniqueId, getFieldValue, groupFormData, parseXMLStringToObject, validateForm, convertXmlToModifiedFormData } from './component-forms/form-helper/utils';
+import { formatTextSplitString, getLocalStorage, sanitizeValueSpecialChar, sanitizePayload } from '@/utils/helper';
 import { useTheme } from '@/context/ThemeContext';
 import Button from './ui/button/Button';
 import { DataGrid } from 'react-data-grid';
-import { handleNextValidationFields } from './component-forms/form-helper/apiHelper';
+import { handleNextValidationFields, executeEditValidateApi } from './component-forms/form-helper/apiHelper';
 import AccessibleModalEntry from './a11y/AccessibleModalEntry';
+import ChildEntryModal from './EntryForm/ChildEntryModal';
+import GuardianEntryForm from './EntryForm/GuardianEntryForm';
+import TabContent from './EntryForm/TabContent';
+import ChildEntriesTable from './EntryForm/ChildEntriesTable';
+// Placeholder if columnWidthMap is not defined
+const columnWidthMap: Record<string, number> = {};
 
-const ChildEntryModal: React.FC<ChildEntryModalProps> = ({
-    isOpen,
-    pageName,
-    onClose,
-    masterValues,
-    formData,
-    masterFormData,
-    formValues,
-    setFormValues,
-    dropdownOptions,
-    loadingDropdowns,
-    onDropdownChange,
-    fieldErrors,
-    setFieldErrors,
-    setFormData,
-    resetChildForm,
-    isEdit,
-    onChildFormSubmit,
-    setValidationModal,
-    viewAccess,
-    isLoading,
-    setChildEntriesTable,
-    setDropDownOptions,
-    childModalZindex
-}) => {
 
-    const modalRef = React.useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        let timer: any;
-
-        if (modalRef.current) {
-            timer = setTimeout(() => {
-                modalRef.current?.focus();
-            }, 50);
-        }
-
-        return () => {
-            clearTimeout(timer); // Clean timeout when modal closes or re-renders
-        };
-    }, [isOpen]);
-
-    if (!isOpen) return null;
-
-    const isChildInvalid = Object.values(fieldErrors).some(error => error);
-    const handleFormSubmit = () => {
-        const masterErrors = validateForm(masterFormData, masterValues);
-        const childErrors = validateForm(formData, formValues);
-
-        if (Object.keys(childErrors).length > 0) {
-            setFieldErrors({ ...masterErrors, ...childErrors });
-            toast.error("Please fill all mandatory fields before submitting.");
-            return;
-        }
-        else {
-            setChildEntriesTable(prev => {
-                let isUpdated = false;
-
-                const updatedEntries = prev.map(entry => {
-                    const isMatch = (entry.SerialNo && formValues.SerialNo && entry.SerialNo.toString() === formValues.SerialNo.toString())
-                        || (entry?.Id && formValues?.Id && entry.Id === formValues.Id);
-
-                    if (isMatch) {
-                        isUpdated = true;
-                        return { ...entry, ...formValues };
-                    }
-                    return entry;
-                });
-
-                // If it was an update, return the modified list
-                if (isUpdated) {
-                    return updatedEntries;
-                }
-
-                // Otherwise it's a new unsaved entry (add Id to track it)
-                const entryToAdd = {
-                    ...formValues,
-                    isInserted: true,
-                    Id: generateUniqueId()
-                };
-                return [...updatedEntries, entryToAdd];
-            });
-
-            onChildFormSubmit();
-        }
-    };
-    return (
-        <div ref={modalRef} tabIndex={-1}  className={`fixed inset-0 flex items-center justify-center ${childModalZindex}`} style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
-            <div className="bg-white rounded-lg p-6 w-full max-w-[80vw] overflow-y-auto min-h-[75vh] max-h-[75vh]">
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-semibold">{pageName}</h2>
-                    <button
-                        onClick={onClose}
-                        className="text-gray-500 hover:text-gray-700"
-                    >
-                        ✕
-                    </button>
-                </div>
-                {isLoading ? (
-                    <div className="text-center py-4">Loading...</div>
-                ) : (
-                    <>
-                        <div className="text-end mt-5">
-                            <Button
-                                onClick={resetChildForm}
-                                className={`mr-2 ${viewAccess
-                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                    : 'bg-blue-500 hover:bg-blue-600 text-white'
-                                    }`}
-                                disabled={viewAccess}
-                            >
-                                Reset
-                            </Button>
-                            <Button
-                                onClick={handleFormSubmit}
-                                disabled={viewAccess || isChildInvalid}
-                                className={`${(viewAccess || isChildInvalid)
-                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                    : 'bg-green-500 hover:bg-green-600 text-white'
-                                    }`}
-                            >
-                                Submit
-                            </Button>
-                        </div>
-                        <EntryForm
-                            formData={formData}
-                            formValues={formValues}
-                            masterValues={masterValues}
-                            setFormValues={setFormValues}
-                            dropdownOptions={dropdownOptions}
-                            loadingDropdowns={loadingDropdowns}
-                            onDropdownChange={onDropdownChange}
-                            fieldErrors={fieldErrors}
-                            setFieldErrors={setFieldErrors}
-                            setFormData={setFormData}
-                            setValidationModal={setValidationModal}
-                            setDropDownOptions={setDropDownOptions}
-                        />
-                    </>
-                )}
-
-            </div>
-        </div>
-    );
-};
-
-const GuardianFEntryForm: React.FC<GuardianEntryModalProps> = ({
-    colors,
-    isOpen,
-    onClose,
-    masterValues,
-    formData,
-    masterFormData,
-    formValues,
-    setFormValues,
-    dropdownOptions,
-    loadingDropdowns,
-    onDropdownChange,
-    fieldErrors,
-    setFieldErrors,
-    setFormData,
-    resetChildForm,
-    isEdit,
-    onChildFormSubmit,
-    setValidationModal,
-    viewAccess,
-    isLoading,
-    setChildEntriesTable,
-    setDropDownOptions,
-    childModalZindex
-}) => {
-    const isChildInvalid = Object.values(fieldErrors).some(error => error);
-
-    const handleFormSubmit = () => {
-        const childErrors = validateForm(formData, formValues);
-
-        if (Object.keys(childErrors).length > 0) {
-            setFieldErrors({ ...childErrors });
-            toast.error("Please fill all mandatory fields before submitting.");
-            return;
-        } else {
-            onChildFormSubmit();
-        }
-
-    }
-
-    return (
-        <div className={`fixed inset-0 flex items-center justify-center z-500`} style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
-            <div className="bg-white rounded-lg p-6 w-full max-w-[80vw] overflow-y-auto min-h-[75vh] max-h-[75vh]">
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-semibold">{viewAccess ? "Guardian Details" : isEdit ? "Edit Guardian Details" : "Add Guardian Details"}</h2>
-                     <Button
-                         className={`flex items-center text-white`}
-                         onClick={onClose}>
-                          <MdOutlineClose/> Close
-                     </Button>
-                              
-                </div>
-                {isLoading ? (
-                    <div className="text-center py-4">Loading...</div>
-                ) : (
-                    <>
-                        <div className="text-end mt-1 mb-2">
-                            <Button
-                                onClick={resetChildForm}
-                                className={`mr-2 ${viewAccess
-                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                    : 'bg-blue-500 hover:bg-blue-600 text-white'
-                                    }`}
-                                disabled={viewAccess}
-                            >
-                                Reset
-                            </Button>
-                            <Button
-                                onClick={handleFormSubmit}
-                                disabled={viewAccess || isChildInvalid}
-                                className={`${(viewAccess || isChildInvalid)
-                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                    : 'bg-green-500 hover:bg-green-600 text-white'
-                                    }`}
-                            >
-                                Submit
-                            </Button>
-                        </div>
-                        <div>
-                            {(() => {
-                                const groupedFormData: GroupedFormData[] = groupFormData(
-                                    formData,
-                                    true
-                                );
-                                return (
-                                    <div>
-                                        {groupedFormData.map((group, idx) => (
-                                            <div
-                                                key={idx}
-                                                style={{
-                                                    border: group.groupName ? `1px solid ${colors.textInputBorder}` : "none",
-                                                    borderRadius: "6px",
-                                                    padding: group.groupName ? "12px" : "0",
-                                                    marginBottom: "16px",
-                                                }}
-                                            >
-                                                {group.groupName && (
-                                                    <h6
-                                                        style={{
-                                                            marginBottom: "10px",
-                                                            fontWeight: "bold",
-                                                            background: `${colors.background}`,
-                                                            padding: "6px 10px",
-                                                            borderRadius: "4px",
-                                                            fontSize:"14px"
-                                                        }}
-                                                    >
-                                                        {group.groupName}
-                                                    </h6>
-                                                )}
-
-                                                <EntryForm
-                                                    formData={group.fields}
-                                                    formValues={formValues}
-                                                    masterValues={masterValues}
-                                                    setFormValues={setFormValues}
-                                                    dropdownOptions={dropdownOptions}
-                                                    loadingDropdowns={loadingDropdowns}
-                                                    onDropdownChange={onDropdownChange}
-                                                    fieldErrors={fieldErrors}
-                                                    setFieldErrors={setFieldErrors}
-                                                    setFormData={setFormData}
-                                                    setValidationModal={setValidationModal}
-                                                    setDropDownOptions={setDropDownOptions}
-                                                />
-                                            </div>
-                                        ))}
-                                    </div>
-                                );
-                            })()}
-                        </div>
-                    </>
-                )}
-            </div>
-        </div>
-    );
-};
 const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageData, editData, action, setEntryEditData, refreshFunction, isTabs, childModalZindex = 'z-200', parentModalZindex = 'z-100', pageName }) => {
     const {colors,fonts} = useTheme()
     const [formSubmitConfirmation, setFormSubmitConfirmation] = useState<boolean>(false);
@@ -313,7 +37,6 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
     const [masterLoadingDropdowns, setMasterLoadingDropdowns] = useState<Record<string, boolean>>({});
     const [isChildModalOpen, setIsChildModalOpen] = useState(false);
     const [childEntriesTable, setChildEntriesTable] = useState<any[]>([]);
-    const [childEntriesTableBackup, setChildEntriesTableBackup] = useState<any[]>([]);
   
     const [childFormData, setChildFormData] = useState<FormField[]>([]);
     const [childFormValues, setChildFormValues] = useState<Record<string, any>>({});
@@ -346,6 +69,42 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
     const [guardianLoading, setGuardianLoading] = useState(false);
     const [finalTabSubmitSuccess, setFinalTabSubmitSuccess] = useState(false);
     const [filtersValueObject,setFiltersValueObject] = useState<Record<string,any>>({});
+    const [editValidateData, setEditValidateData] = useState<any>(null);
+
+    useEffect(() => {
+        const triggerEditValidate = async () => {
+             if (editValidateData && editData && (action === 'edit' || action === 'view')) {
+                 if(isLoading) return;
+
+                 // Check if any dropdowns are loading
+                 if (Object.values(masterLoadingDropdowns).some(loading => loading)) return;
+                 if (Object.values(tabLoadingDropdowns).some(tab => Object.values(tab).some(loading => loading))) return;
+
+                 // Check Master Data
+                 if (masterFormData.length === 0) return;
+                 if (Object.keys(masterFormValues).length === 0) return;
+
+                 // Check Tabs Data if exists
+                 if (tabsData.length > 0) {
+                     const tabKeys = Object.keys(tabFormValues);
+                     if (tabKeys.length < tabsData.length) return;
+                     
+                     if (Object.keys(tabTableData).length < tabsData.length) return;
+                 }
+
+                 const response = await executeEditValidateApi(editValidateData, masterFormValues);
+                 if (response) {
+                      const finalObject = convertXmlToModifiedFormData(response, {
+                          preserveLeadingZeros: true
+                      });
+                      console.log("check final Object", finalObject);
+                      validationMethodToModifyTabsForm(finalObject);
+                 }
+                 setEditValidateData(null);
+             }
+        };
+        triggerEditValidate();
+    }, [editValidateData, masterFormValues, action, isLoading, masterLoadingDropdowns, tabLoadingDropdowns, masterFormData, tabsData, tabFormValues, tabTableData]);
 
 
 
@@ -480,6 +239,10 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
 
                     setMasterFormValues(initialMasterValues);
 
+                    if ((action === 'edit' || action === 'view') && masterTab?.Settings?.EditValidate) {
+                         setEditValidateData(masterTab.Settings.EditValidate);
+                    }
+
                     // Fetch initial dropdown options for master form
                     masterFormData.forEach((field: FormField) => {
                         if (field.type === 'WDropDownBox' && field.wQuery) {
@@ -545,7 +308,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                 const initialTabTableData: Record<string, any[]> = {};
 
                 tabs.forEach((tab, index) => {
-                    const tabKey = `tab_${index}`;
+                    const tabKey = tab.TabName;
                     initialTabFormValues[tabKey] = {};
                     initialTabDropdownOptions[tabKey] = {};
                     initialTabLoadingDropdowns[tabKey] = {};
@@ -649,42 +412,40 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
 
         const { tabsToBeDisabled = [], tabsDataChange = {} } = data;
 
-        // --- Part 1: Handle Tab Removal & Re-indexing ---
-        // We calculate the new state for tabs first.
+        // --- Part 1: Handle Tab Removal ---
+        
+        let newTabsData: TabData[] = [...tabsData];
 
-        const newTabsData: TabData[] = [];
-        const newTabFormValues: Record<string, Record<string, any>> = {};
-        const newTabDropdownOptions: Record<string, Record<string, any[]>> = {};
-        const newTabLoadingDropdowns: Record<string, Record<string, boolean>> = {};
-        const newTabTableData: Record<string, any[]> = {};
+        // Filter out disabled tabs if any
+        if (tabsToBeDisabled && tabsToBeDisabled.length > 0) {
+            newTabsData = newTabsData.filter(tab => {
+                const tabName = tab.TabName;
+                const isDisabled = tabsToBeDisabled.some((disabledName: string) => 
+                     disabledName.trim().toLowerCase() === tabName?.trim().toLowerCase()
+                );
+                return !isDisabled;
+            });
+        }
 
-        // Iterate through current tabs and keep only those NOT in tabsToBeDisabled
-        let newIndex = 0;
-        tabsData.forEach((tab, oldIndex) => {
-            const tabName = tab.TabName;
-            // Check if this tab should be removed
-            // using case-insensitive check if needed, or exact match as per requirement
-            const isDisabled = tabsToBeDisabled.some((disabledName: string) => 
-                disabledName.trim().toLowerCase() === tabName?.trim().toLowerCase()
-            );
+        // Clone state objects to apply updates
+        const newTabFormValues = { ...tabFormValues };
+        const newTabDropdownOptions = { ...tabDropdownOptions };
+        const newTabLoadingDropdowns = { ...tabLoadingDropdowns };
+        const newTabTableData = { ...tabTableData };
 
-            if (!isDisabled) {
-                // Keep this tab
-                const oldKey = `tab_${oldIndex}`;
-                const newKey = `tab_${newIndex}`;
-
-                // clone the tab configuration
-                newTabsData.push({ ...tab });
-
-                // Copy/migrate the state data
-                newTabFormValues[newKey] = { ...(tabFormValues[oldKey] || {}) };
-                newTabDropdownOptions[newKey] = { ...(tabDropdownOptions[oldKey] || {}) };
-                newTabLoadingDropdowns[newKey] = { ...(tabLoadingDropdowns[oldKey] || {}) };
-                newTabTableData[newKey] = [...(tabTableData[oldKey] || [])];
-
-                newIndex++;
-            }
-        });
+        // Remove data for disabled tabs
+        if (tabsToBeDisabled && tabsToBeDisabled.length > 0) {
+             tabsToBeDisabled.forEach((disabledTabName: string) => {
+                 // Ensure we use the exact key (assuming casing matches or is handled)
+                 // The keys in state are the exact TabName strings.
+                 const tabToDelete = newTabsData.find(t => t.TabName?.trim().toLowerCase() === disabledTabName.trim().toLowerCase())?.TabName || disabledTabName;
+                 
+                 delete newTabFormValues[tabToDelete];
+                 delete newTabDropdownOptions[tabToDelete];
+                 delete newTabLoadingDropdowns[tabToDelete];
+                 delete newTabTableData[tabToDelete];
+             });
+        }
 
 
         // --- Part 2: Handle Master Data Updates ---
@@ -697,9 +458,21 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
             const { fieldsValueChange = {}, fieldDisabled = [] } = masterChange;
 
             // Update Field Values
-            Object.keys(fieldsValueChange).forEach(key => {
-                newMasterFormValues[key] = fieldsValueChange[key];
-            });
+             if (fieldsValueChange && Object.keys(fieldsValueChange).length > 0) {
+                 const changesToApply: Record<string, any> = {};
+                 Object.keys(fieldsValueChange).forEach(key => {
+                        const isEditOrView = action === "edit" || action === "view";
+                        const currentValue = newMasterFormValues[key];
+                        // Only update if current value is empty or not in edit/view mode, 
+                        // OR if we want to force update (logic from original code seems to protect existing values in edit/view)
+                        // Original logic:
+                        const hasValue = currentValue !== undefined && currentValue !== null && currentValue !== "";
+                         if (!(isEditOrView && hasValue)) {
+                             changesToApply[key] = fieldsValueChange[key];
+                         }
+                 });
+                 Object.assign(newMasterFormValues, changesToApply);
+            }
 
             // Disable Fields
             if (Array.isArray(fieldDisabled) && fieldDisabled.length > 0) {
@@ -713,29 +486,41 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
         }
 
         // --- Part 3: Handle Other Tabs Data Updates ---
-        // Now apply changes to the *new* (re-indexed) tabs
         Object.keys(tabsDataChange).forEach(tabChangeName => {
-            if (tabChangeName === "Master") return; // successfully handled above
+            if (tabChangeName === "Master") return; 
 
-            // Find which index this tab corresponds to in our NEW tabsData
+            // use tab name directly
+            const tabKey = tabChangeName;
+            
+            // Find the tab in our newTabsData (to update field definitions if needed)
             const tabIndex = newTabsData.findIndex(t => 
-                t.TabName?.trim().toLowerCase() === tabChangeName.trim().toLowerCase()
+                t.TabName?.trim() === tabChangeName.trim()
             );
 
             if (tabIndex !== -1) {
-                const tabKey = `tab_${tabIndex}`;
                 const tabChange = tabsDataChange[tabChangeName];
                 const { fieldsValueChange = {}, fieldDisabled = [] } = tabChange;
 
                 // Update Values
                 if (fieldsValueChange && Object.keys(fieldsValueChange).length > 0) {
-                     newTabFormValues[tabKey] = {
-                        ...newTabFormValues[tabKey],
-                        ...fieldsValueChange
-                     };
+                    const changesToApply: Record<string, any> = {};
+                    Object.keys(fieldsValueChange).forEach(key => {
+                        const isEditOrView = action === "edit" || action === "view";
+                        const currentValue = newTabFormValues[tabKey]?.[key];
+                        const hasValue = currentValue !== undefined && currentValue !== null && currentValue !== "";
+
+                        if (!(isEditOrView && hasValue)) {
+                            changesToApply[key] = fieldsValueChange[key];
+                        }
+                    });
+
+                    newTabFormValues[tabKey] = {
+                        ...(newTabFormValues[tabKey] || {}),
+                        ...changesToApply
+                    };
                 }
 
-                // Disable Fields - We need to update the definition in newTabsData
+                // Disable Fields (Update Data definitions)
                 if (Array.isArray(fieldDisabled) && fieldDisabled.length > 0) {
                     newTabsData[tabIndex] = {
                         ...newTabsData[tabIndex],
@@ -793,7 +578,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
 
         // --- Part 3.2: Fetch Dependent Options for Tabs ---
         newTabsData.forEach((tab, index) => {
-            const tabKey = `tab_${index}`;
+            const tabKey = tab.TabName;
             
             tab.Data.forEach((field: FormField) => {
                 if (field.type === 'WDropDownBox' && field.dependsOn && !field.wQuery) {
@@ -1320,8 +1105,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
             }
 
             setChildEntriesTable(response?.data?.data?.rs1 || []);
-            setChildEntriesTableBackup(response?.data?.data?.rs1 || []);
-
+        
             // Initialize form values with any preset values
             const initialValues: Record<string, any> = {};
             formData.forEach((field: FormField) => {
@@ -1684,6 +1468,9 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
             } else {
         
                 fetchMasterEntryData();
+                if (!isThereChildEntry) {
+                     fetchChildEntryData();
+                }
             }
         } else {
            
@@ -1803,6 +1590,9 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                 fetchTabsData(editData);
             } else {
                 fetchMasterEntryData(editData);
+                 if (!isThereChildEntry) {
+                     fetchChildEntryData(editData);
+                }
             }
             setIsEdit(true);
         } else if (action === 'view' && editData) {
@@ -1811,6 +1601,9 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                 fetchTabsData(editData, true);
             } else {
                 fetchMasterEntryData(editData, true);
+                 if (!isThereChildEntry) {
+                     fetchChildEntryData(editData);
+                }
             }
         }
     }, [action, editData, isTabs]);
@@ -1860,8 +1653,6 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
     const onChildFormSubmit = () => {
         resetChildForm();
         setIsChildModalOpen(false);
-        setChildDropdownOptions({});
-        setChildFormData([]);
         setChildFormValues({});
         // fetchMasterEntryData(masterFormValues);
     };
@@ -2145,23 +1936,35 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
 
   const removeTabsWithReindexing = (apiResponse) => {
     const tabsToRemoveNames = Object.keys(apiResponse).filter(tabName => apiResponse[tabName] === false);
-    // Filter tabsData and create a mapping of old indices to new indices
+    
+    // Filter tabsData to remove tabs
     const updatedTabsData = tabsData.filter(tab => !tabsToRemoveNames.includes(tab.TabName));
-    // Create new objects with reindexed keys
-    const updatedTabFormValue = {};
-    const updatedTabTableData = {};
-    const updatedDropdownOptions = {};
-    updatedTabsData.forEach((tab, newIndex) => {
-        const oldIndex = tabsData.findIndex(t => t.TabName === tab.TabName);
-        updatedTabFormValue[`tab_${newIndex}`] = tabFormValues[`tab_${oldIndex}`] || {};
-        updatedTabTableData[`tab_${newIndex}`] = tabTableData[`tab_${oldIndex}`] || [];
-        updatedDropdownOptions[`tab_${newIndex}`] = tabDropdownOptions[`tab_${oldIndex}`] || {};
-    });
+    
+    // With name-based keys, we don't need to reindex the state maps.
+    // The keys remain valid for the tabs that are kept.
+    // We update tabsData so they are hidden from UI.
     setTabsData(updatedTabsData);
+    
+    // If you want to cleanup state for removed tabs:
+    
+    const updatedTabFormValue = { ...tabFormValues };
+    const updatedDropdownOptions = { ...tabDropdownOptions };
+    const updatedTabTableData = { ...tabTableData };
+    const updatedTabLoadingDropdowns = { ...tabLoadingDropdowns };
+
+    tabsToRemoveNames.forEach(name => {
+        delete updatedTabFormValue[name];
+        delete updatedDropdownOptions[name];
+        delete updatedTabTableData[name];
+        delete updatedTabLoadingDropdowns[name];
+    });
     setTabFormValues(updatedTabFormValue);
-    setTabTableData(updatedTabTableData);
     setTabDropdownOptions(updatedDropdownOptions);
-    };
+    setTabTableData(updatedTabTableData);
+    setTabLoadingDropdowns(updatedTabLoadingDropdowns);
+    
+    // For now, leaving the data in state is safer and keeps it if tab reappears.
+  };
 
 
    const handleTabChangeViewMode = async () =>{
@@ -2182,7 +1985,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
     const submitTabsFormData = async () => {
 
         const currentTab = tabsData[activeTabIndex];
-        const currentTabKey = `tab_${activeTabIndex}`;
+        const currentTabKey = currentTab.TabName;
         const currentTabFormValues = tabFormValues[currentTabKey] || {};
 
         // Validate master form first
@@ -2314,7 +2117,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
 
     const FinalSubmitTabsFormData = async () => {
         const currentTab = tabsData[activeTabIndex];
-        const currentTabKey = `tab_${activeTabIndex}`;
+        const currentTabKey = currentTab?.TabName;
         const currentTabFormValues = tabFormValues[currentTabKey] || {};
 
 
@@ -2323,11 +2126,11 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
         }
 
         tabsData.forEach((tabs, index) => {
-            const currentKey = `tab_${index}`
+            const currentKey = tabs.TabName;
             if (tabs.Settings.isTable === "true") {
                 allData[tabs.TabName] = tabTableData[currentKey]
             } else {
-                allData[tabs.TabName] = Object.keys(tabFormValues[currentKey]).length > 0
+                allData[tabs.TabName] = Object.keys(tabFormValues[currentKey] || {}).length > 0
                     ? [tabFormValues[currentKey]]
                     : [];
             }
@@ -2478,7 +2281,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
 
     const handleTabTableDataEdit = (row: any, idx: any) => {
         const currentTab = tabsData[activeTabIndex];
-        const currentTabKey = `tab_${activeTabIndex}`;
+        const currentTabKey = currentTab.TabName;
         const currentTabFormValues = row || {};
 
         // Check if guardian details are needed
@@ -2495,7 +2298,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
         }
         setTabFormValues(pre => ({
             ...pre,
-            [`tab_${activeTabIndex}`]: row
+            [currentTabKey]: row
         }))
         setTabsModal(true);
         setEditTabModalData(true);
@@ -2504,7 +2307,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
 
     const handleAddTabsFormTableRow = () => {
         const currentTab = tabsData[activeTabIndex];
-        const currentTabKey = `tab_${activeTabIndex}`;
+        const currentTabKey = currentTab.TabName;
         const currentTabFormValues = tabFormValues[currentTabKey] || {};
 
         // Validate current tab
@@ -2599,7 +2402,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
         setGuardianLoading(true);
         const currentTab = tabsData[activeTabIndex];
         const guardianFormFetchAPI = currentTab?.Settings?.ChildEntryAPI;
-        const currentTabKey = `tab_${activeTabIndex}`;
+        const currentTabKey = currentTab.TabName;
 
         const currentTabFormValues = tabFormValues[currentTabKey] || {};
         try {
@@ -2622,8 +2425,6 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                     xFilter += `<${key}>${masterFormValues[key] || currentTabFormValues[key] || nomineeDetails?.[key] || value}</${key}>`;
                 }
             });
-
-
 
             const xmlData = `<dsXml>
                 <J_Ui>${jUi}</J_Ui>
@@ -2676,15 +2477,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
 
     const handleClearTabTableRowEntry = () => {
         const currentTab = tabsData[activeTabIndex];
-        const currentTabKey = `tab_${activeTabIndex}`;
-        const currentTabFormValues = tabFormValues[currentTabKey] || {};
-
-        // setTabsModal(false);
-        // setTabTableData(prev => ({
-        //     ...prev,
-        //     [activeTabIndex]: []
-        // }));
-
+        const currentTabKey = currentTab.TabName;
         setTabFormValues(pre => ({
             ...pre,
             [currentTabKey]: {}
@@ -2694,17 +2487,12 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
     }
 
     const handleTabTableDataDelete = (idx) => {
-        const currentTabKey = `tab_${activeTabIndex}`;
+        const currentTabKey = tabsData[activeTabIndex]?.TabName;
         setTabTableData(prev => ({
             ...prev,
             [currentTabKey]: prev[currentTabKey].filter((_, i) => i !== idx)
         }
     ));
-        setTabsData(prevTabs => {
-            const newTabs = [...prevTabs];
-            newTabs[activeTabIndex].tableData = newTabs[activeTabIndex]?.tableData.filter((_, i) => i !== idx);
-            return newTabs;
-        });
     }
 
     const handleGuardianFormSubmit = () => {
@@ -2776,503 +2564,49 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                                     />
                                 </div>
 
-                                {/* Other Tabs Navigation and Content - Only show if there are non-Master tabs */}
-                                {tabsData.length > 0 && (
-                                    <div className="border-t pt-1 relative">
-                                        <div className="mb-1" style={{position: 'sticky', top: '0', zIndex: 100}}>
-                                            <div className="overflow-x-auto" style={{ 
-                                                msOverflowStyle: 'none', 
-                                                scrollbarWidth: 'none',
-                                                borderBottom: `1px solid ${colors.textInputBorder}`,
-                                                backgroundColor: colors.background,
-                                            }}>
-                                                <nav className="-mb-px flex items-center min-w-max px-4 gap-1">
-                                                    {tabsData.map((tab, index) => {
-                                                        const isActive = activeTabIndex === index;
-                                                        return (
-                                                            <button
-                                                                key={index}
-                                                                onClick={() => {
-                                                                    if(isViewMode){
-                                                                        setActiveTabIndex(index)
-                                                                        handleTabChangeViewMode();
-                                                                    }
-                                                                }}
-                                                                className={`py-2 px-6 border-b-2 font-medium text-sm whitespace-nowrap rounded-t-lg transition-all duration-200 ease-in-out ${
-                                                                    isActive 
-                                                                    ? 'text-opacity-100' 
-                                                                    : 'text-opacity-70 hover:text-opacity-100'
-                                                                }`}
-                                                                style={{
-                                                                    backgroundColor: isActive ? colors.tabBackground : 'transparent',
-                                                                    color: colors.tabText,
-                                                                    border: `1px solid ${isActive ? colors.buttonBackground : 'transparent'}`,
-                                                                    boxShadow: isActive ? `0 1px 3px ${colors.primary}20` : 'none'
-                                                                }}
-                                                            >
-                                                                {formatTextSplitString(tab.TabName || "")}
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </nav>
-                                            </div>
-                                        </div>
-
-                                        {tabsData.length > 0 && tabsData[activeTabIndex] && (
-                                            <>
-                                                <div className="flex justify-end mb-1 gap-2">
-                                                    <div className="flex item-start mr-auto">
-                                                        {activeTabIndex > 0 && (
-
-                                                                  <Button
-                                                                    className={`flex items-center text-white`}
-                                                                    onClick={goToPreviousTab}>                        
-                                                                    <MdArrowBack/> Back                   
-                                                                </Button>
-                                                          
-                                                        )}
-                                                    </div>
-                                                    {
-                                                        isViewMode ?  (
-                                                            <div>
-                                                                {!(activeTabIndex === tabsData.length - 1) && 
-                                                                
-                                                                <Button
-                                                                    className={`flex items-center bg-blue-500 hover:bg-blue-600 text-white`}
-                                                                    onClick={() => {
-                                                                        setActiveTabIndex((prev) => prev + 1)
-                                                                        handleTabChangeViewMode();
-                                                                        }}>
-                                                                         Next
-                                                                 </Button>
-                                                                }
-                                                            </div>
-                                                        ) : (
-                                                            <div className="flex gap-2">
-                                                                {tabsData[activeTabIndex].Settings.isTable === "true" && (
-                                                        <Button
-                                                            className={`flex items-center ${viewMode
-                                                                ? 'bg-gray-400 cursor-not-allowed'
-                                                                : 'bg-blue-500 hover:bg-blue-600'
-                                                                } text-white`}
-                                                            onClick={() => {
-                                                                const noOfRecordsAllowed = Number(tabsData[activeTabIndex]?.Settings?.maxAllowedRecords)
-                                                                const currentRecords = (tabTableData[`tab_${activeTabIndex}`] || [])?.length;
-                                                                if (currentRecords >= noOfRecordsAllowed) {
-                                                                    toast.warning(`Max number of records allowed ${noOfRecordsAllowed}`);
-                                                                }else{
-                                                                    setTabsModal(true)
-                                                                }
-                                                            }}
-                                                            disabled={action === "view" && editData}
-                                                        >
-                                                            Add Entry
-                                                        </Button>
-                                                    )}
-                                                    <Button
-                                                        className={`flex items-center ${isFormInvalid || viewMode
-                                                            ? 'bg-gray-400 cursor-not-allowed'
-                                                            : 'bg-blue-500 hover:bg-blue-600'
-                                                            } text-white`}
-                                                        onClick={submitTabsFormData}
-                                                        disabled={isFormInvalid || viewMode || isFormSubmit}
-                                                    >
-                                                        {isFormSubmit ? "Submitting..." : (
-                                                            <>
-                                                                <FaSave />
-                                                                {activeTabIndex < tabsData.length - 1 ? "Save & Next" : "Save"}
-                                                            </>
-                                                        )}
-                                                    </Button>
-                                                    {
-                                                        activeTabIndex === tabsData.length - 1 && (
-                                                            <Button
-                                                                className={`flex items-center ${isFormInvalid || viewMode || !finalTabSubmitSuccess
-                                                                    ? 'bg-gray-400 cursor-not-allowed'
-                                                                    : 'bg-blue-500 hover:bg-blue-600'
-                                                                    } text-white`}
-                                                                onClick={FinalSubmitTabsFormData}
-                                                                disabled={isFormInvalid || viewMode || isFormSubmit || !finalTabSubmitSuccess}
-                                                            >
-                                                                {isFormSubmit ? "Submitting..." : (
-                                                                    <>
-                                                                        <FaSave />
-                                                                        {"Final Submit"}
-                                                                    </>
-                                                                )}
-                                                            </Button>
-                                                        )
-                                                    }
-                                                            </div>
-                                                        )
-                                                    }
-                                                    
-                                                </div>
-                                                {tabsModal && (
-                                                    <div className={`fixed inset-0 flex items-center justify-center z-400`} style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
-                                                        <div className="bg-white rounded-lg p-6 w-full max-w-[80vw] overflow-y-auto min-h-[80vh] max-h-[80vh]">
-                                                            <div className="flex justify-between items-center mb-2">
-                                                                <h2 className="text-xl font-semibold">
-                                                                    {tabsData[activeTabIndex]?.TabName || "Add Record"}
-                                                                </h2>
-                                                               
-                                                                 <Button
-                                                                     className={`flex items-center text-white`}
-                                                                       onClick={() => {
-                                                                        setTabsModal(false)
-                                                                        setIsMinor(false)
-                                                                    }}
-                                                                     >
-                                                                      <MdOutlineClose/>     Close
-                                                                      </Button>
-                              
-                                                            </div>
-                                                            {!isViewMode ? (
-                                                                <div className='flex justify-end mb-2 gap-2'>
-                                                                    <Button
-                                                                        className={`flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md`}
-                                                                        onClick={handleClearTabTableRowEntry}
-                                                                    >
-                                                                        reset
-                                                                    </Button>
-                                                                    <Button
-                                                                        className={`flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md`}
-                                                                        onClick={handleAddTabsFormTableRow}
-                                                                    >
-                                                                        Save
-                                                                    </Button>
-                                                                    {
-                                                                        isMinor && (<Button
-                                                                            className={`flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md`}
-                                                                            onClick={handleAddNominee}
-                                                                        >
-                                                                            Add/Edit Guardian
-                                                                        </Button>)
-                                                                    }
-
-                                                                </div>
-                                                            ) : (
-                                                                <div className='flex justify-end mb-2 gap-2'>
-                                                                    {
-                                                                        (isMinor && tabsData[activeTabIndex]?.TabName === "NomineeDetails") && (<Button
-                                                                            className={`flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md`}
-                                                                            onClick={handleAddNominee}
-                                                                        >
-                                                                            View Guardian Details
-                                                                        </Button>)
-                                                                    }
-                                                                </div>
-                                                            )}
-                                                            {(isMinor && tabsData[activeTabIndex]?.TabName === "NomineeDetails") && (
-                                                                 <div className="bg-yellow-100 border-l-4 border-orange-500 text-yellow-700 p-4 mb-4">
-                                                                     <p>{isViewMode ? "Click on above view Guardian button to see the Guardian details":
-                                                                     "Click on above add/edit button to change or add the Nominee Guardian."}</p>
-                                                                 </div>)
-                                                            }
-                                                            {(() => {
-                                                                const currentTab = tabsData[activeTabIndex];
-                                                                const groupedFormData: GroupedFormData[] = groupFormData(
-                                                                    currentTab.Data,
-                                                                    currentTab.Settings.isGroup === "true"
-                                                                );
-                                                                return (
-                                                                    <div>
-                                                                        {groupedFormData.map((group, idx) => (
-                                                                            <div
-                                                                                key={idx}
-                                                                                style={{
-                                                                                    border: group.groupName ? `1px solid ${colors.textInputBorder}` : "none",
-                                                                                    borderRadius: "4px",
-                                                                                    padding: group.groupName ? "8px" : "0",
-                                                                                    marginBottom: "10px",
-                                                                                }}
-                                                                            >
-                                                                                {group.groupName && (
-                                                                                    <h6
-                                                                                        style={{
-                                                                                            marginBottom: "8px",
-                                                                                            fontWeight: "bold",
-                                                                                            background: `${colors.background}`,
-                                                                                            padding: "6px 10px",
-                                                                                            borderRadius: "4px",
-                                                                                            fontSize:"14px"
-                                                                                        }}
-                                                                                    >
-                                                                                        {group.groupName}
-                                                                                    </h6>
-                                                                                )}
-
-                                                                                <EntryForm
-                                                                                    formData={group.fields}
-                                                                                    formValues={tabFormValues[`tab_${activeTabIndex}`] || {}}
-                                                                                    setFormValues={(values) => {
-                                                                                        setTabFormValues((prev) => ({
-                                                                                            ...prev,
-                                                                                            [`tab_${activeTabIndex}`]:
-                                                                                                typeof values === "function"
-                                                                                                    ? values(prev[`tab_${activeTabIndex}`] || {})
-                                                                                                    : values,
-                                                                                        }));
-                                                                                    }}
-                                                                                    dropdownOptions={tabDropdownOptions[`tab_${activeTabIndex}`] || {}}
-                                                                                    setDropDownOptions={(options) => {
-                                                                                        setTabDropdownOptions((prev) => ({
-                                                                                            ...prev,
-                                                                                            [`tab_${activeTabIndex}`]:
-                                                                                                typeof options === "function"
-                                                                                                    ? options(prev[`tab_${activeTabIndex}`] || {})
-                                                                                                    : options,
-                                                                                        }));
-                                                                                    }}
-                                                                                    loadingDropdowns={tabLoadingDropdowns[`tab_${activeTabIndex}`] || {}}
-                                                                                    onDropdownChange={(field) =>
-                                                                                        handleTabDropdownChange(field, `tab_${activeTabIndex}`)
-                                                                                    }
-                                                                                    fieldErrors={fieldErrors}
-                                                                                    setFieldErrors={setFieldErrors}
-                                                                                    masterValues={tabFormValues[`tab_${activeTabIndex}`] || {}}
-                                                                                    setFormData={(updatedFormData: FormField[]) => { 
-                                                                                        const currentTab = tabsData[activeTabIndex];
-                                                                                        const currentTabName = currentTab?.TabName                                                                                  ;
-
-                                                                                        setTabsData((prev: TabData[]) => {
-                                                                                            return prev.map(tab => {
-                                                                                                if (tab.TabName === currentTabName) {
-                                                                                                    const currentGroupName = updatedFormData[0]?.CombinedName?.trim() || "";
-
-
-                                                                                                    // Fields to keep from original (other groups)
-                                                                                                    const otherGroupsFields = tab.Data.filter(field => {
-                                                                                                        const fieldGroupName = field.CombinedName?.trim() || "";
-                                                                                                        return fieldGroupName !== currentGroupName;
-                                                                                                    });
-
-                                                                                                    // Combine other groups fields with the updated current group fields
-                                                                                                    const mergedData = [...otherGroupsFields, ...updatedFormData];
-                                                                                                     // Sort by SrNo to maintain original order
-                                                                                                     mergedData.sort((a, b) => (a.Srno || 0) - (b.Srno || 0));
-
-                                                                                                    return {
-                                                                                                        ...tab,
-                                                                                                        Data: mergedData
-                                                                                                    };
-                                                                                                }
-                                                                                                return tab;
-                                                                                            });
-                                                                                        });
-                                                                                    }}
-                                                                                    setValidationModal={setValidationModal}
-                                                                                />
-                                                                            </div>
-                                                                        ))}
-                                                                    </div>
-                                                                );
-                                                            })()
-                                                            }
-                                                        </div>
-                                                    </div>
-                                                )}
-                                                {tabsData[activeTabIndex].Settings.isTable !== "true" && (() => {
-                                                    const currentTab = tabsData[activeTabIndex];
-                                                    const groupedFormData: GroupedFormData[] = groupFormData(
-                                                        currentTab.Data,
-                                                        currentTab.Settings.isGroup === "true"
-                                                    );
-                                                    return (
-                                                        <div>
-                                                            {groupedFormData.map((group, idx) => (
-                                                                <div
-                                                                    key={idx}
-                                                                    style={{
-                                                                        border: group.groupName ? `1px solid ${colors.textInputBorder}` : "none",
-                                                                        borderRadius: "4px",
-                                                                        padding: group.groupName ? "8px" : "0",
-                                                                        marginBottom: "10px",
-                                                                    }}
-                                                                >
-                                                                    {group.groupName && (
-                                                                        <h6
-                                                                            style={{
-                                                                                marginBottom: "8px",
-                                                                                fontWeight: "bold",
-                                                                                background: `${colors.background}`,
-                                                                                padding: "6px 10px",
-                                                                                borderRadius: "4px",
-                                                                                fontSize:"14px"
-                                                                            }}
-                                                                        >
-                                                                            {group.groupName}
-                                                                        </h6>
-                                                                    )}
-
-                                                                    <EntryForm
-                                                                        formData={group.fields}
-                                                                        formValues={tabFormValues[`tab_${activeTabIndex}`] || {}}
-                                                                        setFormValues={(values) => {
-                                                                            setTabFormValues((prev) => ({
-                                                                                ...prev,
-                                                                                [`tab_${activeTabIndex}`]:
-                                                                                    typeof values === "function"
-                                                                                        ? values(prev[`tab_${activeTabIndex}`] || {})
-                                                                                        : values,
-                                                                            }));
-                                                                        }}
-                                                                        dropdownOptions={tabDropdownOptions[`tab_${activeTabIndex}`] || {}}
-                                                                        setDropDownOptions={(options) => {
-                                                                            setTabDropdownOptions((prev) => ({
-                                                                                ...prev,
-                                                                                [`tab_${activeTabIndex}`]:
-                                                                                    typeof options === "function"
-                                                                                        ? options(prev[`tab_${activeTabIndex}`] || {})
-                                                                                        : options,
-                                                                            }));
-                                                                        }}
-                                                                        loadingDropdowns={tabLoadingDropdowns[`tab_${activeTabIndex}`] || {}}
-                                                                        onDropdownChange={(field) =>
-                                                                            handleTabDropdownChange(field, `tab_${activeTabIndex}`)
-                                                                        }
-                                                                        fieldErrors={fieldErrors}
-                                                                        setFieldErrors={setFieldErrors}
-                                                                        masterValues={masterFormValues}
-                                                                        setFormData={(updatedFormData: FormField[]) => { 
-                                                                            const currentTab = tabsData[activeTabIndex];
-                                                                            const currentTabName = currentTab?.TabName;
-
-                                                                            setTabsData((prev: TabData[]) => {
-                                                                                return prev.map(tab => {
-                                                                                    if (tab.TabName === currentTabName) {
-                                                                                        const currentGroupName = updatedFormData[0]?.CombinedName?.trim() || "";
-                                                                                        // Fields to keep from original (other groups)
-                                                                                        const otherGroupsFields = tab.Data.filter(field => {
-                                                                                            const fieldGroupName = field.CombinedName?.trim() || "";
-                                                                                            return fieldGroupName !== currentGroupName;
-                                                                                        });
-
-                                                                                        // Combine other groups fields with the updated current group fields
-                                                                                        const mergedData = [...otherGroupsFields, ...updatedFormData];
-                                                                                        mergedData.sort((a, b) => (a.Srno || 0) - (b.Srno || 0));
-                                                                                        return {
-                                                                                            ...tab,
-                                                                                            Data: mergedData
-                                                                                        };
-                                                                                    }
-                                                                                    return tab;
-                                                                                });
-                                                                            });
-                                                                        }}
-                                                                        setValidationModal={setValidationModal}
-                                                                    />
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    );
-                                                })()}
-
-                                                {tabsData[activeTabIndex]?.Settings?.isTable === "true" && (
-                                                    <div className="overflow-x-auto mt-2">
-                                                    <DataGrid
-                                                        columns={[
-                                                           {
-                                                                    key: 'actions',
-                                                                    name: 'Actions',
-                                                                    width: !viewMode ? 300 : 280,
-                                                                    renderCell: ({ row }: any) => {
-                                                                        const isNomineeTab = tabsData[activeTabIndex]?.TabName === "NomineeDetails";
-                                                                        const isMinor = checkIfMinorforTable(row.NomineeDOB);
-                                                                        const hasGuardianDetails = row.guardianDetails && Object.keys(row.guardianDetails).length > 0;
-
-                                                                        const showGuardianButton = isNomineeTab && isMinor;
-                                                                    
-                                                                        return (
-                                                                            viewMode ? (
-                                                                                <div>
-                                                                                    <button
-                                                                                        className={`mr-2 px-3 py-1 rounded-md transition-colors bg-blue-50 text-blue-500 hover:bg-blue-100 hover:text-blue-700`}
-                                                                                        onClick={() => {
-                                                                                            handleTabTableDataEdit(row, row._index);
-                                                                                        }}>
-                                                                                        view
-                                                                                    </button>
-                                                                                    {showGuardianButton && hasGuardianDetails && (
-                                                                                        <button
-                                                                                            className={`mr-2 px-3 py-1 rounded-md transition-colors bg-blue-50 text-blue-500 hover:bg-blue-100 hover:text-blue-700`}
-                                                                                            onClick={()=>{
-                                                                                                    handleAddNominee(row.guardianDetails,row)
-                                                                                                }}
-                                                                                        >
-                                                                                             View Guardian Details
-                                                                                        </button>
-                                                                                    )}
-                                                                                </div>
-                                                                            ) : (
-                                                                                <div className="flex gap-1">
-                                                                                    <button
-                                                                                        className={`mr-1 px-3 py-1 rounded-md transition-colors bg-blue-50 text-blue-500 hover:bg-blue-100 hover:text-blue-700`}
-                                                                                        onClick={() => {
-                                                                                            handleTabTableDataEdit(row, row._index);
-                                                                                        }}>
-                                                                                        Edit
-                                                                                    </button>
-                                                                                    {showGuardianButton && (
-                                                                                        <button
-                                                                                            className={`mr-1 px-3 py-1 rounded-md transition-colors bg-green-50 text-green-500 hover:bg-green-100 hover:text-green-700`}
-                                                                                            onClick={()=>{
-                                                                                                if(hasGuardianDetails){
-                                                                                                    handleTabTableDataEdit(row, row._index);
-                                                                                                    setTimeout(()=>{
-                                                                                                        handleAddNominee(row.guardianDetails)
-                                                                                                    },400)
-                                                                                                }else{
-                                                                                                    handleAddNominee();
-                                                                                                }
-                                                                                            }}
-                                                                                        >
-                                                                                            {hasGuardianDetails ? "Edit Guardian Details" : "Add Guardian Details"}
-                                                                                        </button>
-                                                                                    )}
-                                                                                    <button
-                                                                                        className={`px-3 py-1 rounded-md transition-colors bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700`}
-                                                                                        onClick={() => handleTabTableDataDelete(row._index)}
-                                                                                    >
-                                                                                        Delete
-                                                                                    </button>
-                                                                                </div>
-                                                                            )
-                                                                        );
-                                                                    }
-                                                                },
-                                                            ...getTabTableColumns(tabsData[activeTabIndex]).map(col => ({
-                                                                key: col,
-                                                                name: col,
-                                                                renderCell: ({ row }) => {
-                                                                    return(
-                                                                    <div style={{ 
-                                                                        color: row.isModified || row.isInserted ? 'green' : 'inherit'
-                                                                    }}>
-                                                                        {row[col]}
-                                                                    </div>
-                                                                )}
-                                                            }))
-                                                        ]}
-                                                        rows={(tabTableData[`tab_${activeTabIndex}`] || []).map((row, index) => ({
-                                                                ...row,
-                                                                _index: index
-                                                              }))}
-                                                        className="rdg-light"
-                                                        rowHeight={40}
-                                                        headerRowHeight={40}
-                                                        style={{
-                                                            backgroundColor: colors.background,
-                                                            color: colors.text,
-                                                            fontFamily: fonts.content,
-                                                        }}
-                                                    />
-                                                    </div>
-                                                )}
-                                            </>
-                                        )}
-                                    </div>
-                                )}
+                            {tabsData.length > 0 && (
+                                <TabContent
+                                    tabsData={tabsData}
+                                    activeTabIndex={activeTabIndex}
+                                    setActiveTabIndex={setActiveTabIndex}
+                                    isViewMode={isViewMode}
+                                    viewMode={viewMode}
+                                    colors={colors}
+                                    fonts={fonts}
+                                    tabFormValues={tabFormValues}
+                                    setTabFormValues={setTabFormValues}
+                                    tabDropdownOptions={tabDropdownOptions}
+                                    setTabDropdownOptions={setTabDropdownOptions}
+                                    tabLoadingDropdowns={tabLoadingDropdowns}
+                                    handleTabDropdownChange={handleTabDropdownChange}
+                                    fieldErrors={fieldErrors}
+                                    setFieldErrors={setFieldErrors}
+                                    masterFormValues={masterFormValues}
+                                    setTabsData={setTabsData}
+                                    setValidationModal={setValidationModal}
+                                    handleTabTableDataEdit={handleTabTableDataEdit}
+                                    handleAddNominee={handleAddNominee}
+                                    handleTabTableDataDelete={handleTabTableDataDelete}
+                                    tabTableData={tabTableData}
+                                    tabsModal={tabsModal}
+                                    setTabsModal={setTabsModal}
+                                    isMinor={isMinor}
+                                    setIsMinor={setIsMinor}
+                                    handleClearTabTableRowEntry={handleClearTabTableRowEntry}
+                                    handleAddTabsFormTableRow={handleAddTabsFormTableRow}
+                                    submitTabsFormData={submitTabsFormData}
+                                    FinalSubmitTabsFormData={FinalSubmitTabsFormData}
+                                    isFormInvalid={isFormInvalid}
+                                    isFormSubmit={isFormSubmit}
+                                    finalTabSubmitSuccess={finalTabSubmitSuccess}
+                                    goToPreviousTab={goToPreviousTab}
+                                    handleTabChangeViewMode={handleTabChangeViewMode}
+                                    checkIfMinorforTable={checkIfMinorforTable}
+                                    getTabTableColumns={getTabTableColumns}
+                                    action={action}
+                                    editData={editData}
+                                />
+                            )}
                             </>
                         ) : (
                             // Regular form rendering (existing logic)
@@ -3355,111 +2689,16 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                                         )}
                                     </div>
                                         {(!isThereChildEntry && childEntriesTable?.length > 0) && (
-                                         <div className="flex flex-col">
-                                            <div className="overflow-x-auto overflow-y-auto flex-1">
-                                            <DataGrid
-                                              columns={[
-                                                {
-                                                    key: "",
-                                                    name:"",
-                                                    width: 50,
-                                                    renderCell: ({row}) =>(
-                                                        <input
-                                                        type="checkbox"
-                                                        aria-label='checked'
-                                                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                                                        checked={row.IsDeleted || false}
-                                                        onChange={(e) => {
-                                                              const updatedTable = childEntriesTable.map((item, i) =>
-                                                                i === row._index
-                                                                  ? { ...item, IsDeleted: e.target.checked }
-                                                                  : item
-                                                              );
-                                                              setChildEntriesTable(updatedTable);
-                                                            }}
-                                                        disabled={viewMode}
-                                                      />
-                                                    )
-
-                                                },
-                                                {
-                                                  key: "actions",
-                                                  name: "Actions",
-                                                  width: columnWidthMap["Actions"] || 200,
-                                                  renderCell: ({ row }) => (
-                                                    <div className="flex gap-1 justify-center">
-                                                      {viewMode && (
-                                                        <button
-                                                          className="bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-700 mr-2 px-3 py-1 rounded-md transition-colors"
-                                                          onClick={() => {
-                                                            setChildFormValues(row);
-                                                            handleChildEditNonSavedData(row);
-                                                          }}
-                                                        >
-                                                          View
-                                                        </button>
-                                                      )}
-                                                      <button
-                                                        className={`mr-2 px-3 py-1 rounded-md transition-colors ${
-                                                          viewMode
-                                                            ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                                                            : "bg-blue-50 text-blue-700 hover:bg-blue-100 hover:text-blue-700"
-                                                        }`}
-                                                        onClick={() => {
-                                                          setChildFormValues(row);
-                                                          handleChildEditNonSavedData(row);
-                                                        }}
-                                                        disabled={viewMode}
-                                                      >
-                                                        Edit
-                                                      </button>
-                                                    </div>
-                                                  ),
-                                                },
-                                                ...(childEntriesTable.length > 0
-                                                  ? Object.keys(childEntriesTable[0])
-                                                      .filter((key) => key !== "SerialNo" && key?.toLowerCase() !== "id" && key !== "IsDeleted" && key !== "isInserted") // Exclude SerialNo and id
-                                                      .slice(0, 6)
-                                                      .map((key) => ({
-                                                        key,
-                                                        name: key,
-                                                        width: columnWidthMap[key] || "auto",
-                                                        renderCell: ({ row }) => {
-                                                          const value =
-                                                            row[key] == null || row[key] === "" ? "-" : String(row[key]);
-                                                          return (
-                                                            <div
-                                                              className="truncate text-center"
-                                                              title={value}
-                                                              style={{
-                                                                whiteSpace: "nowrap",
-                                                                overflow: "hidden",
-                                                                textOverflow: "ellipsis",
-                                                              }}
-                                                            >
-                                                              {value}
-                                                            </div>
-                                                          );
-                                                        },
-                                                      }))
-                                                  : []),
-                                              ]}
-                                              rows={childEntriesTable.map((entry, index) => ({
-                                                ...entry,
-                                                _index: index,
-                                              }))}
-                                              className="rdg-light"
-                                              rowHeight={40}
-                                              headerRowHeight={40}
-                                              style={{
-                                                backgroundColor: "white",
-                                                fontFamily: "inherit",
-                                                // width:"fit-content",
-                                                height:"100%"
-                                              }}
+                                            <ChildEntriesTable
+                                                childEntriesTable={childEntriesTable}
+                                                setChildEntriesTable={setChildEntriesTable}
+                                                viewMode={viewMode}
+                                                setChildFormValues={setChildFormValues}
+                                                handleChildEditNonSavedData={handleChildEditNonSavedData}
+                                                columnWidthMap={columnWidthMap}
+                                                childFormData={childFormData}
+                                                childDropdownOptions={childDropdownOptions}
                                             />
-                                            </div>
-                                          </div>
                                         )}
                                 </div>
                             </>
@@ -3497,8 +2736,6 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                     pageName={pageName}
                     onClose={() => {
                         setIsChildModalOpen(false);
-                        setChildDropdownOptions({});
-                        setChildFormData([]);
                         setChildFormValues({});
                         resetChildForm();
                     }}
@@ -3526,7 +2763,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
             )}
 
             {isGuardianModalOpen && (
-                <GuardianFEntryForm
+                <GuardianEntryForm
                     isOpen={isGuardianModalOpen}
                     onClose={() => setIsGuardianModalOpen(false)}
                     isLoading={guardianLoading}

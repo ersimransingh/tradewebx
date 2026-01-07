@@ -1,10 +1,11 @@
 'use client';
 import { useTheme } from '@/context/ThemeContext';
 import React, { useEffect, useState } from 'react';
-import { decimalFormat, dropDownApiCall, rightAlignKeys, tableApiCall } from './marginConst';
+import { decimalFormat, dropDownApiCall, pledgeRedirectApiNDSLCall, rightAlignKeys, tableApiCall } from './marginConst';
 import { ACTION_NAME, BASE_URL, PATH_URL } from '@/utils/constants';
 import apiService from '@/utils/apiService';
 import { getLocalStorage } from '@/utils/helper';
+import { useLocalStorage } from '@/hooks/useLocalListner';
 
 type TableRow = {
   [key: string]: any;
@@ -25,6 +26,8 @@ export default function MarginPledgeOnline() {
   const [tableVisible, setTableVisible] = useState<boolean>(false);
   const [pledgeRedirectData, setPledgeRedirectData] = useState<any>([]);
   const [buttonDisable, setButtonDisable] = useState<boolean>(true);
+  const [userId] = useLocalStorage('userId', null);
+  const [userType] = useLocalStorage('userType', null);
 
 
 
@@ -155,7 +158,7 @@ export default function MarginPledgeOnline() {
     }
   };
 
-  const pledgeRedirectApiCall = () => {
+  const pledgeRedirectApiCDSLCall = () => {
     try {
       const redirectData = pledgeRedirectData?.[0]?.DATA;
       if (!redirectData) return;
@@ -191,8 +194,17 @@ export default function MarginPledgeOnline() {
   };
 
   useEffect(() => {
-    if (pledgeRedirectData.length > 0) pledgeRedirectApiCall();
-  }, [pledgeRedirectData]);
+    // if (pledgeRedirectData.length > 0) 
+    if(selectedDemat?.DPType === 'CDSL' && pledgeRedirectData.length > 0) {
+      console.log('cdsl');
+      pledgeRedirectApiCDSLCall();
+    }
+    if(selectedDemat?.DPType === 'NSDL' && pledgeRedirectData.length > 0) {
+      console.log('nsdl');
+      
+      pledgeRedirectApiNDSLCall(userId,userType,pledgeRedirectData)
+    }
+  }, [pledgeRedirectData,selectedDemat?.DPType]);
 
   return (
     <div className="w-full">
@@ -349,6 +361,7 @@ export default function MarginPledgeOnline() {
               >
                 OK
               </button>
+              {/* <button onClick={() =>{pledgeRedirectApiNDSLCall(userId,userType,pledgeRedirectData)}}>hello kekeke</button> */}
             </div>
           </>
         )}
