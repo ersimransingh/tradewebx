@@ -2628,7 +2628,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                 } : {}),
                                 ...(isAutoWidth ? { columnWidth: undefined, isAutoWidth: true } : {})
                             }}
-                            summary={jsonData?.Summary}
+                            summary={safePageData.getCurrentLevel(currentLevel)?.summary}
                             onRowClick={handleRecordClick}
                             onRowSelect={handleRowSelect}
                             tableRef={tableRef}
