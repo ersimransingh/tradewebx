@@ -91,6 +91,11 @@ const ChildEntriesTable: React.FC<ChildEntriesTableProps> = ({
                                     key,
                                     name: key,
                                     width: columnWidthMap[key] || "auto",
+                                    renderHeaderCell: () => (
+                                        <div title={key} className="truncate">
+                                            {key}
+                                        </div>
+                                    ),
                                     renderCell: ({ row }: any) => {
                                         let value = row[key] == null || row[key] === "" ? "-" : String(row[key]);
                                         

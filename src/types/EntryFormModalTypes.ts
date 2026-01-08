@@ -108,6 +108,7 @@ export interface EntryFormProps {
     }>>;
     setDropDownOptions: React.Dispatch<React.SetStateAction<Record<string, any[]>>>;
     validationMethodToModifyTabsForm?: (param: any) => void;
+    contextData?: Record<string, any>;
 }
 
 export interface ChildEntryModalProps {

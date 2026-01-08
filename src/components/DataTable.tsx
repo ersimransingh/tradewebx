@@ -1411,7 +1411,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, onRow
                     renderHeaderCell: () => {
                         return (
                             <div className="flex items-center justify-between w-full">
-                                <span className={`truncate flex-1 ${isDetailColumn ? 'detail-column-header' : ''}`}>
+                                <span className={`truncate flex-1 ${isDetailColumn ? 'detail-column-header' : ''}`} title={key}>
                                     {key}
                                     {isDetailColumn && <span className="ml-1 text-xs opacity-70">🔗</span>}
                                 </span>

@@ -18,7 +18,7 @@ interface CustomDatePickerProps {
   ariaInvalid?: boolean;
   ariaDisabled?: boolean;
   ariaDescribedBy?: string;
-  
+  style?: React.CSSProperties;
 }
 
 const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
@@ -35,7 +35,9 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   ariaInvalid,
   ariaDisabled,
   ariaDescribedBy,
+  style
 }) => {
+  
   // Generate years array using moment
   const years = [];
   const currentYear = moment().year();
@@ -67,7 +69,7 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
           ${disabled ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}
           ${className}
         `}
-        style={{height:"30px"}}
+        style={{height:"30px", ...style}}
     >
       <DatePicker
         id={inputId ?? id}        
@@ -77,15 +79,16 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
         aria-disabled={ariaDisabled as any}   
         aria-describedby={ariaDescribedBy as any} 
         selected={selected}
-         onBlur={onBlur}
+        onBlur={onBlur}
         onChange={onChange}
         disabled={disabled}
-        className="focus:border-none focus:ring-0 focus:ring-offset-0 focus:outline-none text-[14px]"
+        className={`focus:border-none focus:ring-0 focus:ring-offset-0 focus:outline-none text-[14px] w-[120px]`}
         placeholderText={placeholder}
         dateFormat="dd/MM/yyyy"
         showYearDropdown
         showMonthDropdown
         dropdownMode="select"
+        popperClassName="!z-[99999]"
         popperProps={{
           strategy: "fixed",
         }}

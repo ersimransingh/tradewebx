@@ -237,7 +237,8 @@ const EntryForm: React.FC<EntryFormProps> = ({
     setFormData,
     setValidationModal,
     setDropDownOptions,
-    validationMethodToModifyTabsForm
+    validationMethodToModifyTabsForm,
+    contextData
 }) => {
     const { colors } = useTheme();
     const marginBottom = 'mb-1';
@@ -278,7 +279,6 @@ const EntryForm: React.FC<EntryFormProps> = ({
 
     // function called to check the validation of the field
     const handleBlur = async (field: FormField) => {
-
         if (!field.ValidationAPI || !field.ValidationAPI.dsXml) return;
 
         const { J_Ui, Sql, X_Filter, X_Filter_Multiple, J_Api } = field.ValidationAPI.dsXml;
@@ -293,7 +293,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
                 let fieldValue;
                 if (typeof placeholder === 'string' && placeholder.startsWith('##') && placeholder.endsWith('##')) {
                     const formKey = placeholder.slice(2, -2);
-                    fieldValue = formValues[formKey] || masterValues[formKey];
+                    fieldValue = formValues[formKey] || masterValues[formKey] || contextData?.[formKey];
                 } else {
                     fieldValue = placeholder;
                 }
@@ -313,7 +313,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
             let fieldValue;
             if (X_Filter.startsWith('##') && X_Filter.endsWith('##')) {
                 const formKey = X_Filter.slice(2, -2);
-                fieldValue = formValues[formKey] || masterValues[formKey];
+                fieldValue = formValues[formKey] || masterValues[formKey] || contextData?.[formKey];
             } else {
                 fieldValue = X_Filter;
             }
@@ -582,6 +582,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
                         timeFormat="HH:mm"
                         timeIntervals={15}
                         dateFormat="dd/MM/yyyy HH:mm"
+                        style={{ width: fieldWidth }}
                       />
                       {fieldErrors[field.wKey] && (
                         <span
@@ -632,6 +633,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
                                  placeholder="Select Date"
                                  id={`date-${field.wKey}`}
                                  name={field.wKey}
+                                 style={{ width: fieldWidth }}
                              />
                         {fieldErrors[field.wKey] && (
                             <span id={`error-${field.wKey}`} role="alert" className="text-red-500 text-sm">{fieldErrors[field.wKey]}</span>

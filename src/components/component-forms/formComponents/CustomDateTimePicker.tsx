@@ -24,6 +24,7 @@ interface CustomDateTimePickerProps {
   ariaInvalid?: boolean;
   ariaDisabled?: boolean;
   ariaDescribedBy?: string;
+  style?: React.CSSProperties;
 }
 
 const CustomDateTimePicker: React.FC<CustomDateTimePickerProps> = ({
@@ -45,7 +46,8 @@ const CustomDateTimePicker: React.FC<CustomDateTimePickerProps> = ({
   ariaRequired,
   ariaInvalid,
   ariaDisabled,
-  ariaDescribedBy
+  ariaDescribedBy,
+  style
 }) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -91,7 +93,7 @@ const CustomDateTimePicker: React.FC<CustomDateTimePickerProps> = ({
           ${disabled ? 'bg-gray-100 cursor-not-allowed opacity-60' : 'bg-white'}
           ${className}
         `}
-        style={{height:"30px"}}
+        style={{height:"30px", ...style}}
         onClick={() => !disabled && setIsOpen(!isOpen)}
       >
         <input
@@ -114,7 +116,7 @@ const CustomDateTimePicker: React.FC<CustomDateTimePickerProps> = ({
       </div>
 
       {isOpen && !disabled && (
-        <div className="absolute top-full left-0 mt-1 z-50 bg-white border border-gray-200 rounded-lg shadow-lg text-[14px]">
+        <div className="absolute top-full left-0 mt-1 z-50 bg-white border border-gray-200 rounded-lg shadow-lg text-[14px] z-[99999]">
           <div className="flex flex-row">
             {/* Calendar Section */}
             <div className="p-4 border-r border-gray-200">
@@ -138,6 +140,7 @@ const CustomDateTimePicker: React.FC<CustomDateTimePickerProps> = ({
                 inline
                 showYearDropdown
                 showMonthDropdown
+                popperClassName="!z-[99999]"
                 dropdownMode="select"
                 minDate={minDate}
                 maxDate={maxDate}
