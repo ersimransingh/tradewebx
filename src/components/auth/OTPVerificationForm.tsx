@@ -18,7 +18,7 @@ import { storeLocalStorage } from "@/utils/helper";
 export default function OTPVerificationForm() {
   const router = useRouter();
   const dispatch = useDispatch();
-  const [otp, setOtp] = useState<any>("");
+  const [otp, setOtp] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const { companyInfo, encPayload } = useSelector((state: RootState) => state.common);
@@ -200,13 +200,11 @@ export default function OTPVerificationForm() {
               <Input
                 type="text"
                 value={otp}
-                onChange={(e: any) => setOtp(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOtp(e.target.value)}
                 dynamicSelectedThemeApply={true}
                 placeholder="Enter OTP"
                 required
                 className="mt-1 transition-all duration-200 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-900"
-                {...{} as any}
-
               />
             </div>
 

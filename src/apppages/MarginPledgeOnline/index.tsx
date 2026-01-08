@@ -8,10 +8,29 @@ import { getLocalStorage } from '@/utils/helper';
 import { useLocalStorage } from '@/hooks/useLocalListner';
 
 type TableRow = {
-  [key: string]: any;
+  [key: string]: string;
   ReqValue: string;
   Value: string;
 };
+
+type ApiRow = {
+  [key: string]: string | number | null;
+};
+
+type PledgeRedirectParam = {
+  APIUrl: string;
+  DPId: string;
+  ReqId: string;
+  Version: string;
+};
+
+type PledgeRedirectDataItem = {
+  DATA: {
+    Param: PledgeRedirectParam;
+    JsonOutput: string;
+  };
+};
+
 
 const initialTableData: TableRow[] = [];
 
@@ -22,9 +41,8 @@ export default function MarginPledgeOnline() {
   const [dematId, setDematId] = useState([]);
   const [selectedDemat, setSelectedDemat] = useState<{ DPAccountNo: string; DPType: string } | null>(null);
   const [tableHeaders, setTableHeaders] = useState<string[]>([]);
-  // const [tableRows, setTableRows] = useState<any[]>([]);
   const [tableVisible, setTableVisible] = useState<boolean>(false);
-  const [pledgeRedirectData, setPledgeRedirectData] = useState<any>([]);
+  const [pledgeRedirectData, setPledgeRedirectData] = useState<PledgeRedirectDataItem[]>([]);
   const [buttonDisable, setButtonDisable] = useState<boolean>(true);
   const [userId] = useLocalStorage('userId', null);
   const [userType] = useLocalStorage('userType', null);
