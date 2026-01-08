@@ -1,7 +1,7 @@
 
 "use client";
 
-export const xmlDataIPO = (clientCode:any) => { 
+export const xmlDataIPO = (clientCode:string) => { 
   return `<dsXml>
  <J_Ui>{"ActionName":"TradeWeb", "Option":"IPO", "Level":1, "RequestFrom":"W"}</J_Ui>
  <Sql></Sql>
@@ -63,7 +63,7 @@ export const submitXML = (
   </item> 
   </items>
   </X_Data>
-  <J_Api>"UserId":"ADMIN","AccYear":24,"MyDbPrefix":"SVVS","MemberCode":"undefined","SecretKey":"undefined","MenuCode":5,"ModuleID":5,"MyDb":"","DenyRights":""</J_Api>
+  <J_Api>"UserId":"${clientCode}","AccYear":24,"MyDbPrefix":"SVVS","MemberCode":"undefined","SecretKey":"undefined","MenuCode":5,"ModuleID":5,"MyDb":"","DenyRights":""</J_Api>
 </dsXml>`;
 
   console.log(xmlData, "xml");

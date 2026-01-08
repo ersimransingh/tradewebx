@@ -4,6 +4,9 @@ import {  CheckStatusXML, deleteXML, submitXML, xmlDataUPI } from "./IpoXML";
 import apiService from "@/utils/apiService";
 import { toast } from "react-toastify";
 
+
+  
+
 export const IPO_url = `${BASE_URL}/api/main/tradeweb`;
 
 export const configDetails = (authToken) => {
@@ -18,7 +21,7 @@ export const configDetails = (authToken) => {
 
 
 
-export const IPO_SELECTED = (selectedIpo:any) => {
+export const IPO_SELECTED = (selectedIpo) => {
 
     return selectedIpo ? [
         {
@@ -34,7 +37,7 @@ export const IPO_SELECTED = (selectedIpo:any) => {
 
 }
 
-export const DYNAMIC_DETAILS = (selectedIpo:any) => {
+export const DYNAMIC_DETAILS = (selectedIpo) => {
     return selectedIpo ? [
         { label: "IPO Name", value: selectedIpo.IPO_Company_Name },
         { label: "Price Range", value: selectedIpo.price_range },
@@ -45,7 +48,7 @@ export const DYNAMIC_DETAILS = (selectedIpo:any) => {
     ] : [];
 }
 
-export const fetchUPIType = async (setUpiSelect:any,authToken:any) => {
+export const fetchUPIType = async (setUpiSelect) => {
 
     try {
         // const response = await axios.post(IPO_url, xmlDataUPI, configDetails(authToken));

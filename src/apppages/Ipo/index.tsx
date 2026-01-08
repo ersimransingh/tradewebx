@@ -8,24 +8,55 @@ import { useLocalStorage } from '@/hooks/useLocalListner';
 import { ACTION_NAME, BASE_URL, PATH_URL } from '@/utils/constants';
 import apiService from '@/utils/apiService';
 
+
+interface IpoItem {
+  IPO_Company_Name: string;
+  IPO_Category: string;
+  start_date?: string;
+  end_date?: string;
+  price_range: string;
+  tick_size: string;
+  min_order: string;
+  rhp?: string;
+  ApplyFlag: 'Y' | 'N';
+  status?: string;
+  StatusFlag: 'Y' | 'N';
+  DPRemarks?: string;
+  BankRemarks?: string;
+  DeleteFlag?: 'Y' | 'N';
+
+  // extra fields you are already using
+  discount?: string;
+  minimumOrder?: number;
+  priceRange?: string;
+  scripCode?: string;
+  ipoCategory?: string;
+}
+
+
+interface UpiOption {
+  Value: string;
+  DisplayName: string;
+}
+
 const Ipo = () => {
   const { colors } = useTheme();
   console.log(colors,'colors');
   
   const authToken = useSelector((state: RootState) => state.auth.authToken);
-  const [ipoData, setIpoData] = useState<string[]>([]);
+  const [ipoData, setIpoData] = useState<IpoItem[]>([]);
   const [selectedIpo, setSelectedIpo] = useState<string[] | null>(null);
-  const [upiSelect, setUpiSelect] = useState<string[]>([]);
+  const [upiSelect, setUpiSelect] = useState<UpiOption[]>([]);
   const [selectedUpi, setSelectedUpi] = useState('');
   const [upiId, setUpiId] = useState('');
-  const [bid1, setBid1] = useState<number | "" | any>(""); // Allow empty string for initial state
+  const [bid1, setBid1] = useState<number | "">(""); // Allow empty string for initial state
   const [isChecked, setIsChecked] = useState<boolean>(false); // Checkbox state
-  const [cutOff, setCutOff] = useState<number | "" | any>("") // Cutoff Price state
+  const [cutOff, setCutOff] = useState<number | "" >("") // Cutoff Price state
   const [disableCutOff, setDisableCutOff] = useState<boolean>(false); // Disable cutoff input
-  const [bid2, setBid2] = useState<number | "" | any>(""); // Bid value
-  const [bid3, setBid3] = useState<number | "" | any>(""); // Bid value
-  const [cutOff2, setCutOff2] = useState<number | "" | any>(""); // Cutoff Price state
-  const [cutOff3, setCutOff3] = useState<number | "" | any>(""); // Cutoff Price state
+  const [bid2, setBid2] = useState<number | "" >(""); // Bid value
+  const [bid3, setBid3] = useState<number | "">(""); // Bid value
+  const [cutOff2, setCutOff2] = useState<number | "">(""); // Cutoff Price state
+  const [cutOff3, setCutOff3] = useState<number | "">(""); // Cutoff Price state
   const [isChecked2, setIsChecked2] = useState<boolean>(false);
   const [isChecked3, setIsChecked3] = useState<boolean>(false);
   const [termsAccepted, setTermsAccepted] = useState<boolean>(false); // Track terms checkbox state
@@ -81,7 +112,7 @@ const Ipo = () => {
   useEffect(() => {
     if (clientCode) {
       fetchIpo();
-      fetchUPIType(setUpiSelect, authToken);
+      fetchUPIType(setUpiSelect);
     } else {
       console.log("clientCode is null, skipping API call");
     }
@@ -138,53 +169,105 @@ const Ipo = () => {
     setDisableCutOff3(false)
   };
 
+  // const calculateAmountPayable = () => {
+
+  //   const discount = parseInt(ipoData1[0].discount)
+
+  //   let baseLine = []
+  //   let values = []
+
+  //   baseLine = [
+  //     bid1 * cutOff || 0,
+  //     bid2 * cutOff2 || 0,
+  //     bid3 * cutOff3 || 0,
+  //   ];
+
+  //   if ((isChecked) && (bid1 * cutOff > 0 || bid2 * cutOff2 > 0 || bid3 * cutOff3 > 0)) {
+  //     values = [
+  //       bid1 * (cutOff - discount) || 0,
+  //       bid2 * (cutOff2) || 0,
+  //       bid3 * (cutOff3) || 0,
+  //     ];
+
+  //     return Math.max(...values)
+  //   }
+
+  //   if ((isChecked2) && discount > 0 && (bid1 * cutOff > 0 || bid2 * cutOff2 > 0 || bid3 * cutOff3 > 0)) {
+  //     values = [
+  //       bid1 * (cutOff) || 0,
+  //       bid2 * (cutOff2 - discount) || 0,
+  //       bid3 * (cutOff3) || 0,
+  //     ];
+
+  //     return Math.max(...values)
+  //   }
+
+  //   if ((isChecked3) && discount > 0 && (bid1 * cutOff > 0 || bid2 * cutOff2 > 0 || bid3 * cutOff3 > 0)) {
+  //     values = [
+  //       bid1 * (cutOff) || 0,
+  //       bid2 * (cutOff2) || 0,
+  //       bid3 * (cutOff3 - discount) || 0,
+  //     ];
+
+
+  //     return Math.max(...values)
+
+  //   }
+
+  //   return Math.max(...baseLine)
+  // };
+
+  const toNumber = (value: number | ""): number =>
+  value === "" ? 0 : value;
+
+
   const calculateAmountPayable = () => {
-
-    const discount = parseInt(ipoData1[0].discount)
-
-    let baseLine = []
-    let values = []
-
-    baseLine = [
-      bid1 * cutOff || 0,
-      bid2 * cutOff2 || 0,
-      bid3 * cutOff3 || 0,
+    const discount = Number(ipoData1[0]?.discount || 0);
+  
+    const b1 = toNumber(bid1);
+    const b2 = toNumber(bid2);
+    const b3 = toNumber(bid3);
+  
+    const c1 = toNumber(cutOff);
+    const c2 = toNumber(cutOff2);
+    const c3 = toNumber(cutOff3);
+  
+    const baseLine: number[] = [
+      b1 * c1,
+      b2 * c2,
+      b3 * c3,
     ];
-
-    if ((isChecked) && (bid1 * cutOff > 0 || bid2 * cutOff2 > 0 || bid3 * cutOff3 > 0)) {
-      values = [
-        bid1 * (cutOff - discount) || 0,
-        bid2 * (cutOff2) || 0,
-        bid3 * (cutOff3) || 0,
+  
+    if (isChecked && baseLine.some(v => v > 0)) {
+      const values = [
+        b1 * Math.max(c1 - discount, 0),
+        b2 * c2,
+        b3 * c3,
       ];
-
-      return Math.max(...values)
+      return Math.max(...values);
     }
-
-    if ((isChecked2) && discount > 0 && (bid1 * cutOff > 0 || bid2 * cutOff2 > 0 || bid3 * cutOff3 > 0)) {
-      values = [
-        bid1 * (cutOff) || 0,
-        bid2 * (cutOff2 - discount) || 0,
-        bid3 * (cutOff3) || 0,
+  
+    if (isChecked2 && discount > 0 && baseLine.some(v => v > 0)) {
+      const values = [
+        b1 * c1,
+        b2 * Math.max(c2 - discount, 0),
+        b3 * c3,
       ];
-
-      return Math.max(...values)
+      return Math.max(...values);
     }
-
-    if ((isChecked3) && discount > 0 && (bid1 * cutOff > 0 || bid2 * cutOff2 > 0 || bid3 * cutOff3 > 0)) {
-      values = [
-        bid1 * (cutOff) || 0,
-        bid2 * (cutOff2) || 0,
-        bid3 * (cutOff3 - discount) || 0,
+  
+    if (isChecked3 && discount > 0 && baseLine.some(v => v > 0)) {
+      const values = [
+        b1 * c1,
+        b2 * c2,
+        b3 * Math.max(c3 - discount, 0),
       ];
-
-
-      return Math.max(...values)
-
+      return Math.max(...values);
     }
-
-    return Math.max(...baseLine)
+  
+    return Math.max(...baseLine);
   };
+  
 
 
   // console.log(selectedIpo,'selectedIpo');
