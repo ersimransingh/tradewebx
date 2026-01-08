@@ -55,7 +55,7 @@ const CustomizeTableModal: React.FC<CustomizeTableModalProps> = ({
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-gray-200">
                     <h2 id="customize-modal-title" className="text-xl font-semibold flex items-center gap-2">
-                        <span className="text-blue-600">Customize Table</span>
+                        <span className="text-blue-600">Freeze Rows</span>
                     </h2>
                     <button
                         onClick={onClose}
