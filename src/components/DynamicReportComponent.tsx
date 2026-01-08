@@ -6,13 +6,14 @@ import axios from 'axios';
 import { BASE_URL, PATH_URL } from '@/utils/constants';
 import moment from 'moment';
 import FilterModal from './FilterModal';
-import { FaSync, FaFilter, FaDownload, FaFileCsv, FaFilePdf, FaPlus, FaEdit, FaFileExcel, FaEnvelope, FaSearch, FaTimes, FaEllipsisV, FaRegEnvelope, FaArrowsAltH } from 'react-icons/fa';
+import { FaSync, FaFilter, FaDownload, FaFileCsv, FaFilePdf, FaPlus, FaEdit, FaFileExcel, FaEnvelope, FaSearch, FaTimes, FaEllipsisV, FaRegEnvelope, FaArrowsAltH, FaColumns } from 'react-icons/fa';
 import { useTheme } from '@/context/ThemeContext';
 import DataTable, { exportTableToCsv, exportTableToPdf, exportTableToExcel, downloadOption } from './DataTable';
 import { store } from "@/redux/store";
 import { APP_METADATA_KEY } from "@/utils/constants";
 import { useSearchParams } from 'next/navigation';
 import EntryFormModal from './EntryFormModal';
+import CustomizeTableModal from './CustomizeTableModal';
 import ConfirmationModal from './Modals/ConfirmationModal';
 import { parseStringPromise } from 'xml2js';
 import CaseConfirmationModal from './Modals/CaseConfirmationModal';
@@ -315,6 +316,11 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
         tabName: string;
     } | null>(null);
     const [isDetailLoading, setIsDetailLoading] = useState(false);
+
+    // State for Customize Table
+    const [isCustomizeModalOpen, setIsCustomizeModalOpen] = useState(false);
+    const [frozenColumns, setFrozenColumns] = useState<string[]>([]);
+    const [availableColumns, setAvailableColumns] = useState<string[]>([]);
 
     useEffect(() => {
         if (!announceMsg) return;
@@ -1664,6 +1670,48 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                         }}
                                     >
                                         <div className="py-1">
+                                            {(componentType === 'entry' || componentType === "multientry") && isRowButtonEnabled('Add') && (
+                                                <button
+                                                    onClick={() => {
+                                                        setIsEntryModalOpen(true);
+                                                        setIsMobileMenuOpen(false);
+                                                    }}
+                                                    className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
+                                                    style={{ color: colors.text }}
+                                                    aria-label="Add New Entry"
+                                                >
+                                                    <FaPlus size={16} />
+                                                    Add New Entry
+                                                </button>
+                                            )}
+                                            
+                                            {/* Customize Table Button (Mobile) */}
+                                            <button
+                                                onClick={() => {
+                                                    // Calculate available columns logic
+                                                    if (apiData && apiData.length > 0) {
+                                                        const currentSettings = safePageData.getCurrentLevel(currentLevel)?.settings;
+                                                        const columnsToHide = currentSettings?.hideEntireColumn
+                                                            ? currentSettings.hideEntireColumn.split(',').map((col: string) => col.trim())
+                                                            : [];
+                                                        
+                                                        const allColumns = Object.keys(apiData[0]).filter(key => 
+                                                            !key.startsWith('_') && !columnsToHide.includes(key)
+                                                        );
+                                                        setAvailableColumns(allColumns);
+                                                        setIsCustomizeModalOpen(true);
+                                                        setIsMobileMenuOpen(false);
+                                                    } else {
+                                                         toast.info("No data available to customize columns.");
+                                                    }
+                                                }}
+                                                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
+                                                style={{ color: colors.text }}
+                                                aria-label="Freeze Columns"
+                                            >
+                                                <FaColumns size={16} />
+                                                Freeze Columns
+                                            </button>
                                             {selectedRows.length > 0 && safePageData.getCurrentLevel(currentLevel)?.settings?.EditableColumn && isRowButtonEnabled('Edit') && (
                                                 <button
                                                     onClick={() => {
@@ -1856,6 +1904,38 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                     </div>
                                 </div>
                             )}
+                            
+                            {/* Customize Table Button (Desktop) */}
+                            <div className="relative group">
+                                <button
+                                    className="p-2 rounded hover:bg-gray-100 transition-colors"
+                                    onClick={() => {
+                                         if (apiData && apiData.length > 0) {
+                                            const currentSettings = safePageData.getCurrentLevel(currentLevel)?.settings;
+                                            const columnsToHide = currentSettings?.hideEntireColumn
+                                                ? currentSettings.hideEntireColumn.split(',').map((col: string) => col.trim())
+                                                : [];
+                                            
+                                            const allColumns = Object.keys(apiData[0]).filter(key => 
+                                                !key.startsWith('_') && !columnsToHide.includes(key)
+                                            );
+                                            setAvailableColumns(allColumns);
+                                            setIsCustomizeModalOpen(true);
+                                        } else {
+                                            toast.info("No data available to customize columns.");
+                                        }
+                                    }}
+                                    style={{ color: colors.text }}
+                                    aria-label="Customize Table"
+                                >
+                                    <FaColumns size={20} />
+                                </button>
+                                <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                                    Customize Table
+                                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-800"></div>
+                                </div>
+                            </div>
+
                             {isMasterButtonEnabled('Email') && (
                                 <div className="relative group">
                                     <button
@@ -2153,6 +2233,13 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                 message={errorMessage}
             />
 
+            <CustomizeTableModal
+                isOpen={isCustomizeModalOpen}
+                onClose={() => setIsCustomizeModalOpen(false)}
+                availableColumns={availableColumns}
+                frozenColumns={frozenColumns}
+                onSave={setFrozenColumns}
+            />
             {/* Download Modal */}
             <FilterModal
                 isOpen={isDownloadModalOpen}
@@ -2285,6 +2372,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                         fullHeight={true}
                         buttonConfig={pageData?.[0]?.buttonConfig}
                         pageData={pageData}
+                        frozenColumns={frozenColumns}
                     />
                 </div>
             )}
@@ -2553,6 +2641,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                             pageData={pageData}
                             detailColumns={safePageData.getCurrentLevel(currentLevel)?.settings?.DetailColumn}
                             onDetailColumnClick={handleDetailColumnClick}
+                            frozenColumns={frozenColumns}
                         />
                         {Object.keys(additionalTables).length > 0 && (
                             <div>

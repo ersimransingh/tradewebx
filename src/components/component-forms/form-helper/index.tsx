@@ -28,7 +28,11 @@ export const handleValidationForDisabledField = async (
             let fieldValue;
             if (typeof placeholder === 'string' && placeholder.startsWith('##') && placeholder.endsWith('##')) {
                 const formKey = placeholder.slice(2, -2);
-                fieldValue = formValues[formKey] || masterValues[formKey];
+                if (field?.wKey === key){
+                    fieldValue = field.wValue || formValues[formKey] || masterValues[formKey];
+                }else {
+                    fieldValue = formValues[formKey] || masterValues[formKey];
+                }
             } else {
                 fieldValue = placeholder;
             }
@@ -44,7 +48,11 @@ export const handleValidationForDisabledField = async (
         let fieldValue;
         if (X_Filter.startsWith('##') && X_Filter.endsWith('##')) {
             const formKey = X_Filter.slice(2, -2);
-            fieldValue = formValues[formKey] || masterValues[formKey];
+            if (field?.wKey === formKey){
+                fieldValue = field.wValue || formValues[formKey] || masterValues[formKey];
+            }else {
+                fieldValue = formValues[formKey] || masterValues[formKey];
+            }
         } else {
             fieldValue = X_Filter;
         }

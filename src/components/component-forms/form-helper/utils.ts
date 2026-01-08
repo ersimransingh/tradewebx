@@ -129,7 +129,11 @@ export const getFieldValue = (fieldName: string, parentValue: string | Record<st
 };
 
 // this funtion is specifically used in entryForm to convert xml data to object to modify the form filed and form data 
-export const convertXmlToModifiedFormData = (xmlString: string) => {
+export const convertXmlToModifiedFormData = (
+  xmlString: string,
+  options?: { preserveLeadingZeros?: boolean }
+) => {
+  const preserveLeadingZeros = options?.preserveLeadingZeros ?? false;
   // XML must have a single root – wrap it
   const wrappedXml = `<Root>${xmlString}</Root>`;
 
@@ -193,9 +197,15 @@ export const convertXmlToModifiedFormData = (xmlString: string) => {
       Array.from(tabNode.children).forEach(fieldNode => {
         const rawValue = fieldNode.textContent?.trim() ?? '';
 
-        fieldsValueChange[fieldNode.tagName] = isNaN(Number(rawValue))
-          ? rawValue
-          : Number(rawValue);
+        const isNumeric = !isNaN(Number(rawValue));
+        const hasLeadingZeros = /^0\d+/.test(rawValue);
+
+        fieldsValueChange[fieldNode.tagName] =
+          preserveLeadingZeros && isNumeric && hasLeadingZeros
+            ? rawValue
+            : isNumeric
+              ? Number(rawValue)
+              : rawValue;
       });
 
       result.tabsDataChange[tabName] = {
