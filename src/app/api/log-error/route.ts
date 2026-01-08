@@ -5,7 +5,7 @@ import path from 'path';
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        const { url, method, requestData, error, timestamp, statusCode } = body;
+        const { url, method, requestData, error, statusCode } = body;
         const serverTimestamp = new Date().toLocaleString('en-IN', {
            timeZone: 'Asia/Kolkata',
            hour12: false,
@@ -35,6 +35,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({ success: true, message: 'Error logged successfully' });
     } catch (err) {
+        console.error(err)
         return NextResponse.json({ success: false, message: 'Failed to log error' }, { status: 500 });
     }
 }

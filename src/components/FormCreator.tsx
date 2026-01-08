@@ -2,9 +2,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
-import Select from 'react-select';
 import moment from 'moment';
-import axios from 'axios';
 import { BASE_URL, PATH_URL } from '@/utils/constants';
 import { useTheme } from '@/context/ThemeContext';
 import { FaCalendarAlt } from 'react-icons/fa';
@@ -148,13 +146,13 @@ const FormCreator: React.FC<FormCreatorProps> = ({
         { id: "lastfinancialyear", text: "Last Financial Year" },
     ];
 
-    const getFinancialYear = (date: moment.Moment) => {
-        const financialYearStart = date.month() >= 3 ? date.year() : date.year() - 1;
-        return [
-            moment(`${financialYearStart}-04-01`),
-            moment(`${financialYearStart + 1}-03-31`),
-        ];
-    };
+    // const getFinancialYear = (date: moment.Moment) => {
+    //     const financialYearStart = date.month() >= 3 ? date.year() : date.year() - 1;
+    //     return [
+    //         moment(`${financialYearStart}-04-01`),
+    //         moment(`${financialYearStart + 1}-03-31`),
+    //     ];
+    // };
 
       const handlePresetSelection = (
       presetId: string,
@@ -534,7 +532,7 @@ const FormCreator: React.FC<FormCreatorProps> = ({
               value: dataItem[valueField]
             }));
         
-            console.log(`Fetched ${options.length} options for ${item.wKey}:`, options);
+
         
             // Cache the options
             setCachedOptions(cacheKey, options);
@@ -630,25 +628,25 @@ const FormCreator: React.FC<FormCreatorProps> = ({
                     xmlFilterContent = item.dependsOn.wQuery.X_Filter_Multiple;
 
                     item.dependsOn.field.forEach(field => {
-                        // console.log('field_multiple', field);
+
                         const value = typeof parentValue === 'object' ? parentValue[field] : '';
                         const fieldElement = sortedFormData.flat().find(el => el.wKey === field);
-                        // console.log('fieldElement', fieldElement);
+
                         // Format date values for both WDateBox and WDateRangeBox
                         let formattedValue = value instanceof Date ? moment(value).format('YYYYMMDD') : value;
                         if (fieldElement?.type === 'WDateBox' && value instanceof Date) {
-                            // console.log('formattedValue_CHK1', formattedValue);
+
                         } else if (fieldElement?.type === 'WDateRangeBox' && Array.isArray(fieldElement.wKey)) {
                             const [fromKey, toKey] = fieldElement.wKey;
                             if (field === fromKey || field === toKey) {
-                                // console.log('formattedValue_CHK2', formattedValue);
+
                             }
                         } else if (fieldElement?.type === 'WDropDownBox' && fieldElement.isMultiple) {
                             // For multiple select dropdowns, ensure we're working with an array
                             const values = Array.isArray(value) ? value : [value];
                             // Join with pipe and ensure no extra spaces
                             formattedValue = values.filter(Boolean).join('|');
-                            // console.log('Multiple select formatted value:', formattedValue);
+ 
                         }
                         xmlFilterContent = xmlFilterContent.replace(`\${${field}}`, formattedValue);
                     });
@@ -662,7 +660,7 @@ const FormCreator: React.FC<FormCreatorProps> = ({
                 } else {
                     xmlFilterContent = item.dependsOn.wQuery.X_Filter || '';
                     item.dependsOn.field.forEach(field => {
-                        // console.log('field', field);
+
                         const value = typeof parentValue === 'object' ? parentValue[field] : '';
                         const fieldElement = sortedFormData.flat().find(el => el.wKey === field);
 
@@ -676,7 +674,7 @@ const FormCreator: React.FC<FormCreatorProps> = ({
                                 formattedValue = moment(value).format('YYYYMMDD');
                             }
                         }
-                        console.log('formattedValue_single', formattedValue);
+
                         xmlFilterContent = xmlFilterContent.replace(`\${${field}}`, formattedValue);
                     });
                 }
@@ -727,11 +725,11 @@ const FormCreator: React.FC<FormCreatorProps> = ({
                 <J_Api>${jApi}</J_Api>
             </dsXml>`;
 
-            // console.log('Dependent dropdown request XML:', xmlData);
+
 
             const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
 
-            // console.log('Dependent dropdown response:', response.data);
+
 
             const rs0Data = response.data?.data?.rs0;
             if (!Array.isArray(rs0Data)) {
@@ -759,7 +757,7 @@ const FormCreator: React.FC<FormCreatorProps> = ({
             
 
 
-            console.log(`Got ${options.length} dependent options for ${item.wKey}:`, options);
+
 
             // Cache the dependent options
             setCachedOptions(cacheKey, options);
@@ -830,7 +828,7 @@ const FormCreator: React.FC<FormCreatorProps> = ({
           const toMin = item.ToMinDate ? moment(item.ToMinDate, "YYYYMMDD").toDate() : undefined;
           const toMax = item.ToMaxDate ? moment(item.ToMaxDate, "YYYYMMDD").toDate() : undefined;
 
-          console.log("check dates",fromMin,fromMax,toMin,toMax)
+
         
           return (
             <div className={isHorizontal ? "mb-2" : "mb-4"}>

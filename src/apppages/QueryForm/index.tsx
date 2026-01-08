@@ -12,10 +12,9 @@ import Loader from "@/components/Loader";
 import { toast } from "react-toastify";
 import {DataGrid,  Column } from "react-data-grid";
 import { FiEye, FiEyeOff } from "react-icons/fi";
-import { FaFileCsv,FaFileExcel, FaFilePdf  } from "react-icons/fa";
+import { FaFileCsv,FaFileExcel } from "react-icons/fa";
 import { selectAllMenuItems } from "@/redux/features/menuSlice";
-import {exportTableToCsv, exportTableToPdf, exportTableToExcel} from "@/components/DataTable";
-import { log } from "node:console";
+import {exportTableToCsv, exportTableToExcel} from "@/components/DataTable";
 import CryptoJS from 'crypto-js';
 
 
@@ -274,7 +273,7 @@ export default function QueryFormPage() {
   /* ------------------ clear auth on route change ------------------ */
   useEffect(() => {
   return () => {
-    console.log("Route changed");
+    console.error("Route changed");
     handleLogout()
   };
 }, []);
@@ -283,6 +282,7 @@ export default function QueryFormPage() {
         try {
             return JSON.parse(getLocalStorage(APP_METADATA_KEY))
         } catch (err) {
+            console.error(err)
             return store.getState().common
         }
     })();

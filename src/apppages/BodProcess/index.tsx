@@ -36,9 +36,9 @@ const BodProcess = () => {
         setLoading
       );
 
-      console.log(userId, "userId");
+
     } else {
-      console.log("userId or userType is null, skipping API call");
+
     }
   }, [userId, userType]);
 

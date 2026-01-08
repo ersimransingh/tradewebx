@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import axios from 'axios';
 import { useDispatch, useSelector } from 'react-redux';
 import { setFinalAuthData, setError as setAuthError } from '@/redux/features/authSlice';
-import { ACTION_NAME, BASE_PATH_FRONT_END, BASE_URL, ENABLE_FERNET, OTP_VERIFICATION_URL } from "@/utils/constants";
+import { ACTION_NAME, BASE_URL, ENABLE_FERNET, OTP_VERIFICATION_URL } from "@/utils/constants";
 import { useTheme } from "@/context/ThemeContext";
 
 import Image from "next/image";
@@ -21,7 +21,7 @@ export default function OTPVerificationForm() {
   const [otp, setOtp] = useState<any>("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const { companyInfo, status, encPayload } = useSelector((state: RootState) => state.common);
+  const { companyInfo, encPayload } = useSelector((state: RootState) => state.common);
   const {firstLogin} = useSelector((state:RootState) => state.auth)
   const { colors } = useTheme();
 
@@ -32,7 +32,7 @@ export default function OTPVerificationForm() {
     const userId = getLocalStorage('userId');
 
     if (!tempToken || !userId) {
-      console.log('Missing authentication data, redirecting to signin');
+
       router.replace('/signin');
       return;
     }
@@ -48,11 +48,11 @@ export default function OTPVerificationForm() {
     const userId = getLocalStorage('userId');
     const userType = getLocalStorage('userType');
 
-    console.log('OTP Verification Debug:', {
-      tempToken: tempToken ? 'Available' : 'Missing',
-      userId,
-      userType
-    });
+    // console.log('OTP Verification Debug:', {
+    //   tempToken: tempToken ? 'Available' : 'Missing',
+    //   userId,
+    //   userType
+    // });
 
     if (!tempToken) {
       setError('Authentication token not found. Please try logging in again.');
@@ -92,9 +92,7 @@ export default function OTPVerificationForm() {
         const clientName = data.data[0].ClientName || data.data[0].UserName || '';
 
         // Debug logging to help identify field mapping issues
-        console.log('OTP verification response data:', data.data[0]);
-        console.log('Mapped clientCode:', clientCode);
-        console.log('Mapped clientName:', clientName);
+    
 
         // Validate that we have the required data
         if (!clientCode || !clientName) {

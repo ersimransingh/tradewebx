@@ -101,14 +101,14 @@ export const tableApiCall = async (selectedDemat, setTableHeaders, setTableRows)
 //this func will be used when futur process get completed by Backend
 export const pledgeRedirectApiCall = async (pledgeRedirectApiCall) => {
 
-  const URL = `${pledgeRedirectApiCall}`
+  // const URL = `${pledgeRedirectApiCall}`
 
 
 
   try {
-    const request = await axios.post('')
+    // const request = await axios.post('')
   } catch (error) {
-
+    console.error(error)
   }
 }
 

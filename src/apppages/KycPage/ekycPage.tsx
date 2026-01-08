@@ -6,7 +6,7 @@ import { selectAllMenuItems } from "@/redux/features/menuSlice";
 import { ACTION_NAME, BASE_URL, PATH_URL } from "@/utils/constants";
 import { findPageData, getLocalStorage, storeLocalStorage } from "@/utils/helper";
 import Loader from "@/components/Loader";
-import { buildTabs, TabData } from "./KycTabs";
+import { buildTabs } from "./KycTabs";
 import { FiRefreshCcw } from "react-icons/fi";
 import { useSaveLoading } from "@/context/SaveLoadingContext";
 import apiService from "@/utils/apiService";
@@ -137,7 +137,7 @@ const Kyc = () => {
         setIsLoading(true);
         try {
             const { MasterEntry = {} } = pageData && pageData[0]?.Entry || {};
-            console.log("Check data", MasterEntry, pageData);
+
             const userData = getLocalStorage("rekycRowData_viewMode");
             const parsedUserData = userData ? JSON.parse(userData) : null;
             const isKeysPresent = Object.keys(MasterEntry || {}).length > 0;

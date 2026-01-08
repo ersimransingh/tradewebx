@@ -8,7 +8,7 @@ interface TableStylingProps {
 
 
 function TableStyling({ onRowClick, screenSize = 'web' }: TableStylingProps) {
-  const { colors, fonts } = useTheme();
+  const { colors } = useTheme();
 
   return (
     <style jsx global>{`

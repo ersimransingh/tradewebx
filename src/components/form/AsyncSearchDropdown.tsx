@@ -25,14 +25,13 @@ const AsyncSearchDropdown: React.FC<AsyncSearchDropdownProps> = ({
   value,
   onChange,
   colors,
-  formData,
   formValues,
   handleFormChange,
   fetchDependentOptions,
   isHorizontal = false,
 }) => {
 
-  console.log("check the selected value",value)
+
   const [options, setOptions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 

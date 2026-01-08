@@ -23,7 +23,7 @@ const DematHoldingModal = ({ isOpen, onClose, clientCode, dpAccountNo }: DematHo
     const pageData = findPageData(menuItems, "Dpholding");
     const pageSettings = pageData[0].levels[0].settings
 
-    console.log("check page data", pageData)
+
 
 
 

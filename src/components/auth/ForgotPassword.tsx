@@ -34,12 +34,12 @@ const EyeCloseIcon = () => (
         />
     </svg>
 );
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from 'axios';
-import { useDispatch, useSelector } from 'react-redux';
-import { setError as setAuthError, setLoading } from '@/redux/features/authSlice';
-import { BASE_URL, LOGIN_URL, BASE_PATH_FRONT_END, OTP_VERIFICATION_URL, ACTION_NAME } from "@/utils/constants";
+import { useSelector } from 'react-redux';
+// import { setError as setAuthError, setLoading } from '@/redux/features/authSlice';
+import { BASE_URL, OTP_VERIFICATION_URL, ACTION_NAME } from "@/utils/constants";
 import Image from "next/image";
 import { RootState, store } from "@/redux/store";
 import { toast } from "react-toastify";
@@ -47,7 +47,6 @@ import { decodeFernetToken } from "@/utils/helper";
 
 export default function ForgotPasswordForm() {
     const router = useRouter();
-    const dispatch = useDispatch();
     const { companyInfo } = useSelector((state: RootState) => state.common);
 
     // Step 1 states
@@ -90,12 +89,12 @@ export default function ForgotPasswordForm() {
             const data = shouldDecode ? decodeFernetToken(response.data.data) : response.data;
 
             if (data.success) {
-                console.log(clientCode, '1212121');
+
 
                 setCurrentStep(2);
 
                 toast.success(data.data.rs0[0].Message);
-                console.log(clientCode, 'client 221');
+
             } else {
                 setError(response.data.message || 'Failed to process request');
             }

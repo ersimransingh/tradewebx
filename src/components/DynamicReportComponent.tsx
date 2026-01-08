@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useAppSelector } from '@/redux/hooks';
 import { selectAllMenuItems } from '@/redux/features/menuSlice';
-import axios from 'axios';
 import { BASE_URL, PATH_URL } from '@/utils/constants';
 import moment from 'moment';
 import FilterModal from './FilterModal';
@@ -254,7 +253,7 @@ const validatePageData = (pageData: any): PageDataValidationResult => {
 };
 
 const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ componentName, componentType }) => {
-    console.log("check comp names", componentName, componentType)
+
     const menuItems = useAppSelector(selectAllMenuItems);
     const searchParams = useSearchParams();
     const clientCodeParam = searchParams.get('clientCode');
@@ -351,7 +350,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
         timestamp: number;
     }>>({});
 
-    console.log("check level stack", levelStack)
+
 
     // Function to generate cache key based on current state
     const generateCacheKey = (level: number, filters: Record<string, any>, primaryFilters: Record<string, any>) => {
@@ -383,6 +382,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
         try {
             return JSON.parse(getLocalStorage(APP_METADATA_KEY))
         } catch (err) {
+            console.error(err)
             return store.getState().common
         }
     })();
@@ -688,12 +688,12 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
         // Only run after page is loaded and when level or primary filters change
         if (pageLoaded) {
             if (currentLevel > 0) {
-                console.log('Fetching data for level:', currentLevel);
+
                 fetchData();
             }
             // For level 0, fetchData will handle cache checking internally
             else if (autoFetch) {
-                console.log('Auto-fetching data for level 0');
+
                 fetchData();
             }
         }
@@ -731,7 +731,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
 
         // Check if we have cached data for this exact combination
         if (dataCache[cacheKey] && cacheRequired) {
-            console.log('Using cached data for:', cacheKey);
+
             const cachedData = dataCache[cacheKey];
             setApiData(cachedData.data);
             setAdditionalTables(cachedData.additionalTables);
@@ -745,11 +745,11 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
 
         // Check if there's already an ongoing request for this cache key
         if (ongoingRequestRef.current === cacheKey && cacheRequired) {
-            console.log('Request already in progress for:', cacheKey);
+
             return; // Exit early to prevent duplicate requests
         }
 
-        console.log('Making API call for:', cacheKey);
+
         ongoingRequestRef.current = cacheKey; // Mark request as ongoing
         setIsLoading(true);
         setHasFetchAttempted(true);
@@ -929,12 +929,12 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
 
     // Handle click on columns with DetailAPI configuration
     const handleDetailColumnClick = async (columnKey: string, rowData: any) => {
-        console.log('Detail Column Click:', columnKey, rowData);
+
 
         // Get the current level settings
         const currentLevelSettings = pageData?.[0]?.levels?.[currentLevel]?.settings;
         if (!currentLevelSettings?.DetailColumn) {
-            console.log('No DetailColumn configuration found');
+
             return;
         }
 
@@ -944,7 +944,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
         );
 
         if (!detailConfig?.DetailAPI) {
-            console.log('No DetailAPI configuration found for column:', columnKey);
+
             return;
         }
 
@@ -1008,10 +1008,10 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                 <J_Api>${jApiString}, "UserType":"${getLocalStorage('userType')}"</J_Api>
             </dsXml>`;
 
-            console.log('Detail API Request:', xmlData);
+
 
             const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
-            console.log('Detail API Response:', response);
+
 
             const rawData = response?.data?.data?.rs0 || [];
 
@@ -1155,7 +1155,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
 
             // Restore cached data if available for this exact combination
             if (dataCache[cacheKey]) {
-                console.log('Restoring cached data for first tab:', cacheKey);
+
                 const cachedData = dataCache[cacheKey];
                 setApiData(cachedData.data);
                 setAdditionalTables(cachedData.additionalTables);
@@ -1190,7 +1190,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
     };
 
 
-    // console.log(pageData[0].levels[currentLevel].settings?.EditableColumn,'editable');
+
 
 
 
@@ -1201,7 +1201,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
             const masterEntry = entry.MasterEntry;
             const pageName = pageData[0]?.wPage || "";
 
-            // console.log(masterEntry,'masterEntry')
+
 
             const sql = Object.keys(masterEntry?.sql || {}).length ? masterEntry.sql : "";
             let X_Data = "";
@@ -1247,12 +1247,12 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                 const deleteMsg = rawMessage.replace(/<\/?Message>/g, "");
                 toast.success(deleteMsg)
             }
-            console.log("response of delete api", response)
+
 
         } catch (error) {
-            console.error(`Error fetching options for   `);
+            console.error(`Error fetching options for   `,error);
         } finally {
-            console.log("check delete record");
+
         }
     }
 
@@ -1888,9 +1888,6 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                     <button
                                         className="p-2 rounded hover:bg-gray-100 transition-colors"
                                         onClick={() => {
-                                            console.log('Plus button clicked, componentType:', componentType);
-                                            console.log('pageData available:', !!pageData);
-                                            console.log('pageData structure:', pageData);
                                             setIsEntryModalOpen(true);
                                         }}
                                         style={{ color: colors.text }}
@@ -2434,7 +2431,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                 maxFileSize={3 * 1024 * 1024 * 1024}
                                 allowedFileTypes={['csv', 'txt', 'xls', 'xlsx']}
                                 onQueueUpdate={(stats) => {
-                                    console.log('Queue stats:', stats);
+
                                     // Only refetch if we have new successful uploads
                                     const prevSuccess = (window as any).__prevUploadSuccess || 0;
                                     if (stats.success > prevSuccess && stats.success > 0) {
@@ -2446,7 +2443,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                                 if (pageData && pageData.length > 0 && validationResult?.isValid) {
                                                     fetchData(filters, false);
                                                 } else {
-                                                    console.log('Skipping refetch: page configuration not ready yet');
+
                                                 }
                                             } catch (err) {
                                                 console.error('Error refetching data after upload:', err);

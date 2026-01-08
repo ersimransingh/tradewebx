@@ -1,7 +1,6 @@
 import { THEME_COLORS_STORAGE_KEY, THEME_STORAGE_KEY } from "@/context/ThemeContext";
 import { APP_METADATA_KEY, SECURE_STORAGE_KEY, SECURITY_LIBRARY, ACTION_NAME, BASE_URL, PATH_URL } from "./constants";
 import { toast } from "react-toastify";
-import { log } from "node:console";
 //@ts-ignore
 import { Token, Secret } from 'fernet';
 import CryptoJS from 'crypto-js';
@@ -74,6 +73,7 @@ export function handleViewFile(base64Data: string, fieldType: string = 'file') {
             document.body.removeChild(link);
         }
     } catch (error) {
+        console.error(error)
         alert("Unable to preview file.");
     }
 }
@@ -178,12 +178,12 @@ export const clearIndexedDB = () => {
         const request = indexedDB.deleteDatabase("ekycDB");
 
         request.onsuccess = () => {
-            console.log("IndexedDB deleted successfully");
+
             resolve(true);
         };
 
         request.onerror = (event) => {
-            console.error("Error deleting IndexedDB:", request.error);
+            console.error("Error deleting IndexedDB:", request.error,event);
             reject(request.error);
         };
 
@@ -227,6 +227,7 @@ export const parseXmlValue = (xmlString: string, tag: string): string => {
     return match ? match[1] : '';
 };
 export const parseHeadings = (xmlString: string): any => {
+
     // Implement heading parsing logic if needed
     return {};
 };
@@ -330,11 +331,11 @@ export const decodeFernetToken = (data: string) => {
         if (SECURITY_LIBRARY === 'cryptojssdk') {
             // Use CryptoJS decryption
             const decodedString = Decryption(data);
-            console.log('Decoded string (CryptoJS):', decodedString);
+
 
             // Parse the decoded string as JSON
             const parsedData = JSON.parse(decodedString);
-            console.log('Parsed JSON (CryptoJS):', parsedData);
+
 
             return parsedData;
         } else if (SECURITY_LIBRARY === 'fernetsdk') {
@@ -349,11 +350,11 @@ export const decodeFernetToken = (data: string) => {
             });
 
             const decodedString = token.decode();
-            console.log('Decoded string (Fernet):', decodedString);
+
 
             // Parse the decoded string as JSON
             const parsedData = JSON.parse(decodedString);
-            console.log('Parsed JSON (Fernet):', parsedData);
+
 
             return parsedData;
         } else {
@@ -367,7 +368,7 @@ export const decodeFernetToken = (data: string) => {
 
 export const normalizeEncryptedParam = (param: string | null): string | null => {
     if(param){
-        const trimmedString = param?.trim();
+        // const trimmedString = param?.trim();
         const finalParam = param.replace(/ /g, '+');
         return finalParam;
     } else{
@@ -484,11 +485,11 @@ export const storeLocalStorage = (key: string, value: string): void => {
 
         // Debug logging for token storage
         if (key === 'auth_token') {
-            console.log(`💾 [helper] Stored ${key}:`, value.substring(0, 30) + '...');
+
 
             // Immediately verify it was stored correctly
             const verification = getLocalStorage(key);
-            console.log(`🔍 [helper] Verification of stored ${key}:`, verification ? verification.substring(0, 30) + '...' : 'null');
+          
         }
     } catch (error) {
         console.error('Error storing data securely:', error);
@@ -503,7 +504,7 @@ export const getLocalStorage = (key: string): string | null => {
 
         // Debug logging for token retrieval
         if (key === 'auth_token' && value) {
-            console.log(`🔍 [helper] Retrieved ${key}:`, value.substring(0, 30) + '...');
+
         }
 
         return value;

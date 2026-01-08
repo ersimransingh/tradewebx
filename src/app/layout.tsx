@@ -6,7 +6,7 @@ import { SidebarProvider } from "@/context/SidebarContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { Provider } from 'react-redux';
 import { store } from "@/redux/store";
-import { APP_METADATA_KEY, BASE_PATH_FRONT_END } from "@/utils/constants";
+import { APP_METADATA_KEY } from "@/utils/constants";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import "flatpickr/dist/themes/light.css";
@@ -23,6 +23,7 @@ const appMetadata = (() => {
   try {
     return JSON.parse(getLocalStorage(APP_METADATA_KEY) || '{}')
   } catch (err) {
+    console.error(err)
     return store.getState().common
   }
 })();

@@ -10,7 +10,7 @@ import apiService from "@/utils/apiService";
 import { decryptData, getLocalStorage } from "@/utils/helper";
 
 export default function UserMetaCard() {
-  const { isOpen, openModal, closeModal } = useModal();
+  const { closeModal } = useModal();
   const { colors } = useTheme();
   const searchParams = useSearchParams();
   const [profileData, setProfileData] = useState(null);
@@ -188,14 +188,14 @@ export default function UserMetaCard() {
     color: colors.secondary,
   };
 
-  const socialButtonStyle = {
-    backgroundColor: colors.buttonBackground,
-    borderColor: colors.color3,
-  };
+  // const socialButtonStyle = {
+  //   backgroundColor: colors.buttonBackground,
+  //   borderColor: colors.color3,
+  // };
 
-  const socialIconStyle = {
-    color: colors.buttonText,
-  };
+  // const socialIconStyle = {
+  //   color: colors.buttonText,
+  // };
 
   // Helper function to get display name from any section
   const getDisplayName = () => {

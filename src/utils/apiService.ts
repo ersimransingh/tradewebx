@@ -2,7 +2,7 @@ import axios, { AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 import { ACTION_NAME, BASE_PATH_FRONT_END, BASE_URL, ENABLE_FERNET, OTP_VERIFICATION_URL } from './constants';
 import { toast } from 'react-toastify';
 import CryptoJS from 'crypto-js';
-import { SECURITY_CONFIG, isAllowedHttpHost } from './securityConfig';
+import { SECURITY_CONFIG } from './securityConfig';
 import { clearAllAuthData } from './auth';
 import { decodeFernetToken, getLocalStorage, storeLocalStorage } from './helper';
 import { store } from '@/redux/store';
@@ -80,7 +80,7 @@ class ApiService {
             hostname === '0.0.0.0';
 
         if (isDevelopment) {
-            console.log('LocalStorage protection disabled for development environment');
+
             return;
         }
 
@@ -194,12 +194,12 @@ class ApiService {
                     const token = this.getAuthToken();
                     if (token) {
                         config.headers['Authorization'] = `Bearer ${token}`;
-                        console.log('🔑 Token injected in request interceptor:', token.substring(0, 20) + '...');
+
                     } else {
                         console.warn('⚠️ No token available for request to:', config.url);
                     }
                 } else {
-                    console.log('🔄 Refresh token request detected, skipping token injection');
+
                 }
 
                 return config;
@@ -254,7 +254,7 @@ class ApiService {
                         }).then(() => {
                             // Log token before retrying queued request
                             const queuedToken = this.getAuthToken();
-                            console.log('🔄 Retrying queued request with token:', queuedToken ? queuedToken.substring(0, 30) + '...' : 'null');
+                           
                             return axios(originalRequest);
                         }).catch(err => {
                             return Promise.reject(err);
@@ -276,13 +276,13 @@ class ApiService {
 
                         // If we still have the old token, wait a bit more (up to 500ms total)
                         while (retryCount < 4 && (!newToken || newToken === originalRequest.headers?.['Authorization']?.replace('Bearer ', ''))) {
-                            console.log(`🔄 Waiting for new token to be available... (attempt ${retryCount + 1})`);
+                          
                             await new Promise(resolve => setTimeout(resolve, 100));
                             newToken = this.getAuthToken();
                             retryCount++;
                         }
 
-                        console.log('🔄 About to retry request with token:', newToken ? newToken.substring(0, 30) + '...' : 'null');
+                      
 
                         this.processQueue(null);
 
@@ -328,7 +328,7 @@ class ApiService {
         }
 
         this.isHandlingSessionExpiry = true;
-        console.log('🚨 handleRefreshFailure - Refresh token failed, clearing authentication data');
+       
 
         // Clear all authentication data first
         this.clearAuth();
@@ -347,7 +347,7 @@ class ApiService {
         }
 
         // Show session expired popup and redirect to login
-        console.log('🚨 Triggering session expired popup due to refresh token failure');
+
         this.showSessionExpiredPopup();
     }
 
@@ -355,18 +355,18 @@ class ApiService {
     private showSessionExpiredPopup(): void {
         if (typeof window === 'undefined') return;
 
-        console.log('🔔 Showing session expired popup...');
+
 
         // Don't show popup if already on signin page
         if (window.location.pathname.includes('/signin')) {
-            console.log('👤 Already on signin page, redirecting directly');
+  
             this.redirectToLogin();
             return;
         }
 
         // Prevent multiple popups
         if (document.getElementById('session-expired-modal')) {
-            console.log('⚠️ Session expired popup already visible');
+
             return;
         }
 
@@ -495,7 +495,7 @@ class ApiService {
     // Get authorization token from localStorage
     private getAuthToken(): string | null {
         const authToken = getLocalStorage('auth_token');
-        console.log('🔑 getAuthToken called, token:', authToken ? authToken.substring(0, 30) + '...' : 'null');
+
         return authToken;
     }
 
@@ -510,7 +510,7 @@ class ApiService {
         const refreshToken = this.getRefreshToken();
 
         if (!refreshToken) {
-            console.log('No refresh token available');
+
             throw new Error('No refresh token available');
         }
 
@@ -524,7 +524,7 @@ class ApiService {
     <J_Api>"UserId":"${getLocalStorage('userId')}", "UserType":"${getLocalStorage('userType')}"</J_Api>
 </dsXml>`;
 
-        console.log('Attempting to refresh token...');
+
 
         try {
             // Create a new axios instance to bypass interceptors for refresh token requests
@@ -541,15 +541,14 @@ class ApiService {
                 }
             );
 
-            console.log('Refresh token API response:', response.status, response.data);
+       
             const shouldDecode = ENABLE_FERNET && store.getState().common.encPayload;
             const data = shouldDecode && typeof response.data.data === 'string' ? decodeFernetToken(response.data.data) : response.data;
             if (data.success && data.data.rs0.length > 0) {
                 const tokenData = data.data.rs0[0];
 
                 // Update tokens in localStorage
-                console.log('💾 Storing new access token:', tokenData.AccessToken.substring(0, 30) + '...');
-                console.log('💾 Storing new refresh token:', tokenData.RefreshToken.substring(0, 20) + '...');
+
 
                 storeLocalStorage('auth_token', tokenData.AccessToken);
                 storeLocalStorage('refreshToken', tokenData.RefreshToken);
@@ -558,17 +557,14 @@ class ApiService {
                 const storedAccessToken = getLocalStorage('auth_token');
                 const storedRefreshToken = getLocalStorage('refreshToken');
 
-                console.log('✅ Tokens refreshed and stored successfully');
-                console.log('🔍 Verification - stored access token:', storedAccessToken ? storedAccessToken.substring(0, 30) + '...' : 'null');
-                console.log('🔍 Verification - stored refresh token:', storedRefreshToken ? storedRefreshToken.substring(0, 20) + '...' : 'null');
+               
             } else {
                 console.error('Refresh token API returned unsuccessful response:', data);
                 throw new Error('Failed to refresh token');
             }
         } catch (error: any) {
             console.error('🚨 Token refresh failed:', error);
-            console.log('📊 Error status:', error.response?.status);
-            console.log('📊 Error data:', error.response?.data);
+
 
             // Handle different types of refresh token errors
             const errorStatus = error.response?.status;
@@ -733,10 +729,10 @@ class ApiService {
             const request = indexedDB.deleteDatabase("ekycDB");
 
             request.onsuccess = () => {
-                console.log("IndexedDB deleted successfully");
+  
             };
 
-            request.onerror = (event) => {
+            request.onerror = () => {
                 console.error("Error deleting IndexedDB:", request.error);
             };
 
@@ -748,7 +744,7 @@ class ApiService {
 
     // Test method to manually trigger session expired popup (for development/testing)
     testSessionExpiredPopup(): void {
-        console.log('🧪 Testing session expired popup...');
+
         this.showSessionExpiredPopup();
     }
 
@@ -776,7 +772,9 @@ class ApiService {
                 },
                 body: JSON.stringify(logData)
             });
-        } catch (loggingError) {}
+        } catch (loggingError) {
+            console.error(loggingError)
+        }
     }
 }
 

@@ -2,8 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog } from '@headlessui/react';
 import FormCreator from './FormCreator';
-import Select from 'react-select';
-import { FaSort, FaSortAmountDown, FaSortAmountUp } from 'react-icons/fa';
 import { useTheme } from '@/context/ThemeContext';
 import { useSidebar } from '@/context/SidebarContext';
 
@@ -30,10 +28,6 @@ const FilterModal: React.FC<FilterModalProps> = ({
     filters,
     onFilterChange,
     initialValues,
-    sortableFields = [],
-    currentSort,
-    onSortChange,
-    isSortingAllowed = false,
     onApply,
     isDownload = false,
     totalRecords = 0        // <-- default 0 records

@@ -246,7 +246,7 @@ const ExpandableRow = ({ row, primitiveKeys, arrayKeys, level, colors, fonts, in
          const leftAlignedColumns = settings?.leftAlignedColumns || settings?.leftAlignedColums
          ? (settings?.leftAlignedColumns || settings?.leftAlignedColums).split(',').map((col: string) => col.trim())
          : [];
-         const isLeftAligned = leftAlignedColumns.includes(key);
+        //  const isLeftAligned = leftAlignedColumns.includes(key);
 
 
         // 4. Value Based Text Color

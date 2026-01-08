@@ -28,8 +28,6 @@ import {
   FaSearch
 } from 'react-icons/fa';
 
-import { PATH_URL } from "@/utils/constants";
-import { BASE_URL } from "@/utils/constants";
 import { fetchInitializeLogin } from "@/redux/features/common/commonSlice";
 import { getLocalStorage } from "@/utils/helper";
 
@@ -177,15 +175,15 @@ const AppSidebar: React.FC = () => {
         const userType = getLocalStorage('userType');
 
         if (authToken && userId && userType) {
-          console.log('✅ Auth token found, fetching menu items');
+
           dispatch(fetchMenuItems());
         } else if (retryCount < maxRetries) {
           retryCount++;
-          console.log(`⏳ Auth token not ready, retrying in 500ms... (attempt ${retryCount}/${maxRetries})`, {
-            authToken: !!authToken,
-            userId: !!userId,
-            userType: !!userType
-          });
+          // console.log(`⏳ Auth token not ready, retrying in 500ms... (attempt ${retryCount}/${maxRetries})`, {
+          //   authToken: !!authToken,
+          //   userId: !!userId,
+          //   userType: !!userType
+          // });
           // Retry after a short delay to allow token setup to complete
           timeoutId = setTimeout(checkTokenAndFetchMenu, 500);
         } else {

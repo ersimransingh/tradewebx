@@ -22,14 +22,14 @@ export default function MarginPledgeOnline() {
   const [dematId, setDematId] = useState([]);
   const [selectedDemat, setSelectedDemat] = useState<{ DPAccountNo: string; DPType: string } | null>(null);
   const [tableHeaders, setTableHeaders] = useState<string[]>([]);
-  const [tableRows, setTableRows] = useState<any[]>([]);
+  // const [tableRows, setTableRows] = useState<any[]>([]);
   const [tableVisible, setTableVisible] = useState<boolean>(false);
   const [pledgeRedirectData, setPledgeRedirectData] = useState<any>([]);
   const [buttonDisable, setButtonDisable] = useState<boolean>(true);
   const [userId] = useLocalStorage('userId', null);
   const [userType] = useLocalStorage('userType', null);
 
-  console.log(colors, 'colors');
+
 
 
   useEffect(() => {
@@ -39,7 +39,7 @@ export default function MarginPledgeOnline() {
   useEffect(() => {
     const fetchTableBody = async () => {
       await tableApiCall(selectedDemat, setTableHeaders, (rows) => {
-        setTableRows(rows);
+        // setTableRows(rows);
         const enrichedRows = rows.map(row => ({
           ...row,
           ReqValue: '',
@@ -154,7 +154,7 @@ export default function MarginPledgeOnline() {
         setPledgeRedirectData(request.data.data.rs0);
       }
     } catch (error) {
-      console.log(error);
+      console.error(error);
     }
   };
 

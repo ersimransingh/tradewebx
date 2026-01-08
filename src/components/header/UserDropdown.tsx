@@ -1,10 +1,8 @@
 "use client";
-import Image from "next/image";
 import Link from "next/link";
 import React, { useState } from "react";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
-import { logout } from '@/utils/auth';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
 export default function UserDropdown() {
@@ -14,7 +12,7 @@ export default function UserDropdown() {
     e.stopPropagation();
     setIsOpen((prev) => !prev);
   }
-  // console.log(userData, 'userData');
+
   function closeDropdown() {
     setIsOpen(false);
   }

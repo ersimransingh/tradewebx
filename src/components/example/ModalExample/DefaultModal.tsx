@@ -10,7 +10,7 @@ export default function DefaultModal() {
   const { isOpen, openModal, closeModal } = useModal();
   const handleSave = () => {
     // Handle save logic here
-    console.log("Saving changes...");
+
     closeModal();
   };
   return (

@@ -1,6 +1,6 @@
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
-import { ParsedData, FileMetadata } from '@/types/upload';
+import { FileMetadata } from '@/types/upload';
 
 const isNumericLike = (value: any): boolean => {
   const str = value === null || value === undefined ? '' : String(value).trim();

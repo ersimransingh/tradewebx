@@ -1,6 +1,6 @@
 import apiService from "@/utils/apiService";
 import { BASE_URL, PATH_URL } from "@/utils/constants";
-import { getLocalStorage, storeLocalStorage, escapeXmlChars, sanitizePayload } from "@/utils/helper";
+import { storeLocalStorage, sanitizePayload } from "@/utils/helper";
 import { toast } from "react-toastify";
 
 export const fetchEkycDropdownOptions = async (field: any, setMasterDropdownOptions: any, setMasterLoadingDropdowns: any) => {
@@ -68,7 +68,7 @@ export const handleSaveSinglePageData = async (
         });
 
         // Stringify first, then escape ampersands
-        const jsonString = JSON.stringify(formData);
+        // const jsonString = JSON.stringify(formData);
 
         const xmlData = `<dsXml>
         <J_Ui>${jUi}</J_Ui>
@@ -132,7 +132,7 @@ export const SubmitEkycForm = async (settings: any, data: any, setSaving?: (load
         });
 
         // Stringify first, then escape ampersands
-        const jsonString = JSON.stringify(formData);
+        // const jsonString = JSON.stringify(formData);
 
 
         const xmlData = `<dsXml>

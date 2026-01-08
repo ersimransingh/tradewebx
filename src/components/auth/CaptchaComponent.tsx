@@ -24,7 +24,7 @@ const CaptchaComponent = forwardRef<CaptchaComponentRef, CaptchaComponentProps>(
         const [isAudioPlaying, setIsAudioPlaying] = useState(false);
 
         const generateCaptcha = () => {
-            console.log('Generating new CAPTCHA...');
+
             if (typeof window !== 'undefined' && window.speechSynthesis) {
                 window.speechSynthesis.cancel();
             }
@@ -36,7 +36,6 @@ const CaptchaComponent = forwardRef<CaptchaComponentRef, CaptchaComponentProps>(
             const answer = num1 + num2;
             const question = `${num1} + ${num2}`;
 
-            console.log('New CAPTCHA generated:', question, '=', answer);
             setCaptchaQuestion(question);
             setCaptchaAnswer(answer.toString());
             setUserAnswer("");
@@ -46,10 +45,10 @@ const CaptchaComponent = forwardRef<CaptchaComponentRef, CaptchaComponentProps>(
         };
 
         useImperativeHandle(ref, () => {
-            console.log('Setting up CAPTCHA ref methods');
+
             return {
                 refreshCaptcha: () => {
-                    console.log('refreshCaptcha method called via ref');
+    
                     generateCaptcha();
                 },
             };

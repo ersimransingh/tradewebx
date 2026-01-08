@@ -41,13 +41,13 @@ export const recursiveSearch = (data: any[], searchTerm: string): any[] => {
 
     return data.reduce((acc: any[], item: any) => {
         // Check if current item has primitive match
-        const hasMatch = Object.entries(item).some(([key, value]) => {
+        const hasMatch = Object.entries(item).some(([value]) => {
             if (Array.isArray(value) || typeof value === 'object') return false;
             return String(value).toLowerCase().includes(lowerTerm);
         });
 
         // Check children recursively
-        const childMatch = false;
+        // const childMatch = false;
         const newItem = { ...item };
         let hasChildMatch = false;
 
@@ -141,7 +141,7 @@ const processNodeForPdf = (data: any[], level = 0): any => {
 };
 
 export const generatePdf = async (data: any[], headerData: any, appMetadata: any) => {
-    console.log("headerData---->", headerData,appMetadata);
+
     let logoImage = '';
     if (appMetadata?.companyLogo) {
         try {

@@ -50,7 +50,7 @@ export const fetchUPIType = async (setUpiSelect:any,authToken:any) => {
     try {
         // const response = await axios.post(IPO_url, xmlDataUPI, configDetails(authToken));
         const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlDataUPI)
-        console.log(response.data, "UPI TYpe");
+
 
         if (response.data.data.rs0) {
             const userTypeData = response.data.data.rs0
@@ -61,7 +61,7 @@ export const fetchUPIType = async (setUpiSelect:any,authToken:any) => {
             }));
             setUpiSelect(formattedUpiType);
 
-            console.log(formattedUpiType,'formattedUpiType');
+
             
 
         }
@@ -104,7 +104,7 @@ export const handleBidChange = (e:any, bidType:any, setBid:any) => {
 };
 
 export const handleFocus = (bidType:any, bid:any, minimumOrder:any, setBid:any) => {
-    console.log(minimumOrder,'minimumOrder');
+
     
     if (bidType === 'bid1') {
         if (bid) { // Check if the input is not empty or null
@@ -271,7 +271,7 @@ const submitApiFetch = async (xmlData,config,clearFn) => {
 
     // const response = await axios.post(IPO_url, xmlData, config)
     const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData)
-    console.log(response, 'response Submit Api');
+
     if (response.success === true) {
         // clearFn()
         toast.success('form submitted')
@@ -303,12 +303,12 @@ export const onSubmitBtn = (userClientCode:any, scripCode:any, ipoCategory:any, 
         cutOffFlag3: isChecked3
     }
 
-    console.log(data, 'allipodata');
+
     // setIpoAllData()
 
 
     if ((selectedUpi === '' || upiId === '')) {
-        console.log(upiId);
+
         
         toast.error('UPI ID cannot be blank')
         return;
@@ -326,7 +326,7 @@ export const onSubmitBtn = (userClientCode:any, scripCode:any, ipoCategory:any, 
         return
     }
     else {
-        console.log('in else part of submit');
+
         setTermsAccepted(!termsAccepted)
         submitApiFetch(submitXML(data.clientCode, data.scripCode, data.category, data.UPIId, data.bid1, data.cutOff, data.cutOffFlag, data.bid2, data.cutOff2, data.cutOffFlag2, data.bid3, data.cutOff3, data.cutOffFlag3), configDetails(authToken),clearFn)
        
@@ -344,7 +344,7 @@ export const handleDelete = async (data:any,clientCode:any,config:any) => {
         // const response = await axios.post(IPO_url, deleteXML(clientCode,data.IPO_NSE_Symbol, data.IPO_Category),  config)
         const response = await apiService.postWithAuth(BASE_URL + PATH_URL, deleteXML(clientCode,data.IPO_NSE_Symbol, data.IPO_Category))
 
-        console.log(response, 'response delete');
+
 
     }
 };
@@ -354,7 +354,7 @@ export const checkStatusFs = async(data:any,clientCode:any,config:any) => {
     // const response = await axios.post(IPO_url, CheckStatusXML(clientCode,data.IPO_NSE_Symbol, data.IPO_Category),  config)
     const response = await apiService.postWithAuth(BASE_URL + PATH_URL, CheckStatusXML(clientCode,data.IPO_NSE_Symbol, data.IPO_Category))
 
-    console.log(response,'checkStatusFs');
+
     
     return response
     

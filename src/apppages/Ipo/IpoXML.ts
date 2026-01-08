@@ -66,10 +66,10 @@ export const submitXML = (
   <J_Api>"UserId":"ADMIN","AccYear":24,"MyDbPrefix":"SVVS","MemberCode":"undefined","SecretKey":"undefined","MenuCode":5,"ModuleID":5,"MyDb":"","DenyRights":""</J_Api>
 </dsXml>`;
 
-  console.log(xmlData, "xml");
+
 
   return xmlData;
-  console.log(xmlData, "xml2");
+
 };
 
 

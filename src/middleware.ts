@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { BASE_PATH_FRONT_END } from './utils/constants';
-import { SECURITY_CONFIG, isAllowedHttpHost, getSecurityHeaders, getHstsHeader } from './utils/securityConfig';
+import {  getSecurityHeaders } from './utils/securityConfig';
 
 // Helper function to check if development mode is enabled
-function isDevelopmentMode(): boolean {
-    return process.env.NEXT_DEVELOPMENT_MODE === 'true';
-}
+// function isDevelopmentMode(): boolean {
+//     return process.env.NEXT_DEVELOPMENT_MODE === 'true';
+// }
 
 export function middleware(request: NextRequest) {
     // HTTPS enforcement removed - HTTP is now allowed for all hosts
@@ -45,7 +44,7 @@ export function middleware(request: NextRequest) {
 
         // This is a simplified rate limiting - in production, use Redis or similar
         // For now, we'll just log suspicious activity
-        console.log('API request from IP:', ip, 'to:', request.nextUrl.pathname);
+
     }
 
     // Check if we're on an auth page or root path

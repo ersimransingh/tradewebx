@@ -12,7 +12,7 @@ import ConfirmationModal from './ConfirmationModal';
 
 import { toast } from 'react-toastify';
 
-const TradeSplit: React.FC<TradeSplitProps> = ({ data, settings, filters, isAutoWidth }) => {
+const TradeSplit: React.FC<TradeSplitProps> = ({ data, isAutoWidth }) => {
     const { colors, fonts } = useTheme();
     const [rows, setRows] = useState<TradeRow[]>([]);
     const [isEditing, setIsEditing] = useState(false);
@@ -67,7 +67,7 @@ const TradeSplit: React.FC<TradeSplitProps> = ({ data, settings, filters, isAuto
         // Group rows by Unique Trade Identifier
         const groups = _.groupBy(rows, (r) => `${r.SerialNo}-${r.Scrip}-${r.BuySell}`);
 
-        Object.entries(groups).forEach(([key, groupRows]) => {
+        Object.entries(groups).forEach(([, groupRows]) => {
             const firstRow = groupRows[0];
             const isSell = firstRow.BuySell === 'S';
             
@@ -154,7 +154,7 @@ const TradeSplit: React.FC<TradeSplitProps> = ({ data, settings, filters, isAuto
     <J_Api>"UserId":"${getLocalStorage('userId')}", "UserType":"${getLocalStorage('userType')}"</J_Api>
 </dsXml>`;
             
-            console.log("Saving Payload:", xmlPayload);
+
             const response: any = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlPayload);
             const responseData = response?.data?.data?.rs0?.[0]; // Access first record of rs0
             
