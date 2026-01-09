@@ -393,13 +393,15 @@ const FormCreator: React.FC<FormCreatorProps> = ({
 
             // Now fetch new options for the direct dependents
             dependentFields.forEach(dependentItem => {
-                if (Array.isArray(dependentItem.dependsOn!.field)) {
-                    const allDependenciesFilled = dependentItem.dependsOn!.field.every(field =>
+                if (!dependentItem.dependsOn) return; // Explicit check
+
+                if (Array.isArray(dependentItem.dependsOn.field)) {
+                    const allDependenciesFilled = dependentItem.dependsOn.field.every(field =>
                         newValues[field] !== undefined && newValues[field] !== null
                     );
 
                     if (allDependenciesFilled) {
-                        const dependencyValues = dependentItem.dependsOn!.field.reduce((acc, field) => {
+                        const dependencyValues = dependentItem.dependsOn.field.reduce((acc, field) => {
                             const fieldElement = sortedFormData.flat().find(el => el.wKey === field);
 
                             if (fieldElement?.type === 'WDateBox' && newValues[field]) {
@@ -418,13 +420,13 @@ const FormCreator: React.FC<FormCreatorProps> = ({
                         fetchDependentOptions(dependentItem, dependencyValues);
                     }
                 } else {
-                    const fieldElement = sortedFormData.flat().find(el => el.wKey === dependentItem.dependsOn!.field);
-                    if (fieldElement?.type === 'WDateBox' && newValues[dependentItem.dependsOn!.field]) {
-                        const formattedDate = moment(newValues[dependentItem.dependsOn!.field]).format('YYYYMMDD');
+                    const fieldElement = sortedFormData.flat().find(el => el.wKey === dependentItem.dependsOn?.field);
+                    if (fieldElement?.type === 'WDateBox' && newValues[dependentItem.dependsOn.field]) {
+                        const formattedDate = moment(newValues[dependentItem.dependsOn.field]).format('YYYYMMDD');
                         fetchDependentOptions(dependentItem, formattedDate);
                     } else if (fieldElement?.type === 'WDateRangeBox' && Array.isArray(fieldElement.wKey)) {
                         const [fromKey, toKey] = fieldElement.wKey;
-                        const field = dependentItem.dependsOn!.field;
+                        const field = dependentItem.dependsOn.field;
                         if (field === fromKey || field === toKey) {
                             const formattedDate = moment(newValues[field]).format('YYYYMMDD');
                             fetchDependentOptions(dependentItem, formattedDate);
@@ -432,7 +434,7 @@ const FormCreator: React.FC<FormCreatorProps> = ({
                             fetchDependentOptions(dependentItem, newValues[field]);
                         }
                     } else {
-                        fetchDependentOptions(dependentItem, newValues[dependentItem.dependsOn!.field]);
+                        fetchDependentOptions(dependentItem, newValues[dependentItem.dependsOn.field]);
                     }
                 }
             });
@@ -1125,9 +1127,10 @@ const FormCreator: React.FC<FormCreatorProps> = ({
             const updatedValues = { ...formValues };
 
             dateFieldsWithValue.forEach(item => {
-                const year = parseInt(item.wValue!.substring(0, 4));
-                const month = parseInt(item.wValue!.substring(4, 6)) - 1; // Month is 0-based
-                const day = parseInt(item.wValue!.substring(6, 8));
+                const val = item.wValue || '';
+                const year = parseInt(val.substring(0, 4));
+                const month = parseInt(val.substring(4, 6)) - 1; // Month is 0-based
+                const day = parseInt(val.substring(6, 8));
                 updatedValues[item.wKey as string] = new Date(year, month, day);
             });
 

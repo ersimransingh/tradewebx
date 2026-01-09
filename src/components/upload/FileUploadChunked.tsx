@@ -375,7 +375,7 @@ const FileUploadChunked: React.FC<FileUploadChunkedProps> = ({
             if (!errorsByFile.has(errorFileName)) {
               errorsByFile.set(errorFileName, []);
             }
-            errorsByFile.get(errorFileName)!.push(error);
+            errorsByFile.get(errorFileName)?.push(error);
           });
 
           // Create FileImportErrors array for each unique file
@@ -615,7 +615,7 @@ const FileUploadChunked: React.FC<FileUploadChunkedProps> = ({
               if (!errorsByFile.has(errorFileName)) {
                 errorsByFile.set(errorFileName, []);
               }
-              errorsByFile.get(errorFileName)!.push(error);
+              errorsByFile.get(errorFileName)?.push(error);
             });
 
             // Create FileImportErrors array for each unique file
