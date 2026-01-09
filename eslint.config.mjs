@@ -23,7 +23,7 @@ const eslintConfig = [
       "react-hooks/exhaustive-deps": "off",
       "@typescript-eslint/ban-ts-comment": "off",
       "@typescript-eslint/no-non-null-assertion": "off",
-      "@typescript-eslint/no-empty-interface": "off",
+      "@typescript-eslint/no-empty-interface": "warn",
       "@typescript-eslint/no-empty-function": "warn"
     }
   }
