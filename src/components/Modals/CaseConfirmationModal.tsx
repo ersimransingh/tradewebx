@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useCallback } from "react";
 
 interface ValidationModalProps {
   isOpen: boolean;
@@ -46,6 +46,16 @@ const CaseConfirmationModal: React.FC<ValidationModalProps> = ({
     }
   };
 
+
+  const handleEscape = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onCancel?.();
+      }
+    },
+    [onCancel]
+  );
+
   useEffect(() => {
     if (isOpen) {
       previouslyFocusedElement.current =
@@ -67,13 +77,13 @@ const CaseConfirmationModal: React.FC<ValidationModalProps> = ({
       // Restore previous focus
       previouslyFocusedElement.current?.focus();
     };
-  }, [isOpen]);
+  }, [isOpen,handleEscape]);
 
-  const handleEscape = (e: KeyboardEvent) => {
-    if (e.key === "Escape") {
-      onCancel?.();
-    }
-  };
+  // const handleEscape = (e: KeyboardEvent) => {
+  //   if (e.key === "Escape") {
+  //     onCancel?.();
+  //   }
+  // };
 
   if (!isOpen) return null;
 

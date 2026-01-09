@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect,useCallback } from "react";
 import { useModal } from "../../hooks/useModal";
 import { useTheme } from "../../context/ThemeContext";
 import { useSearchParams } from "next/navigation";
@@ -16,11 +16,12 @@ export default function UserMetaCard() {
   const [profileData, setProfileData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    getUserDetails();
-  }, []);
+  // useEffect(() => {
+  //   getUserDetails();
+  // }, []);
 
-  const getUserDetails = async () => {
+  // const getUserDetails = async () => {
+  const getUserDetails = useCallback(async () => {
     setIsLoading(true);
 
     // Get userid from URL parameters, fallback to localStorage
@@ -49,8 +50,15 @@ export default function UserMetaCard() {
     } catch (error) {
       console.error('Error fetching user profile:', error);
       setIsLoading(false);
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, [searchParams]);
+  //};
+
+   useEffect(() => {
+    getUserDetails();
+  }, [getUserDetails]);
 
   // Helper function to get user initials
   const getUserInitials = () => {
