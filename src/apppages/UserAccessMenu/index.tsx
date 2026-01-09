@@ -83,7 +83,7 @@ const UserAccessMenu: React.FC = () => {
     };
 
     fetchGroups();
-  }, []);
+  }, [UserID,userType]);
 
   //  2. Fetch access data for selected group
   useEffect(() => {
@@ -115,7 +115,7 @@ const UserAccessMenu: React.FC = () => {
     };
 
     fetchAccessData();
-  }, [selectedGroup]);
+  }, [selectedGroup, UserID, userType]);
 
   //  Toggle rs0 checkbox
   const handleRs0Change = (index: number, key: string) => {

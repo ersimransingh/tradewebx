@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,useCallback } from 'react';
 import { useTheme } from '@/context/ThemeContext';
 import { useSelector } from 'react-redux';
 import moment from 'moment';
@@ -42,8 +42,12 @@ const Downloads = () => {
     const pageData: any = findPageData(menuItems, "Downloads");
 
 
-    const getDownloads = async (isReload = false, values?: any) => {
-        if (isReload) {
+    // const getDownloads = async (isReload = false, values?: any) => {
+    //     if (isReload) {
+    //         setLoading(true);
+    //     }
+    const getDownloads = useCallback(async (isReload = false, values?: any) => {
+            if (isReload) {
             setLoading(true);
         }
 
@@ -110,12 +114,16 @@ const Downloads = () => {
         } finally {
             setLoading(false);
         }
-    };
+    },
+     [filterValues, userData.userId, userData.userType]
+    )
+    // };
+    
 
     useEffect(() => {
         if(pageData?.autoFetch === 'false') setFilterModalVisible(true)
         else getDownloads(true)
-    },[])
+    },[pageData?.autoFetch, getDownloads])
 
     const downloadAllFn = async () => {
         if (!downloadAllData.length) {
