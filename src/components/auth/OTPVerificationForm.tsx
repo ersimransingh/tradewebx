@@ -203,7 +203,6 @@ export default function OTPVerificationForm() {
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOtp(e.target.value)}
                 dynamicSelectedThemeApply={true}
                 placeholder="Enter OTP"
-                required
                 className="mt-1 transition-all duration-200 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-900"
               />
             </div>

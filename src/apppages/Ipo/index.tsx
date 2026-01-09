@@ -7,37 +7,8 @@ import { DYNAMIC_DETAILS, IPO_SELECTED, checkStatusFs, configDetails, fetchUPITy
 import { useLocalStorage } from '@/hooks/useLocalListner';
 import { ACTION_NAME, BASE_URL, PATH_URL } from '@/utils/constants';
 import apiService from '@/utils/apiService';
+import { IpoItem, IpoRow, UpiOption } from '@/types/ipoTypes';
 
-
-interface IpoItem {
-  IPO_Company_Name: string;
-  IPO_Category: string;
-  start_date?: string;
-  end_date?: string;
-  price_range: string;
-  tick_size: string;
-  min_order: string;
-  rhp?: string;
-  ApplyFlag: 'Y' | 'N';
-  status?: string;
-  StatusFlag: 'Y' | 'N';
-  DPRemarks?: string;
-  BankRemarks?: string;
-  DeleteFlag?: 'Y' | 'N';
-
-  // extra fields you are already using
-  discount?: string;
-  minimumOrder?: number;
-  priceRange?: string;
-  scripCode?: string;
-  ipoCategory?: string;
-}
-
-
-interface UpiOption {
-  Value: string;
-  DisplayName: string;
-}
 
 const Ipo = () => {
   const { colors } = useTheme();
@@ -45,7 +16,7 @@ const Ipo = () => {
   
   const authToken = useSelector((state: RootState) => state.auth.authToken);
   const [ipoData, setIpoData] = useState<IpoItem[]>([]);
-  const [selectedIpo, setSelectedIpo] = useState<string[] | null>(null);
+  const [selectedIpo, setSelectedIpo] = useState<IpoRow | null>(null);
   const [upiSelect, setUpiSelect] = useState<UpiOption[]>([]);
   const [selectedUpi, setSelectedUpi] = useState('');
   const [upiId, setUpiId] = useState('');
@@ -130,16 +101,6 @@ const Ipo = () => {
     const maxPrice = parseFloat(maxPriceStr || minPriceStr); // fallback to min if only one price
     const minPrice = ipo.min_order
 
-
-
-
-    // ✅ Set Bid 1 to minimum order and Cutoff to max price
-    // const minOrder = ipo.minimumOrder
-    // // console.log();
-    // setBid1('');
-    // setCutOff('');
-    // setDisableCutOff(false);
-    // setIsChecked(false);
 
 
 
@@ -330,7 +291,7 @@ const Ipo = () => {
               <td className="p-2 border text-blue-600 cursor-pointer hover:underline">
                 {item.ApplyFlag === 'Y' ? item.status :
                   <div>
-                    <span onClick={() => checkStatusFs(item, clientCode, config)}>Check Status</span>
+                    <span onClick={() => checkStatusFs(item, clientCode,)}>Check Status</span>
                   </div>}
               </td>
               {/* <td className="p-2 border">{item.StatusFlag === 'Y' ? `
@@ -349,7 +310,7 @@ const Ipo = () => {
                     <div>
                       <strong>Bank Remarks:</strong> {item.BankRemarks}
                     </div>
-                    <div onClick={() => handleDelete(item, clientCode, config)} className='text-blue-600 cursor-pointer hover:underline'>
+                    <div onClick={() => handleDelete(item, clientCode)} className='text-blue-600 cursor-pointer hover:underline'>
                       {item.DeleteFlag === 'Y' ? 'Delete' : ''}
                     </div>
                   </div>

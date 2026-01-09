@@ -3,7 +3,8 @@ import { BASE_URL, PATH_URL } from "@/utils/constants";
 import {  CheckStatusXML, deleteXML, submitXML, xmlDataUPI } from "./IpoXML";
 import apiService from "@/utils/apiService";
 import { toast } from "react-toastify";
-
+import { BidType, IpoRow, IpoRowSymbol, SubmitBidPayload } from "@/types/ipoTypes";
+import { ChangeEvent, Dispatch, SetStateAction } from 'react';
 
   
 
@@ -21,7 +22,7 @@ export const configDetails = (authToken) => {
 
 
 
-export const IPO_SELECTED = (selectedIpo) => {
+export const IPO_SELECTED = (selectedIpo: IpoRow | null) => {
 
     return selectedIpo ? [
         {
@@ -37,7 +38,7 @@ export const IPO_SELECTED = (selectedIpo) => {
 
 }
 
-export const DYNAMIC_DETAILS = (selectedIpo) => {
+export const DYNAMIC_DETAILS = (selectedIpo: IpoRow | null) => {
     return selectedIpo ? [
         { label: "IPO Name", value: selectedIpo.IPO_Company_Name },
         { label: "Price Range", value: selectedIpo.price_range },
@@ -74,190 +75,139 @@ export const fetchUPIType = async (setUpiSelect) => {
     }
 }
 
-export const handleDecrement = (bidType:any, bid:any, setBid:any, minimumOrder:any) => {
+export const handleDecrement = (bidType:BidType, bid:number | "", setBid: React.Dispatch<React.SetStateAction<number | "">>, minimumOrder:number) => {
     console.log(bidType,':                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              bidType',setBid,':setBid',minimumOrder,':minimumOrder');
     
-    if (bidType === 'bid1') {
-        if (bid > minimumOrder) {
-            setBid((prev) => parseInt(prev) - parseInt(minimumOrder));
-        }
-    }
-    if (bidType === 'bid2') {
-        if (bid > minimumOrder) {
-            setBid((prev) => parseInt(prev) - parseInt(minimumOrder));
-        }
-    }
-    if (bidType === 'bid3') {
-        if (bid > minimumOrder) {
-            setBid((prev) => parseInt(prev) - parseInt(minimumOrder));
-        }
-    }
+    if (bid === "" || bid <= minimumOrder) return;
+
+  setBid(prev =>
+    typeof prev === "number" ? prev - minimumOrder : prev
+  );
 };
 
 
-export const handleBidChange = (e:any, bidType:any, setBid:any) => {
-    const value = parseInt(e.target.value); // Ensure value is a number or default to 0
-    if (bidType === "bid1") {
-        setBid(value);
-    } else if (bidType === "bid2") {
-        setBid(value);
-    } else if (bidType === "bid3") {
-        setBid(value);
+export const handleBidChange = (
+    e: ChangeEvent<HTMLInputElement>,
+    bidType: BidType, // kept for consistency / future use
+    setBid: Dispatch<SetStateAction<number | ''>>
+  ): void => {
+    const rawValue = e.target.value;
+  
+    // Allow clearing the input
+    if (rawValue === '') {
+      setBid('');
+      return;
     }
-};
+  
+    const value = Number(rawValue);
+  
+    if (!Number.isNaN(value)) {
+      setBid(value);
+    }
+  };
 
-export const handleFocus = (bidType:any, bid:any, minimumOrder:any, setBid:any) => {
+export const handleFocus = (
+    bidType: BidType, // kept for consistency (future logic if needed)
+    bid: string | number | null,
+    minimumOrder: number,
+    setBid: React.Dispatch<React.SetStateAction<number | "">>
+  ): void => {
+    if (bid === null || bid === '') return;
+  
+    const value = Number(bid);
+  
+    if (
+      Number.isNaN(value) ||
+      value < minimumOrder ||
+      value % minimumOrder !== 0
+    ) {
+      toast.error(
+        `Enter valid Quantity. It should be multiple of ${minimumOrder}`
+      );
+      setBid('');
+    }
+  };
 
-    
-    if (bidType === 'bid1') {
-        if (bid) { // Check if the input is not empty or null
-            const value = parseInt(bid);
-            if (value >= minimumOrder && value % minimumOrder === 0) {
-                // Valid value
-            } else {
-                toast.error(`Enter valid Quantity. It should be multiple of ${minimumOrder}`);
-                setBid('');
-            }
-        }
+export const handleIncrement = (
+    bidType: BidType,
+    bid: string | number | null,
+    setBid: React.Dispatch<React.SetStateAction<number | "">>,
+    minimumOrder: number
+  ): void => {
+    if (!bid || bid === '') {
+      // Initialize bid with minimumOrder
+      setBid(minimumOrder);
+      return;
     }
-    if (bidType === 'bid2') {
-        if (bid) { // Check if the input is not empty or null
-            const value = parseInt(bid);
-            if (value >= minimumOrder && value % minimumOrder === 0) {
-                // Valid value
-                return value
-            } else {
-                toast.error(`Enter valid Quantity. It should be multiple of ${minimumOrder}`);
-                setBid('');
-            }
-        }
-    }
-    if (bidType === 'bid3') {
-        if (bid) { // Check if the input is not empty or null
-            const value = parseInt(bid);
-            if (value >= minimumOrder && value % minimumOrder === 0) {
-                // Valid value
-            } else {
-                toast.error(`Enter valid Quantity. It should be multiple of ${minimumOrder}`);
-                setBid('');
-            }
-        }
-    }
-};
+  
+    setBid((prev) => Number(prev) + minimumOrder);
+  };
 
-export const handleIncrement = (bidType:any, bid:any, setBid:any, minimumOrder:any) => {
-    if (bidType === 'bid1') {
-        if (!bid || bid === '') {
-            // If bid1 is empty, initialize it to the minimumOrder
-            setBid(minimumOrder);
-        } else {
-            // Increment bid1 by the minimumOrder
-            setBid((prev:any) => parseInt(prev) + minimumOrder);
-        }
-    }
-
-    if (bidType === 'bid2') {
-        if (!bid || bid === '') {
-            setBid(minimumOrder);
-        } else {
-            setBid((prev:any) => parseInt(prev) + minimumOrder);
-        }
-    }
-
-    if (bidType === 'bid3') {
-        if (!bid || bid === '') {
-            setBid(minimumOrder);
-        } else {
-            setBid((prev:any) => parseInt(prev) + minimumOrder);
-        }
-    }
-};
-
-export const handleCheckboxChange = (bidType:any, setIsChecke:any, isChecked:any, setCutOff:any, setDisableCutOff:any, priceRange:any) => {
-    if (bidType === 'bid1') {
-        setIsChecke(!isChecked); // Toggle checkbox state
-        if (!isChecked) {
-            // Set to max price and disable input
-            setCutOff(priceRange.split(" - ")[1]);
-            setDisableCutOff(true);
-        } else {
-            setDisableCutOff(false);
-            setCutOff(""); // Clear cutoff price when unchecked
-        }
-    }
-    if (bidType === 'bid2') {
-        setIsChecke(!isChecked)
-
-        if (!isChecked) {
-            // Set to max price and disable input
-            setCutOff(priceRange.split(" - ")[1]);
-            setDisableCutOff(true);
-        } else {
-            setDisableCutOff(false);
-            setCutOff(""); // Clear cutoff price when unchecked
-        }
-    }
-    if (bidType === 'bid3') {
-        setIsChecke(!isChecked)
-
-        if (!isChecked) {
-            // Set to max price and disable input
-            setCutOff(priceRange.split(" - ")[1]);
-            setDisableCutOff(true);
-        } else {
-            setDisableCutOff(false);
-            setCutOff(""); // Clear cutoff price when unchecked
-        }
-    }
-};
-
-export const handleTextBoxChange = (e:any, bidType:any, setCutOff:any) => {
-    let value = e.target.value;
-    if (value === "") {
-        value = null; // Set to null for empty input
+  export const handleCheckboxChange = (
+    bidType: BidType, // kept for consistency
+    setIsChecked: Dispatch<SetStateAction<boolean>>,
+    isChecked: boolean,
+    setCutOff: Dispatch<SetStateAction<number | ''>>,
+    setDisableCutOff: Dispatch<SetStateAction<boolean>>,
+    priceRange: string
+  ): void => {
+    const [, maxPrice] = priceRange.split(' - ').map(Number);
+  
+    setIsChecked((prev) => !prev);
+  
+    if (!isChecked) {
+      // checked → set max price & disable input
+      setCutOff(maxPrice);
+      setDisableCutOff(true);
     } else {
-        value = parseFloat(value); // Ensure it's a valid number
+      // unchecked → enable input & clear
+      setDisableCutOff(false);
+      setCutOff('');
     }
-
-    if (bidType === 'bid1') {
-        setCutOff(value);
-    } else if (bidType === 'bid2') {
-        setCutOff(value);
-    } else if (bidType === 'bid3') {
-        setCutOff(value);
+  };
+  
+  export const handleTextBoxChange = (
+    e: ChangeEvent<HTMLInputElement>,
+    bidType: BidType, // optional but consistent
+    setCutOff: Dispatch<SetStateAction<number | ''>>
+  ): void => {
+    const value = e.target.value;
+  
+    if (value === '') {
+      setCutOff('');
+      return;
     }
-};
-
-export const handleCutOffBlur = (bidType:any, cutOff:any, setCutOff:any, priceRange:any) => {
-    let value;
-    if (bidType === 'bid1') {
-        value = cutOff;
-    } else if (bidType === 'bid2') {
-        value = cutOff;
-    } else if (bidType === 'bid3') {
-        value = cutOff;
+  
+    const numericValue = Number(value);
+  
+    if (!Number.isNaN(numericValue)) {
+      setCutOff(numericValue);
     }
-
-    if (value === null || value === "") {
-        // If the input is empty, you can reset it to a valid value like null or zero
-        value = null;
-    } else {
-        value = parseInt(value); // Validate if it's a valid number
-        if (value < priceRange.split(" - ")[0] || value > priceRange.split(" - ")[1]) {
-            toast.error(`Please enter a value between ${priceRange.split(" - ")[0]} and ${priceRange.split(" - ")[1]}.`);
-            value = null; // Reset to null or you could clear the input
-            value = ''
-        }
+  };
+  
+  export const handleCutOffBlur = (
+    bidType: BidType,
+    cutOff: number | '',
+    setCutOff: Dispatch<SetStateAction<number | ''>>,
+    priceRange: string
+  ): void => {
+    if (cutOff === '' || cutOff === null) {
+      setCutOff('');
+      return;
     }
-
-    if (bidType === 'bid1') {
-        setCutOff(value);
-    } else if (bidType === 'bid2') {
-        setCutOff(value);
-    } else if (bidType === 'bid3') {
-        setCutOff(value);
+  
+    const value = Number(cutOff);
+    const [minPrice, maxPrice] = priceRange.split(' - ').map(Number);
+  
+    if (Number.isNaN(value) || value < minPrice || value > maxPrice) {
+      toast.error(`Please enter a value between ${minPrice} and ${maxPrice}.`);
+      setCutOff('');
+      return;
     }
-};
+  
+    setCutOff(value);
+  };
+  
 
 
 export const handleTermsChange = (
@@ -288,80 +238,178 @@ const submitApiFetch = async (xmlData,config,clearFn) => {
 
 
 
-export const onSubmitBtn = (userClientCode:any, scripCode:any, ipoCategory:any, upiId:any, selectedUpi:any, bid1:any, cutOff:any, isChecked:any, bid2:any, cutOff2:any, isChecked2:any, bid3:any, cutOff3:any, isChecked3:any, setTermsAccepted:any, termsAccepted:any, clearFn:any, setStatus:any, calculateAmountPayable:any,authToken:any) => {
-
-    const data = {
-        clientCode: userClientCode,
-        scripCode: scripCode,
-        category: ipoCategory,
-        UPIId: `${upiId.trim()}${selectedUpi.trim()}`,
-        bid1: bid1,
-        cutOff: parseInt(cutOff),
-        cutOffFlag: isChecked,
-        bid2: bid2,
-        cutOff2: isNaN(parseInt(cutOff2)) === true ? '' : parseInt(cutOff2),
-        cutOffFlag2: isChecked2,
-        bid3: bid3,
-        cutOff3: isNaN(parseInt(cutOff3)) === true ? '' : parseInt(cutOff3),
-        cutOffFlag3: isChecked3
+export const onSubmitBtn = (
+    userClientCode: string,
+    scripCode: string,
+    ipoCategory: string,
+    upiId: string,
+    selectedUpi: string,
+  
+    bid1: number | '',
+    cutOff: number | '',
+    isChecked: boolean,
+  
+    bid2: number | '',
+    cutOff2: number | '',
+    isChecked2: boolean,
+  
+    bid3: number | '',
+    cutOff3: number | '',
+    isChecked3: boolean,
+  
+    setTermsAccepted: Dispatch<SetStateAction<boolean>>,
+    termsAccepted: boolean,
+  
+    clearFn: () => void,
+    setStatus: Dispatch<SetStateAction<boolean>>,
+  
+    calculateAmountPayable: () => number,
+    authToken: string
+  ): void => {
+    const payload: SubmitBidPayload = {
+      clientCode: userClientCode,
+      scripCode,
+      category: ipoCategory,
+      UPIId: `${upiId.trim()}${selectedUpi.trim()}`,
+  
+      bid1,
+      cutOff: cutOff === '' ? '' : Number(cutOff),
+      cutOffFlag: isChecked,
+  
+      bid2,
+      cutOff2: cutOff2 === '' ? '' : Number(cutOff2),
+      cutOffFlag2: isChecked2,
+  
+      bid3,
+      cutOff3: cutOff3 === '' ? '' : Number(cutOff3),
+      cutOffFlag3: isChecked3,
+    };
+  
+    /* ---------- VALIDATIONS ---------- */
+  
+    if (!upiId || !selectedUpi) {
+      toast.error('UPI ID cannot be blank');
+      return;
     }
-
-
-    // setIpoAllData()
-
-
-    if ((selectedUpi === '' || upiId === '')) {
-
-        
-        toast.error('UPI ID cannot be blank')
-        return;
-    } if (
-        (!bid1 || !cutOff) &&  // Check if bid1 and cutOff are both empty
-        (!bid2 || !cutOff2) && // Check if bid2 and cutOff2 are both empty
-        (!bid3 || !cutOff3)    // Check if bid3 and cutOff3 are both empty
-    ) {
-        toast.error('Enter Bid Details');
-        return;
+  
+    const noBidEntered =
+      (!bid1 || !cutOff) &&
+      (!bid2 || !cutOff2) &&
+      (!bid3 || !cutOff3);
+  
+    if (noBidEntered) {
+      toast.error('Enter Bid Details');
+      return;
     }
-
-    if ((isChecked || isChecked2 || isChecked3) && (calculateAmountPayable() > 200000)) {
-        toast.error('Bid cannot be at the Cut-off Price for HNI category. Please bid at a fixed price in the issue price range.')
-        return
+  
+    const isAnyCutOffChecked = isChecked || isChecked2 || isChecked3;
+  
+    if (isAnyCutOffChecked && calculateAmountPayable() > 200000) {
+      toast.error(
+        'Bid cannot be at the Cut-off Price for HNI category. Please bid at a fixed price in the issue price range.'
+      );
+      return;
     }
-    else {
+  
+    /* ---------- SUBMIT ---------- */
+  
+    setTermsAccepted(!termsAccepted);
+  
+    submitApiFetch(
+      submitXML(
+        payload.clientCode,
+        payload.scripCode,
+        payload.category,
+        payload.UPIId,
+        payload.bid1,
+        payload.cutOff,
+        payload.cutOffFlag,
+        payload.bid2,
+        payload.cutOff2,
+        payload.cutOffFlag2,
+        payload.bid3,
+        payload.cutOff3,
+        payload.cutOffFlag3
+      ),
+      configDetails(authToken),
+      clearFn
+    );
+  
+    setStatus(false);
+    clearFn();
+  };
+  
 
-        setTermsAccepted(!termsAccepted)
-        submitApiFetch(submitXML(data.clientCode, data.scripCode, data.category, data.UPIId, data.bid1, data.cutOff, data.cutOffFlag, data.bid2, data.cutOff2, data.cutOffFlag2, data.bid3, data.cutOff3, data.cutOffFlag3), configDetails(authToken),clearFn)
-       
-        setStatus(false);
-        clearFn()
-        return
+
+
+//   export const handleDelete = async (
+//     data: IpoRow,
+//     clientCode: string
+//   ): Promise<void> => {
+//     const confirmDelete = window.confirm(
+//       'Are you sure you want to delete this IPO?'
+//     );
+  
+//     if (!confirmDelete) return;
+  
+//     try {
+//       await apiService.postWithAuth(
+//         BASE_URL + PATH_URL,
+//         deleteXML(clientCode, data.IPO_NSE_Symbol, data.IPO_Category)
+//       );
+  
+//       toast.success('IPO deleted successfully');
+//     } catch (error: unknown) {
+//       console.error('Delete IPO failed:', error);
+//       toast.error('Failed to delete IPO');
+//     }
+//   };
+  
+export const handleDelete = async (
+    data: IpoRowSymbol,
+    clientCode: string
+  ): Promise<void> => {
+    const confirmDelete = window.confirm(
+      'Are you sure you want to delete this IPO?'
+    );
+  
+    if (!confirmDelete) return;
+  
+    try {
+      await apiService.postWithAuth(
+        BASE_URL + PATH_URL,
+        deleteXML(clientCode, data.IPO_NSE_Symbol, data.IPO_Category)
+      );
+  
+      toast.success('IPO deleted successfully');
+    } catch (error: unknown) {
+      console.error('Delete IPO failed:', error);
+      toast.error('Failed to delete IPO');
     }
-
-}
-
-
-
-export const handleDelete = async (data:any,clientCode:any,config:any) => {
-    if (window.confirm("Are you sure you want to delete this IPO?")) {
-        // const response = await axios.post(IPO_url, deleteXML(clientCode,data.IPO_NSE_Symbol, data.IPO_Category),  config)
-        const response = await apiService.postWithAuth(BASE_URL + PATH_URL, deleteXML(clientCode,data.IPO_NSE_Symbol, data.IPO_Category))
+  };
+  
 
 
-
+  export const checkStatusFs = async (
+    data: IpoRowSymbol,
+    clientCode: string
+  ): Promise<unknown> => {
+    try {
+      const response = await apiService.postWithAuth(
+        BASE_URL + PATH_URL,
+        CheckStatusXML(clientCode, data.IPO_NSE_Symbol, data.IPO_Category)
+      );
+  
+      return response;
+    } catch (error: unknown) {
+      console.error('Check IPO status failed:', error);
+      throw error; // allow caller to handle toast / UI
     }
-};
+  };
+  
 
 
-export const checkStatusFs = async(data:any,clientCode:any,config:any) => {
-    // const response = await axios.post(IPO_url, CheckStatusXML(clientCode,data.IPO_NSE_Symbol, data.IPO_Category),  config)
-    const response = await apiService.postWithAuth(BASE_URL + PATH_URL, CheckStatusXML(clientCode,data.IPO_NSE_Symbol, data.IPO_Category))
 
-
-    
-    return response
-    
-}
 
 
 // deleteXML(data.IPO_NSE_Symbol, data.IPO_Category),
