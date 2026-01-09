@@ -20,21 +20,27 @@ export const xmlDataUPI = `<dsXml>
 </dsXml>`;
 
 
+type BidValue = number | '';
+type CutOffValue = number | '';
+
 
 export const submitXML = (
-  clientCode:any,
-  scripCode:any,
-  category:any,
-  UPIId:any,
-  bid1:any,
-  cutOff:any,
-  cutOffFlag:any,
-  bid2:any,
-  cutOff2:any,
-  cutOffFlag2:any,
-  bid3:any,
-  cutOff3:any,
-  cutOffFlag3:any,
+  clientCode: string,
+  scripCode: string,
+  category: string,
+  UPIId: string,
+
+  bid1: BidValue,
+  cutOff: CutOffValue,
+  cutOffFlag: boolean,
+
+  bid2: BidValue,
+  cutOff2: CutOffValue,
+  cutOffFlag2: boolean,
+
+  bid3: BidValue,
+  cutOff3: CutOffValue,
+  cutOffFlag3: boolean
   // clearFn:any
 ) => {
   const xmlData = `<dsXml>
@@ -74,7 +80,10 @@ export const submitXML = (
 
 
 
-export const deleteXML = (userClientCode,scripCode, individualInvestor) => {
+export const deleteXML = ( 
+  userClientCode: string,
+  scripCode: string,
+  individualInvestor: string) => {
   const xmlData = `<dsXml>
   <J_Ui>"ActionName":"IPO", "Option":"Submit" </J_Ui>
   <X_Filter></X_Filter>
@@ -91,7 +100,11 @@ export const deleteXML = (userClientCode,scripCode, individualInvestor) => {
 };
 
 
-export const CheckStatusXML = (userClientCode,scripCode, individualInvestor) => {
+export const CheckStatusXML = (
+  userClientCode: string,
+  scripCode: string,
+  individualInvestor: string
+) => {
   const xmlData = `<dsXml>
   <J_Ui>"ActionName":"IPO", "Option":"Submit" </J_Ui>
   <X_Filter></X_Filter>
