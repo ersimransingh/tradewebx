@@ -1176,7 +1176,7 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
                                                                             }
                                                                             colors={colors}
                                                                             formData={[]}
-                                                                            handleFormChange={() => { }}
+                                                                            handleFormChange={() => undefined}
                                                                             formValues={row}
                                                                         />
                                                                     ) : editable.type === "WDateBox" ? (
@@ -1371,7 +1371,7 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
                                                                                 }
                                                                                 colors={colors}
                                                                                 formData={[]}
-                                                                                handleFormChange={() => { }}
+                                                                                handleFormChange={() => undefined}
                                                                                 formValues={row}
                                                                             />
                                                                         ) : editable.type === "WDateBox" ? (

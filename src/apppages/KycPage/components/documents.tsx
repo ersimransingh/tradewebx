@@ -764,14 +764,14 @@ const Documents = ({ formFields, tableData, fieldErrors, setFieldData, setActive
                 formValues={fieldValues}
                 masterValues={{}}
                 setFormValues={handleFieldChange}
-                onDropdownChange={() => { }}
+                onDropdownChange={() => undefined}
                 dropdownOptions={personalDropdownOptions}
                 loadingDropdowns={personalLoadingDropdowns}
                 fieldErrors={attachmentsFieldErrors}
                 setFieldErrors={setAttachmentsFieldErrors}
-                setFormData={() => { }}
+                setFormData={() => undefined}
                 setValidationModal={setValidationModal}
-                setDropDownOptions={() => { }}
+                setDropDownOptions={() => undefined}
                 viewMode={viewMode}
             />
         </div>

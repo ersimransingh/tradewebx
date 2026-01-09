@@ -2204,7 +2204,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                 currentSort={sortConfig}
                 onSortChange={setSortConfig}
                 isSortingAllowed={safePageData.getCurrentLevel(currentLevel)?.isShortAble !== "false"}
-                onApply={() => { }}
+                onApply={() => undefined}
                 totalRecords={apiData?.length}   // <-- REQUIRED
             />
             <ConfirmationModal
@@ -2246,7 +2246,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                 onFilterChange={handleDownloadFilterChange}
                 initialValues={downloadFilters}
                 isDownload={true}
-                onApply={() => { }}
+                onApply={() => undefined}
             />
 
             {isEditTableRowModalOpen && <EditTableRowModal

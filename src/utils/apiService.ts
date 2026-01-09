@@ -728,9 +728,7 @@ class ApiService {
         if (typeof window !== 'undefined' && 'indexedDB' in window) {
             const request = indexedDB.deleteDatabase("ekycDB");
 
-            request.onsuccess = () => {
-  
-            };
+            request.onsuccess = () => undefined;
 
             request.onerror = () => {
                 console.error("Error deleting IndexedDB:", request.error);

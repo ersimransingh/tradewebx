@@ -257,7 +257,7 @@ export const fetchMenuItems = createAsyncThunk(
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify(logData)
-                }).catch(() => {});
+                }).catch(() => undefined);
             } catch (loggingError) {
                 console.error(loggingError)
             }

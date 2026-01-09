@@ -536,14 +536,14 @@ const Nominee = ({ formFields, tableData, setFieldData, setActiveTab, Settings }
               setFormValues={(newValues) => {
                 setCurrentFormData(newValues);
               }}
-              onDropdownChange={() => { }}
+              onDropdownChange={() => undefined}
               dropdownOptions={nomineeDropdownOptions}
               loadingDropdowns={nomineeLoadingDropdowns}
               fieldErrors={fieldErrors}
               setFieldErrors={setFieldErrors}
               setFormData={setLocalFormData}
               setValidationModal={setValidationModal}
-              setDropDownOptions={() => { }}
+              setDropDownOptions={() => undefined}
               viewMode={viewMode}
             />
 
@@ -577,7 +577,7 @@ const Nominee = ({ formFields, tableData, setFieldData, setActiveTab, Settings }
                       formValues={guardianFormData}
                       masterValues={{}}
                       setFormValues={setGuardianFormData}
-                      onDropdownChange={() => { }}
+                      onDropdownChange={() => undefined}
                       dropdownOptions={guardianDropdownOptions}
                       loadingDropdowns={guardianLoadingDropdowns}
                       fieldErrors={guardianFieldErrors}
