@@ -449,14 +449,14 @@ const KycDemat = ({ formFields, tableData, setFieldData, setActiveTab, Settings 
               formValues={currentFormData}
               masterValues={{}}
               setFormValues={setCurrentFormData}
-              onDropdownChange={() => { }}
+              onDropdownChange={() => undefined}
               dropdownOptions={dematDropdownOptions}
               loadingDropdowns={dematLoadingDropdowns}
               fieldErrors={fieldErrors}
               setFieldErrors={setFieldErrors}
               setFormData={setLocalFormData}
               setValidationModal={setValidationModal}
-              setDropDownOptions={() => { }}
+              setDropDownOptions={() => undefined}
               viewMode={viewMode}
             />
           </div>

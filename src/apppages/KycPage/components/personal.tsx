@@ -123,14 +123,14 @@ const Personal = ({ formFields, tableData, setFieldData, setActiveTab, Settings 
                 formValues={fieldVlaues || {}}
                 masterValues={{}}
                 setFormValues={setFieldValues}
-                onDropdownChange={() => { }}
+                onDropdownChange={() => undefined}
                 dropdownOptions={personalDropdownOptions}
                 loadingDropdowns={personalLoadingDropdowns}
                 fieldErrors={personalFieldErrors}
                 setFieldErrors={setPersonalFieldErrors}
                 setFormData={setLocalFormData}
                 setValidationModal={setValidationModal}
-                setDropDownOptions={() => { }}
+                setDropDownOptions={() => undefined}
                 viewMode={viewMode}
             />
         </div>

@@ -107,7 +107,8 @@ const parseTextFileStream = (
   const resolveHeaders = () => {
     if (headerResolved || pendingRows.length === 0) return;
 
-    const firstRow = pendingRows.shift()!;
+    const firstRow = pendingRows.shift();
+    if (!firstRow) return;
     const secondRow = pendingRows[0];
     const useFirstRowAsHeader = shouldTreatRowAsHeader(firstRow, secondRow);
 
@@ -121,7 +122,8 @@ const parseTextFileStream = (
     headerResolved = true;
 
     while (pendingRows.length > 0) {
-      pushRowObject(pendingRows.shift()!);
+      const row = pendingRows.shift();
+      if (row) pushRowObject(row);
     }
   };
 

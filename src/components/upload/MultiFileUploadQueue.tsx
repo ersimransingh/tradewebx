@@ -105,7 +105,7 @@ const MultiFileUploadQueue: React.FC<MultiFileUploadQueueProps> = ({
               if (!errorsByFileName.has(errorFileName)) {
                 errorsByFileName.set(errorFileName, []);
               }
-              errorsByFileName.get(errorFileName)!.push(error);
+              errorsByFileName.get(errorFileName)?.push(error);
             });
 
             // Create FileImportErrors for each unique filename
@@ -119,8 +119,10 @@ const MultiFileUploadQueue: React.FC<MultiFileUploadQueueProps> = ({
                 });
               } else {
                 // Merge errors if same filename appears in multiple items
-                const existing = errorsByFile.get(errorFileName)!;
-                existing.errors.push(...errors);
+                const existing = errorsByFile.get(errorFileName);
+                if (existing) {
+                  existing.errors.push(...errors);
+                }
               }
             });
 
@@ -471,12 +473,12 @@ const MultiFileUploadQueue: React.FC<MultiFileUploadQueueProps> = ({
                               onClick={() => {
                                 // Show modal with this item's errors
                                 const errorsByFileName = new Map<string, any[]>();
-                                item.importErrors!.forEach(error => {
+                                item.importErrors?.forEach(error => {
                                   const errorFileName = error.tf_FileName || item.fileName;
                                   if (!errorsByFileName.has(errorFileName)) {
                                     errorsByFileName.set(errorFileName, []);
                                   }
-                                  errorsByFileName.get(errorFileName)!.push(error);
+                                  errorsByFileName.get(errorFileName)?.push(error);
                                 });
 
                                 const errorsList: FileImportErrors[] = Array.from(errorsByFileName.entries()).map(([errorFileName, errors]) => ({

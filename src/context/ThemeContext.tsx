@@ -352,9 +352,9 @@ export const useTheme = () => {
         theme: 'light' as ThemeType,
         colors: initialThemes['light'],
         fonts: defaultFonts,
-        setTheme: () => { },
-        updateTheme: () => { },
-        updateFonts: () => { },
+        setTheme: () => undefined,
+        updateTheme: () => undefined,
+        updateFonts: () => undefined,
         availableThemes: Object.keys(initialThemes) as ThemeType[],
         allThemes: initialThemes,
       };

@@ -210,7 +210,7 @@ const ColumnFilterDropdown: React.FC<{
 
     // Debug: Track isOpen state changes
     useEffect(() => {
-
+        // Track isOpen state changes
     }, [isOpen, column]);
 
     // Don't render filter dropdown if data type is 'none'
@@ -623,7 +623,7 @@ const useScreenSize = () => {
     return screenSize;
 };
 
-const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, onRowSelect, tableRef, summary, isEntryForm = false, handleAction = () => { }, fullHeight = true, showViewDocument = false, buttonConfig, filtersCheck, pageData, detailColumns, onDetailColumnClick, frozenColumns = [] }) => {
+const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, onRowSelect, tableRef, summary, isEntryForm = false, handleAction = () => undefined, fullHeight = true, showViewDocument = false, buttonConfig, filtersCheck, pageData, detailColumns, onDetailColumnClick, frozenColumns = [] }) => {
 
     // 🆕 ADDITION: Multi-checkbox toggle handler
     const toggleRowSelection = (row: any, checked: boolean) => {

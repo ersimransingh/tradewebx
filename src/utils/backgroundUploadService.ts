@@ -379,7 +379,7 @@ class BackgroundUploadManager {
 
       if (fileType === 'csv') {
         this.currentFileAbortRef = parseCSVStream(
-          item.file!,
+          item.file as File,
           onData,
           onComplete,
           onError,
@@ -387,7 +387,7 @@ class BackgroundUploadManager {
         );
       } else {
         this.currentFileAbortRef = parseTXTStream(
-          item.file!,
+          item.file as File,
           onData,
           onComplete,
           onError,
@@ -422,7 +422,7 @@ class BackgroundUploadManager {
     const chunkData: ChunkData = {
       chunkIndex,
       data,
-      sessionId: item.sessionId!,
+      sessionId: item.sessionId as string,
       totalChunks: Math.ceil(item.totalRecords / chunkSize),
       startIndex: chunkIndex * chunkSize,
       endIndex: (chunkIndex + 1) * chunkSize,

@@ -461,16 +461,16 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
                     return;
                 } else {
                     // Handle table rows
-                    updated!.forEach((_, idx) => {
-                        if (Array.isArray(column.dependsOn!.field)) {
-                            const allFieldValues = column.dependsOn!.field.reduce((acc, field) => {
-                                acc[field] = updated![idx][field];
+                    updated.forEach((_, idx) => {
+                        if (Array.isArray(column.dependsOn?.field)) {
+                            const allFieldValues = column.dependsOn.field.reduce((acc, field) => {
+                                acc[field] = updated[idx][field];
                                 return acc;
                             }, {} as Record<string, any>);
 
                             fetchDependentOptions(column, allFieldValues, idx);
                         } else {
-                            fetchDependentOptions(column, updated![idx][key], idx);
+                            fetchDependentOptions(column, updated[idx][key], idx);
                         }
                     });
                 }
@@ -1176,7 +1176,7 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
                                                                             }
                                                                             colors={colors}
                                                                             formData={[]}
-                                                                            handleFormChange={() => { }}
+                                                                            handleFormChange={() => undefined}
                                                                             formValues={row}
                                                                         />
                                                                     ) : editable.type === "WDateBox" ? (
@@ -1371,7 +1371,7 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
                                                                                 }
                                                                                 colors={colors}
                                                                                 formData={[]}
-                                                                                handleFormChange={() => { }}
+                                                                                handleFormChange={() => undefined}
                                                                                 formValues={row}
                                                                             />
                                                                         ) : editable.type === "WDateBox" ? (

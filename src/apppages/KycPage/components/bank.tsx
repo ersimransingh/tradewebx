@@ -444,14 +444,14 @@ const KycBank = ({ formFields, tableData, setFieldData, setActiveTab, Settings }
               formValues={currentFormData}
               masterValues={{}}
               setFormValues={setCurrentFormData}
-              onDropdownChange={() => { }}
+              onDropdownChange={() => undefined}
               dropdownOptions={bankDropdownOptions}
               loadingDropdowns={bankLoadingDropdowns}
               fieldErrors={fieldErrors}
               setFieldErrors={setFieldErrors}
               setFormData={setLocalFormData}
               setValidationModal={setValidationModal}
-              setDropDownOptions={() => { }}
+              setDropDownOptions={() => undefined}
               viewMode={viewMode}
             />
           </div>
