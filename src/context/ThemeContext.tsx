@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 // import axios from 'axios';
 import { ACTION_NAME, PATH_URL } from '@/utils/constants';
 import { BASE_URL } from '@/utils/constants';
@@ -157,7 +157,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [hasFetchedTheme, setHasFetchedTheme] = useState(false);
   const { userId: UserId, userType: UserType, isAuthenticated } = useSelector((state: RootState) => state.auth)
   // Add fetchThemes function
-  const fetchThemes = async () => {
+  // const fetchThemes = async () => {
+  const fetchThemes = useCallback(async () => {
     try {
       const authToken = getLocalStorage('auth_token');
       if (!authToken) {
@@ -244,7 +245,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } finally {
       themeFetchInFlight.current = false;
     }
-  };
+    }, [UserId,UserType,hasFetchedTheme]);
+  // };
 
   useEffect(() => {
     const loadTheme = async () => {
@@ -337,7 +339,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setHasFetchedTheme(false);
       themeFetchInFlight.current = false;
     }
-  }, [UserId, UserType, isAuthenticated])
+  }, [UserId, UserType, isAuthenticated, fetchThemes])
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 };
 

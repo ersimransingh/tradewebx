@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
+import { useState, useEffect, forwardRef, useImperativeHandle, useCallback } from 'react';
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 
@@ -23,7 +23,8 @@ const CaptchaComponent = forwardRef<CaptchaComponentRef, CaptchaComponentProps>(
         const [isAudioSupported, setIsAudioSupported] = useState(false);
         const [isAudioPlaying, setIsAudioPlaying] = useState(false);
 
-        const generateCaptcha = () => {
+        // const generateCaptcha = () => {
+        const generateCaptcha = useCallback(() => {
 
             if (typeof window !== 'undefined' && window.speechSynthesis) {
                 window.speechSynthesis.cancel();
@@ -42,7 +43,8 @@ const CaptchaComponent = forwardRef<CaptchaComponentRef, CaptchaComponentProps>(
             setIsValid(false);
             onCaptchaChange(false);
             setCaptchaId(Math.random().toString(36).substring(2, 11));
-        };
+         }, [onCaptchaChange]);   
+        // };
 
         useImperativeHandle(ref, () => {
 
@@ -56,7 +58,7 @@ const CaptchaComponent = forwardRef<CaptchaComponentRef, CaptchaComponentProps>(
 
         useEffect(() => {
             generateCaptcha();
-        }, []);
+        }, [generateCaptcha]);
 
         useEffect(() => {
             if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
