@@ -521,7 +521,7 @@ function Dashboard() {
             setLoading(false);
         }
     // };
-    }, [selectedClient,dropdownChanged,isInitialLoad,]);
+    }, [selectedClient,dropdownChanged,isInitialLoad]);
 
     // Restore selected client from sessionStorage on component mount
     useEffect(() => {
@@ -562,7 +562,7 @@ function Dashboard() {
             dispatch(fetchInitializeLogin());
         }
     // }, [dispatch, lastTradingDate, companyLogo]);
-    },[auth.userType,dispatch,lastTradingDate,companyLogo,getDashboardData,]);
+    },[auth.userType,dispatch,lastTradingDate,companyLogo,getDashboardData]);
 
     // Save selected client to sessionStorage whenever it changes
     useEffect(() => {
@@ -595,7 +595,7 @@ function Dashboard() {
             }
         }
     // }, [selectedClient]);
-     }, [selectedClient,auth.userType,dropdownChanged,isInitialLoad,getDashboardData,]);
+     }, [selectedClient,auth.userType,dropdownChanged,isInitialLoad,getDashboardData]);
 
         const handleClientChange = useCallback(
           (v: { value: string; label: string } | null) => {
