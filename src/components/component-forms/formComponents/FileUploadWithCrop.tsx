@@ -89,13 +89,14 @@ const FileUploadWithCrop: React.FC<FileUploadWithCropProps> = ({
     });
   }
 
-  useEffect(() => {
-    if (completedCrop?.width && completedCrop?.height && imgRef.current && previewCanvasRef.current) {
-      generateCroppedImage();
-    }
-  }, [completedCrop]);
+  // useEffect(() => {
+  //   if (completedCrop?.width && completedCrop?.height && imgRef.current && previewCanvasRef.current) {
+  //     generateCroppedImage();
+  //   }
+  // }, [completedCrop]);
 
-  const generateCroppedImage = async () => {
+  // const generateCroppedImage = async () => {
+  const generateCroppedImage = React.useCallback(async () => {  
     if (!imgRef.current || !previewCanvasRef.current || !completedCrop) return;
 
     const canvas = previewCanvasRef.current;
@@ -158,7 +159,13 @@ const FileUploadWithCrop: React.FC<FileUploadWithCropProps> = ({
         0.9
       );
     });
-  };
+    }, [completedCrop, fileName, fileType, field.wKey, setFormValues]);
+  // };
+    useEffect(() => {
+    if (completedCrop?.width && completedCrop?.height && imgRef.current && previewCanvasRef.current) {
+      generateCroppedImage();
+    }
+  }, [completedCrop,generateCroppedImage]);
 
   const handleCropDone = async () => {
     if (croppedImageUrl) {

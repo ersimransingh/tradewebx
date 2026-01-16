@@ -451,7 +451,8 @@ function Dashboard() {
               }));
             }, []);
 
-    const getDashboardData = async () => {
+    // const getDashboardData = async () => {
+    const getDashboardData = useCallback(async () => {
 
         // Check if we have cached data for this client in sessionStorage
         if (selectedClient && !dropdownChanged && !isInitialLoad) {
@@ -519,7 +520,8 @@ function Dashboard() {
         } finally {
             setLoading(false);
         }
-    };
+    // };
+    }, [selectedClient,dropdownChanged,isInitialLoad]);
 
     // Restore selected client from sessionStorage on component mount
     useEffect(() => {
@@ -559,7 +561,8 @@ function Dashboard() {
         if (!companyLogo) {
             dispatch(fetchInitializeLogin());
         }
-    }, [dispatch, lastTradingDate, companyLogo]);
+    // }, [dispatch, lastTradingDate, companyLogo]);
+    },[auth.userType,dispatch,lastTradingDate,companyLogo,getDashboardData]);
 
     // Save selected client to sessionStorage whenever it changes
     useEffect(() => {
@@ -591,7 +594,8 @@ function Dashboard() {
                 getDashboardData();
             }
         }
-    }, [selectedClient]);
+    // }, [selectedClient]);
+     }, [selectedClient,auth.userType,dropdownChanged,isInitialLoad,getDashboardData]);
 
         const handleClientChange = useCallback(
           (v: { value: string; label: string } | null) => {
@@ -616,7 +620,7 @@ function Dashboard() {
         setDropdownChanged(true);
         setError(false);
         getDashboardData();
-    }, [selectedClient]);
+    }, [selectedClient,getDashboardData]);
 
     // Function to clear session data on logout
     const clearSessionData = useCallback(() => {

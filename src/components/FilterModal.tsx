@@ -71,7 +71,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
     // Reset flag so it only fires once
     setShouldAnnounce(false);
 
-}, [totalRecords]);
+}, [totalRecords,shouldAnnounce]);
 
     // Handle apply button click
     const handleApply = () => {
