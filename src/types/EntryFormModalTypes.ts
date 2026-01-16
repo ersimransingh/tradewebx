@@ -52,6 +52,7 @@ export interface FormField {
     type: string;
     label: string;
     isBR?: string;
+    isUpper?: string;
     fieldJustUpdated?:string;
     isChangeColumn?:string;
     FieldVisibleTag?:string;

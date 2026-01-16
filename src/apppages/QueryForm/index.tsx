@@ -3,18 +3,18 @@
 import React, { useEffect, useRef, useState } from "react";
 import Select, { SingleValue } from "react-select";
 import { useTheme } from "@/context/ThemeContext";
-import { getLocalStorage, storeLocalStorage, removeLocalStorage, findPageData} from "@/utils/helper";
+import { getLocalStorage, storeLocalStorage, removeLocalStorage, findPageData } from "@/utils/helper";
 import apiService from "@/utils/apiService";
 import { useAppSelector } from "@/redux/hooks";
 import { store } from "@/redux/store";
-import { ACTION_NAME, BASE_URL, PATH_URL,APP_METADATA_KEY } from "@/utils/constants";
+import { ACTION_NAME, BASE_URL, PATH_URL, APP_METADATA_KEY } from "@/utils/constants";
 import Loader from "@/components/Loader";
 import { toast } from "react-toastify";
-import {DataGrid,  Column } from "react-data-grid";
+import { DataGrid, Column } from "react-data-grid";
 import { FiEye, FiEyeOff } from "react-icons/fi";
-import { FaFileCsv,FaFileExcel } from "react-icons/fa";
+import { FaFileCsv, FaFileExcel } from "react-icons/fa";
 import { selectAllMenuItems } from "@/redux/features/menuSlice";
-import {exportTableToCsv, exportTableToExcel} from "@/components/DataTable";
+import { exportTableToCsv, exportTableToExcel } from "@/components/DataTable";
 import CryptoJS from 'crypto-js';
 
 
@@ -36,12 +36,12 @@ function Encryption(data) {
   const key = CryptoJS.enc.Utf8.parse(passKey);
   const iv = CryptoJS.enc.Utf8.parse(passKey);
   const encrypted = CryptoJS.AES.encrypt(CryptoJS.enc.Utf8.parse(data), key,
-      {
-          keySize: 128 / 8,
-          iv: iv,
-          mode: CryptoJS.mode.CBC,
-          padding: CryptoJS.pad.Pkcs7
-      });
+    {
+      keySize: 128 / 8,
+      iv: iv,
+      mode: CryptoJS.mode.CBC,
+      padding: CryptoJS.pad.Pkcs7
+    });
   return encrypted.toString();
 }
 
@@ -73,7 +73,7 @@ const buildDatabaseXml = () => `
   </dsXml>
 `;
 
-const buildExecuteQueryXml = (query: string,option:string) => `
+const buildExecuteQueryXml = (query: string, option: string) => `
   <dsXml>
     <J_Ui>"ActionName":"${ACTION_NAME}","Option":"GetDataQueryForm"</J_Ui>
     <Sql/>
@@ -91,14 +91,14 @@ const buildExecuteQueryXml = (query: string,option:string) => `
 
 export default function QueryFormPage() {
   const { colors } = useTheme();
-  
+
   const AUTH_KEY = "queryFormAuth";
   const tableRef = useRef<HTMLDivElement>(null);
 
   const menuItems = useAppSelector(selectAllMenuItems);
   const pageData: any = findPageData(menuItems, "queryform");
 
-  
+
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => !!getLocalStorage(AUTH_KEY));
 
   const [loading, setLoading] = useState(false);
@@ -122,7 +122,7 @@ export default function QueryFormPage() {
 
   /* Refs */
   const passwordInputRef = useRef<HTMLInputElement | null>(null);
-  const queryTextRef = useRef<HTMLTextAreaElement | null>(null);  
+  const queryTextRef = useRef<HTMLTextAreaElement | null>(null);
 
   /* Focus password on load */
   useEffect(() => {
@@ -210,56 +210,56 @@ export default function QueryFormPage() {
   };
 
   /* ------------------ Execute Query ------------------ */
-      const handleExecute = async () => {
-        if (!selectedDb) return toast.error("Please select a database");
-        if (!queryText.trim()) return toast.error("Query cannot be empty");
-      
-        setRows([]);
-        setColumns([]);
-        setStatusMessage("");
-      
-        const startTime = performance.now();   // ⏱️ START TIMER
-        setLoading(true);
-      
-        try {
-          const selectedOption = selectedDb?.value || "";
-          const xmlData = buildExecuteQueryXml(queryText.trim(), selectedOption);
-        
-          const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
-        
-          const endTime = performance.now(); 
-          const timeTaken = ((endTime - startTime) / 1000).toFixed(3); 
-        
-          const returnedRows = response?.data?.data?.rs0 || [];
-        
-          if (!returnedRows.length) {
-            setStatusMessage(`No results found. (Processed in ${timeTaken} s)`);
-            return;
-          }
-        
-          const keys = Array.from(
-            new Set(returnedRows.flatMap((row: KeyValue) => Object.keys(row)))
-          );
-        
-          const gridColumns: Column<KeyValue>[] = keys.map((key: string) => ({
-            key,
-            name: key,
-            width: 200,
-            resizable: true,
-          }));
-        
-          setColumns(gridColumns);
-          setRows(returnedRows);
-          setStatusMessage(
-            `Query executed in ${timeTaken} s. ${returnedRows.length} row(s).`
-          );
-        
-        } catch {
-          toast.error("Query execution failed");
-        } finally {
-          setLoading(false);
-        }
-      };
+  const handleExecute = async () => {
+    if (!selectedDb) return toast.error("Please select a database");
+    if (!queryText.trim()) return toast.error("Query cannot be empty");
+
+    setRows([]);
+    setColumns([]);
+    setStatusMessage("");
+
+    const startTime = performance.now();   // ⏱️ START TIMER
+    setLoading(true);
+
+    try {
+      const selectedOption = selectedDb?.value || "";
+      const xmlData = buildExecuteQueryXml(queryText.trim(), selectedOption);
+
+      const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
+
+      const endTime = performance.now();
+      const timeTaken = ((endTime - startTime) / 1000).toFixed(3);
+
+      const returnedRows = response?.data?.data?.rs0 || [];
+
+      if (!returnedRows.length) {
+        setStatusMessage(`No results found. (Processed in ${timeTaken} s)`);
+        return;
+      }
+
+      const keys = Array.from(
+        new Set(returnedRows.flatMap((row: KeyValue) => Object.keys(row)))
+      );
+
+      const gridColumns: Column<KeyValue>[] = keys.map((key: string) => ({
+        key,
+        name: key,
+        width: 200,
+        resizable: true,
+      }));
+
+      setColumns(gridColumns);
+      setRows(returnedRows);
+      setStatusMessage(
+        `Query executed in ${timeTaken} s. ${returnedRows.length} row(s).`
+      );
+
+    } catch {
+      toast.error("Query execution failed");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   /* ------------------ Clear ------------------ */
   const handleClear = () => {
@@ -272,20 +272,18 @@ export default function QueryFormPage() {
 
   /* ------------------ clear auth on route change ------------------ */
   useEffect(() => {
-  return () => {
-    console.error("Route changed");
-    handleLogout()
-  };
-}, []);
+    return () => {
+      handleLogout()
+    };
+  }, []);
 
   const appMetadata = (() => {
-        try {
-            return JSON.parse(getLocalStorage(APP_METADATA_KEY))
-        } catch (err) {
-            console.error(err)
-            return store.getState().common
-        }
-    })();
+    try {
+      return JSON.parse(getLocalStorage(APP_METADATA_KEY))
+    } catch (err) {
+      return store.getState().common
+    }
+  })();
 
   /* ------------------ MAIN JSX ------------------ */
 
@@ -331,39 +329,39 @@ export default function QueryFormPage() {
               Enter Password:
             </label>
 
-           {/* Password Input with Eye Icon */}
-              <div style={{ position: "relative", width: "100%" }}>
-                <input
-                  id="pwd"
-                  ref={passwordInputRef}
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "10px 40px 10px 10px", // leave space for icon
-                    marginTop: 6,
-                    borderRadius: 6,
-                    border: `1px solid ${colors.textInputBorder}`,
-                  }}
-                />
+            {/* Password Input with Eye Icon */}
+            <div style={{ position: "relative", width: "100%" }}>
+              <input
+                id="pwd"
+                ref={passwordInputRef}
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "10px 40px 10px 10px", // leave space for icon
+                  marginTop: 6,
+                  borderRadius: 6,
+                  border: `1px solid ${colors.textInputBorder}`,
+                }}
+              />
 
-                {/* Eye Icon */}
-                <span
-                  onClick={() => setShowPassword((prev) => !prev)}
-                  style={{
-                    position: "absolute",
-                    right: 10,
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    cursor: "pointer",
-                    color: colors.text,
-                    fontSize: 20,
-                  }}
-                >
-                  {showPassword ? <FiEyeOff /> : <FiEye />}
-                </span>
-              </div>
+              {/* Eye Icon */}
+              <span
+                onClick={() => setShowPassword((prev) => !prev)}
+                style={{
+                  position: "absolute",
+                  right: 10,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  cursor: "pointer",
+                  color: colors.text,
+                  fontSize: 20,
+                }}
+              >
+                {showPassword ? <FiEyeOff /> : <FiEye />}
+              </span>
+            </div>
             {passwordError && <p style={{ color: colors.errorText }}>{passwordError}</p>}
             <button
               type="submit"
@@ -469,61 +467,61 @@ export default function QueryFormPage() {
 
             {/* ------------------ RESULTS GRID (react-data-grid) ------------------ */}
             {columns.length > 0 && (
-                <>
-                  {/* Export buttons – Accessible, WCAG compliant */}
-                  <div
+              <>
+                {/* Export buttons – Accessible, WCAG compliant */}
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    gap: 12,
+                  }}
+                >
+                  {/* CSV */}
+                  <button
+                    onClick={() => {
+                      toast.success("your reports will be downloded in the background")
+                      exportTableToCsv(tableRef.current, null, rows, pageData)
+                    }}
+                    aria-label="Export table as CSV file"
                     style={{
+                      padding: "8px 12px",
+                      background: colors.buttonBackground,
+                      color: colors.buttonText,
+                      borderRadius: 6,
+                      border: "1px solid transparent",
                       display: "flex",
-                      justifyContent: "flex-end",
-                      gap: 12,
+                      alignItems: "center",
+                      gap: 6,
+                      cursor: "pointer"
                     }}
                   >
-                    {/* CSV */}
-                    <button
-                      onClick={()=>{
-                        toast.success("your reports will be downloded in the background")
-                        exportTableToCsv(tableRef.current, null, rows, pageData)
-                      }}
-                      aria-label="Export table as CSV file"
-                      style={{
-                        padding: "8px 12px",
-                        background: colors.buttonBackground,
-                        color: colors.buttonText,
-                        borderRadius: 6,
-                        border: "1px solid transparent",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 6,
-                        cursor: "pointer"
-                      }}
-                    > 
-                      <FaFileCsv size={20} aria-hidden="true" />
-                    </button>
-                    
-                    {/* Excel */}
-                    <button
-                      onClick={()=>{
-                        toast.success("your reports will be downloded in the background")
-                        exportTableToExcel(tableRef.current,null,rows,pageData,appMetadata)
-                      }}
-                      aria-label="Export table as Excel file"
-                      style={{
-                        padding: "8px 12px",
-                        background: colors.buttonBackground,
-                        color: colors.buttonText,
-                        borderRadius: 6,
-                        border: "1px solid transparent",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 6,
-                        cursor: "pointer"
-                      }}
-                    >
-                      <FaFileExcel size={20} aria-hidden="true" />
-                    </button>
-                    
-                    {/* PDF currently commented due to sanjiv sir request*/}
-                    {/* <button
+                    <FaFileCsv size={20} aria-hidden="true" />
+                  </button>
+
+                  {/* Excel */}
+                  <button
+                    onClick={() => {
+                      toast.success("your reports will be downloded in the background")
+                      exportTableToExcel(tableRef.current, null, rows, pageData, appMetadata, [])
+                    }}
+                    aria-label="Export table as Excel file"
+                    style={{
+                      padding: "8px 12px",
+                      background: colors.buttonBackground,
+                      color: colors.buttonText,
+                      borderRadius: 6,
+                      border: "1px solid transparent",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      cursor: "pointer"
+                    }}
+                  >
+                    <FaFileExcel size={20} aria-hidden="true" />
+                  </button>
+
+                  {/* PDF currently commented due to sanjiv sir request*/}
+                  {/* <button
                       onClick={()=>{
                         toast.success("your reports will be downloded in the background")
                         exportTableToPdf(tableRef.current,null,appMetadata,rows,pageData,null,0,"download")
@@ -543,27 +541,27 @@ export default function QueryFormPage() {
                     >
                       <FaFilePdf size={20} aria-hidden="true" />
                     </button> */}
-                  </div>
-                    
-                  <div
+                </div>
+
+                <div
+                  style={{
+                    height: 400,
+                    marginTop: 10,
+                  }}
+                  ref={tableRef}
+                >
+                  <DataGrid
+                    columns={columns}
+                    className="rdg-light"
+                    rows={rows}
                     style={{
-                      height: 400,
-                      marginTop: 10,
+                      height: "100%",
+                      background: colors.cardBackground,
                     }}
-                    ref={tableRef}
-                  >
-                    <DataGrid
-                      columns={columns}
-                      className="rdg-light"
-                      rows={rows}
-                      style={{
-                        height: "100%",
-                        background: colors.cardBackground,
-                      }}
-                    />
-                  </div>
-                </>
-              )}
+                  />
+                </div>
+              </>
+            )}
           </>
         )}
       </div>

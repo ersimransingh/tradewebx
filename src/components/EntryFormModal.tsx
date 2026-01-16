@@ -756,7 +756,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
 
             const options = response.data?.data?.rs0?.map((item: any) => ({
                 label: item[field.wDropDownKey?.key || 'DisplayName'],
-                value: item[field.wDropDownKey?.value || 'Value']
+                value: item[field.wDropDownKey?.value || 'Value' || 'value']
             }));
 
             setDropdownOptions(prev => ({ ...prev, [field.wKey]: options }));
@@ -1926,7 +1926,11 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
         const errors = {};
         tabData.Data.forEach(field => {
             if (field.FieldEnabledTag === "Y" && field.isMandatory === "true" && field.type !== "WDisplayBox") {
-                if (!tabFormValues[field.wKey] || tabFormValues[field.wKey]?.toString()?.trim() === "") {
+                let val = tabFormValues[field.wKey];
+                if (val === 0 || val === 1) {
+                    val = val.toString();
+                }
+                if (!val || val?.toString()?.trim() === "") {
                     errors[field.wKey] = `${field.label} is required`;
                 }
             }

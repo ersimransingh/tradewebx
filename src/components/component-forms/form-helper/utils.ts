@@ -30,7 +30,11 @@ export const validateForm = (formData, formValues) => {
     const errors = {};
     formData.forEach(field => {
         if (field.FieldEnabledTag === "Y" && field.isMandatory === "true" && field.type !== "WDisplayBox") {
-            if (!formValues[field.wKey] || formValues[field.wKey]?.toString()?.trim() === "") {
+            let val = formValues[field.wKey];
+            if (val === 0 || val === 1) {
+                val = val.toString();
+            }
+            if (!val || val?.toString()?.trim() === "") {
                 errors[field.wKey] = `${field.label} is required`;
             }
         }

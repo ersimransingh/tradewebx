@@ -95,16 +95,24 @@ const TabContent: React.FC<TabContentProps> = ({
 
     // Flatten tabTableData into a single context object for validation context
     const contextData = React.useMemo(() => {
-        if (!tabTableData) return {};
-        
-        return Object.values(tabTableData).reduce((acc, rows) => {
-            if (Array.isArray(rows) && rows.length > 0) {
-                 // Assuming we want the first row of each tab's table data as context
-                return { ...acc, ...rows[0] };
-            }
-            return acc;
-        }, {} as Record<string, any>);
-    }, [tabTableData]);
+        const flatTableData = tabTableData
+            ? Object.values(tabTableData).reduce((acc, rows) => {
+                if (Array.isArray(rows) && rows.length > 0) {
+                    // Assuming we want the first row of each tab's table data as context
+                    return { ...acc, ...rows[0] };
+                }
+                return acc;
+            }, {} as Record<string, any>)
+            : {};
+
+        const flatFormData = tabFormValues
+            ? Object.values(tabFormValues).reduce((acc, values) => {
+                return { ...acc, ...(values || {}) };
+            }, {} as Record<string, any>)
+            : {};
+
+        return {...flatFormData,...flatTableData,  };
+    }, [tabTableData, tabFormValues]);
 
     return (
         <>
@@ -250,7 +258,15 @@ const TabContent: React.FC<TabContentProps> = ({
                                                 className={`flex items-center text-white`}
                                                 onClick={() => {
                                                     setTabsModal(false);
-                                                    setIsMinor(false);
+                                                    const currentTabFields = tabsData[activeTabIndex]?.Data || [];
+                                                    setFieldErrors((prev) => {
+                                                        const newErrors = { ...prev };
+                                                        currentTabFields.forEach((field) => {
+                                                            if (field.wKey) delete newErrors[field.wKey];
+                                                        });
+                                                        return newErrors;
+                                                    });
+                                                    handleClearTabTableRowEntry();
                                                 }}
                                             >
                                                 <MdOutlineClose />     Close

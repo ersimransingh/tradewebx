@@ -687,7 +687,10 @@ const EntryForm: React.FC<EntryFormProps> = ({
                         }}
                         value={formValues[field.wKey] || ""}
                         onChange={(e) => {
-                            const value = e.target.value;
+                            let value = e.target.value;
+                            if (field?.isUpper === "Y") {
+                                value = value.toUpperCase();
+                            }
                             if (field.FieldType === "INT" && !/^[0-9]*$/.test(value)) return;
                             if (value.length <= parseInt(field.FieldSize, 10)) {
                                 handleInputChange(field.wKey, value);
