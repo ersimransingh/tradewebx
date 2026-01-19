@@ -1,11 +1,12 @@
 'use client';
 import { useTheme } from '@/context/ThemeContext';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { decimalFormat, dropDownApiCall, pledgeRedirectApiNDSLCall, rightAlignKeys, tableApiCall } from './marginConst';
 import { ACTION_NAME, BASE_URL, PATH_URL } from '@/utils/constants';
 import apiService from '@/utils/apiService';
 import { getLocalStorage } from '@/utils/helper';
 import { useLocalStorage } from '@/hooks/useLocalListner';
+import { toast } from 'react-toastify';
 
 type TableRow = {
   [key: string]: string;
@@ -176,20 +177,56 @@ export default function MarginPledgeOnline() {
     }
   };
 
-  const pledgeRedirectApiCDSLCall = () => {
+  // const pledgeRedirectApiCDSLCall = () => {
+  //   try {
+  //     const redirectData = pledgeRedirectData?.[0]?.DATA;
+  //     if (!redirectData) return;
+
+  //     const { APIUrl, DPId, ReqId, Version } = redirectData.Param;
+  //     const pledgedtls = redirectData.JsonOutput;
+
+  //     const form = document.createElement('form');
+  //     form.method = 'POST';
+  //     form.action = APIUrl;
+  //     form.target = '_blank';
+  //     form.style.display = 'none';
+
+  //     const addHiddenField = (name: string, value: string) => {
+  //       const input = document.createElement('input');
+  //       input.type = 'hidden';
+  //       input.name = name;
+  //       input.value = value;
+  //       form.appendChild(input);
+  //     };
+
+  //     addHiddenField('dpid', DPId);
+  //     addHiddenField('reqid', ReqId);
+  //     addHiddenField('version', Version);
+  //     addHiddenField('pledgedtls', pledgedtls);
+
+  //     document.body.appendChild(form);
+  //     form.submit();
+  //     setTimeout(() => document.body.removeChild(form), 1000);
+  //   } catch (error) {
+  //     console.error("Pledge API Error:", error);
+  //   }
+  // };
+
+
+  const pledgeRedirectApiCDSLCall = useCallback(() => {
     try {
       const redirectData = pledgeRedirectData?.[0]?.DATA;
       if (!redirectData) return;
-
+  
       const { APIUrl, DPId, ReqId, Version } = redirectData.Param;
       const pledgedtls = redirectData.JsonOutput;
-
+  
       const form = document.createElement('form');
       form.method = 'POST';
       form.action = APIUrl;
       form.target = '_blank';
       form.style.display = 'none';
-
+  
       const addHiddenField = (name: string, value: string) => {
         const input = document.createElement('input');
         input.type = 'hidden';
@@ -197,19 +234,20 @@ export default function MarginPledgeOnline() {
         input.value = value;
         form.appendChild(input);
       };
-
+  
       addHiddenField('dpid', DPId);
       addHiddenField('reqid', ReqId);
       addHiddenField('version', Version);
       addHiddenField('pledgedtls', pledgedtls);
-
+  
       document.body.appendChild(form);
       form.submit();
       setTimeout(() => document.body.removeChild(form), 1000);
     } catch (error) {
-      console.error("Pledge API Error:", error);
+      console.error('Pledge API Error:', error);
     }
-  };
+  }, [pledgeRedirectData]);
+  
 
   useEffect(() => {
     // if (pledgeRedirectData.length > 0) 
@@ -222,7 +260,7 @@ export default function MarginPledgeOnline() {
       
       pledgeRedirectApiNDSLCall(userId,userType,pledgeRedirectData)
     }
-  }, [pledgeRedirectData,selectedDemat?.DPType]);
+  }, [ pledgeRedirectApiCDSLCall,pledgeRedirectData, userId,userType,selectedDemat?.DPType]);
 
   return (
     <div className="w-full">

@@ -71,7 +71,7 @@ const ApiConfiguration = () => {
         setViewLogServiceName
       ).finally(() => setLogLoading(false)); // ✅ hide loader when done
     }
-  }, [viewLogServiceName]);
+  }, [viewLogServiceName,userId]);
 
   const VISIBLE_COL_COUNT = 6;
   const visibleKeys = uniqueKeys.slice(0, VISIBLE_COL_COUNT);
