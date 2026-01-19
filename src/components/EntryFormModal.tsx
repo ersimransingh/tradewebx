@@ -2499,6 +2499,25 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
     ));
     }
 
+
+    const handleDeleteGuardian = (idx: any) => {
+        const currentTabKey = tabsData[activeTabIndex]?.TabName;
+        setTabTableData(prev => ({
+            ...prev,
+            [currentTabKey]: prev[currentTabKey].map((row, i) => {
+                if (i === idx) {
+                    const { guardianDetails, ...rest } = row;
+                    return {
+                        ...rest,
+                        isModified: true
+                    };
+                }
+                return row;
+            })
+        }));
+        toast.success("Guardian Details Deleted successfully"); 
+    }
+
     const handleGuardianFormSubmit = () => {
         setIsGuardianModalOpen(false);
     }
@@ -2591,6 +2610,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                                     handleTabTableDataEdit={handleTabTableDataEdit}
                                     handleAddNominee={handleAddNominee}
                                     handleTabTableDataDelete={handleTabTableDataDelete}
+                                    handleDeleteGuardian={handleDeleteGuardian}
                                     tabTableData={tabTableData}
                                     tabsModal={tabsModal}
                                     setTabsModal={setTabsModal}
