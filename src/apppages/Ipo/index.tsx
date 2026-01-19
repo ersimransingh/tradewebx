@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
 import { useTheme } from '@/context/ThemeContext';
@@ -47,7 +47,7 @@ const Ipo = () => {
 
   configDetails(authToken);
 
-  const fetchIpo = async () => {
+  const fetchIpo = useCallback(async () => {
     if (typeof window === 'undefined') return;
 
     const xmlDataIPO = `
@@ -68,17 +68,42 @@ const Ipo = () => {
     } catch (error) {
       console.error("Error fetching IPO:", error);
     }
-  };
+  },[clientCode])
+
+
+  // const fetchIpo = useCallback(async () => {
+  //   if (typeof window === 'undefined') return;
+  
+  //   const xmlDataIPO = `
+  //     <dsXml>
+  //       <J_Ui>"ActionName":"${ACTION_NAME}", "Option":"IPO","Level":1, "RequestFrom":"W"</J_Ui>
+  //       <Sql></Sql>
+  //       <X_Filter></X_Filter>
+  //       <X_GFilter></X_GFilter>
+  //       <J_Api>"UserId":"${clientCode}"</J_Api>
+  //     </dsXml>
+  //   `;
+  
+  //   try {
+  //     const response = await apiService.postWithAuth(
+  //       BASE_URL + PATH_URL,
+  //       xmlDataIPO
+  //     );
+  
+  //     setIpoData(response.data?.data?.rs0 || []);
+  //   } catch (error) {
+  //     console.error("Error fetching IPO:", error);
+  //   }
+  // }, [clientCode,]);
+  
 
   useEffect(() => {
-    if (clientCode) {
+    // if (clientCode) {
       fetchIpo();
       fetchUPIType(setUpiSelect);
-    } else {
-
-    }
-
-  }, [clientCode]);
+    // }
+  }, [fetchIpo]);
+  
 
 
 
