@@ -120,7 +120,7 @@ const Documents = ({ formFields, tableData, fieldErrors, setFieldData, setActive
                 router.replace(pathname);
             }
         }
-    }, [success, id, signerIdentifier, esp, router]);
+    }, [success, id, signerIdentifier, esp, router, pathname]);
 
     useEffect(() => {
         if (formFields && formFields.length > 0) {
@@ -575,7 +575,7 @@ const Documents = ({ formFields, tableData, fieldErrors, setFieldData, setActive
             removeLocalStorage("redirectedField");
             router.replace(pathname);
         }
-    }, [scope, success, Settings, router]);
+    }, [scope, success, Settings, router, fetchFormData, setSaving, pathname]);
 
     return (
         <div className="w-full p-5 pt-2 bg-white rounded-lg shadow-md">

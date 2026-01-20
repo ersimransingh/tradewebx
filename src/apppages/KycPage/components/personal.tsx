@@ -37,7 +37,7 @@ const Personal = ({ formFields, tableData, setFieldData, setActiveTab, Settings 
                 }
             })
         }
-    }, [])
+    }, [formFields])
 
     // Validate mandatory fields for nominee
     const validateMandatoryFields = (formData: any) => {

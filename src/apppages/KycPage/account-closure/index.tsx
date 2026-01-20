@@ -3,7 +3,7 @@ import { selectAllMenuItems } from "@/redux/features/menuSlice";
 import { useAppSelector } from "@/redux/hooks";
 import { ACTION_NAME, BASE_URL, PATH_URL } from "@/utils/constants";
 import { displayAndDownloadPDF, findPageData, displayAndDownloadFile, getLocalStorage, storeLocalStorage, removeLocalStorage, sanitizePayload } from "@/utils/helper";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { toast } from "react-toastify";
 import { useTheme } from "@/context/ThemeContext";
 import { FaExternalLinkAlt, FaFilePdf } from "react-icons/fa";
@@ -227,8 +227,8 @@ const AccountClosure: React.FC<AccountClosureProps> = ({
     }
   };
 
-  const handleGetData = async () => {
-
+  // const handleGetData = async () => {
+const handleGetData = useCallback(async () => {
 
     const currentPage = accountClouserOpen ? accountClouserDataPass : pageData?.[0]?.levels?.[0];
     if (!currentPage) return;
@@ -294,14 +294,16 @@ const AccountClosure: React.FC<AccountClosureProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+}, [accountClouserOpen, accountClouserDataPass, pageData]);
+  // };
 
 
 
 
   useEffect(() => {
     handleGetData();
-  }, [pageData, accountClouserOpen]);
+  // }, [pageData, accountClouserOpen]);
+  }, [handleGetData]);
 
   const handleCMRUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -329,6 +331,7 @@ const AccountClosure: React.FC<AccountClosureProps> = ({
 
     // Additional validation
     if (parseBalance(data?.TradingLedgerBalance || "0") > 0 || parseBalance(data?.DPLedgerBalance || "0") > 0) {
+      console.log(data?.TradingLedgerBalance,data?.DPLedgerBalance)
       toast.warning("You have balance in your Accounts");
       return;
     }
@@ -469,7 +472,8 @@ const AccountClosure: React.FC<AccountClosureProps> = ({
     }
   }, [closureType, hasHoldingValue]);
 
-  const handleKRACallBack = async (reportName: string) => {
+  // const handleKRACallBack = async (reportName: string) => {
+  const handleKRACallBack = useCallback(async (reportName: string) => {
     try {
       const userId = getLocalStorage('userId') || 'ADMIN';
       const entryName = 'REKYC';
@@ -516,7 +520,8 @@ const AccountClosure: React.FC<AccountClosureProps> = ({
       console.error(`Error generating ${reportName} PDF:`, error);
       toast.error(`Error generating ${reportName} PDF`);
     }
-  }
+    }, []);
+  // }
 
   // Handle E-Sign callback
   useEffect(() => {
@@ -524,7 +529,8 @@ const AccountClosure: React.FC<AccountClosureProps> = ({
       handleKRACallBack("FINALPDF")
       router.replace(pathname);
     }
-  }, [success, id, signerIdentifier, esp]);
+     }, [success, id, signerIdentifier, esp, pathname, router,  handleKRACallBack,]);
+  // }, [success, id, signerIdentifier, esp]);
 
   if (loading) {
     return (

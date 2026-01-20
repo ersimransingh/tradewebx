@@ -1,7 +1,7 @@
 "use client";
 import EkycEntryForm from '@/components/component-forms/EkycEntryForm';
 import { EkycComponentProps } from '@/types/EkycFormTypes';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { DataGrid } from 'react-data-grid';
 import { useTheme } from "@/context/ThemeContext";
 import { fetchEkycDropdownOptions, handleSaveSinglePageData } from '../ekychelper';
@@ -104,7 +104,8 @@ const KycBank = ({ formFields, tableData, setFieldData, setActiveTab, Settings }
   };
 
   // Function to create a new empty bank entry
-  const createNewBankEntry = () => {
+  // const createNewBankEntry = () => {
+  const createNewBankEntry = useCallback(() => {
     const newEntry: Record<string, any> = {};
 
     // Add all fields from formFields with empty values
@@ -130,7 +131,8 @@ const KycBank = ({ formFields, tableData, setFieldData, setActiveTab, Settings }
     newEntry.IsModified = "false";
 
     return newEntry;
-  };
+  }, [formFields]);
+  // };
 
   const handleAddBankClick = () => {
     const maxAllowed = Number(Settings?.maxAllowedRecords) || 0;
@@ -344,7 +346,8 @@ const KycBank = ({ formFields, tableData, setFieldData, setActiveTab, Settings }
     if (Object.keys(currentFormData).length === 0) {
       setCurrentFormData(newEntry);
     }
-  }, []);
+  }, [createNewBankEntry, currentFormData]);
+  // }, []);
 
   return (
     <div className="w-full p-5 pt-2 bg-white rounded-lg shadow-md">

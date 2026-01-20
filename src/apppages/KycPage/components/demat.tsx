@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback  } from 'react';
 import { DataGrid } from 'react-data-grid';
 import { useTheme } from "@/context/ThemeContext";
 import { EkycComponentProps } from '@/types/EkycFormTypes';
@@ -104,7 +104,8 @@ const KycDemat = ({ formFields, tableData, setFieldData, setActiveTab, Settings 
   };
 
   // Function to create a new empty demat entry
-  const createNewDematEntry = () => {
+  // const createNewDematEntry = () => {
+  const createNewDematEntry = useCallback(() => {
     const newEntry: Record<string, any> = {};
 
     // Add all fields from formFields with empty values
@@ -130,7 +131,8 @@ const KycDemat = ({ formFields, tableData, setFieldData, setActiveTab, Settings 
     newEntry.IsModified = "false";
 
     return newEntry;
-  };
+  }, [formFields]);
+  // };
 
   const handleAddDematClick = () => {
     const maxAllowed = Number(Settings?.maxAllowedRecords) || 0;
@@ -348,7 +350,8 @@ const KycDemat = ({ formFields, tableData, setFieldData, setActiveTab, Settings 
     if (Object.keys(currentFormData).length === 0) {
       setCurrentFormData(newEntry);
     }
-  }, []);
+  }, [createNewDematEntry, currentFormData]);
+  // }, []);
 
   return (
     <div className="w-full p-5 pt-2 bg-white rounded-lg shadow-md">

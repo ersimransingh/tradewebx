@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback  } from "react";
 import { ACTION_NAME, BASE_URL, PATH_URL } from "@/utils/constants";
 import { toast } from "react-toastify";
 import Loader from "@/components/Loader";
@@ -44,7 +44,8 @@ const TradingBalanceModal = ({ isOpen, onClose, clientCode }: TradingBalanceModa
     };
 
 
-    const fetchTradingLedger = async () => {
+    // const fetchTradingLedger = async () => {
+    const fetchTradingLedger = useCallback(async () => {
         try {
             setLoading(true);
             const { fromDate, toDate } = getCurrentFinancialYearDates();
@@ -82,13 +83,15 @@ const TradingBalanceModal = ({ isOpen, onClose, clientCode }: TradingBalanceModa
         } finally {
             setLoading(false);
         }
-    };
+    }, [clientCode]);
+    // };
 
     useEffect(() => {
         if (isOpen) {
             fetchTradingLedger();
         }
-    }, [isOpen]);
+    }, [isOpen, fetchTradingLedger]);
+    // }, [isOpen]);
 
     if (!isOpen) return null;
 
