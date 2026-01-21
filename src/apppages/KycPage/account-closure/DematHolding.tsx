@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect,useCallback } from "react";
 import { ACTION_NAME, BASE_URL, PATH_URL } from "@/utils/constants";
 import { toast } from "react-toastify";
 import Loader from "@/components/Loader";
@@ -27,7 +27,8 @@ const DematHoldingModal = ({ isOpen, onClose, clientCode, dpAccountNo }: DematHo
 
 
 
-    const fetchDematHoldings = async () => {
+    // const fetchDematHoldings = async () => {
+      const fetchDematHoldings = useCallback(async () => {
         try {
             setLoading(true);
             const xmlData = `<dsXml>
@@ -63,13 +64,15 @@ const DematHoldingModal = ({ isOpen, onClose, clientCode, dpAccountNo }: DematHo
         } finally {
             setLoading(false);
         }
-    };
+    }, [clientCode, dpAccountNo]);
+    // };
 
     useEffect(() => {
         if (isOpen) {
             fetchDematHoldings();
         }
-    }, [isOpen]);
+    // }, [isOpen]);
+      }, [isOpen, fetchDematHoldings]);
 
     if (!isOpen) return null;
 

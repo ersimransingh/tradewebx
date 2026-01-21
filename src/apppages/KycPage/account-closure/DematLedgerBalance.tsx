@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ACTION_NAME, BASE_URL, PATH_URL } from "@/utils/constants";
 import { toast } from "react-toastify";
 import Loader from "@/components/Loader";
@@ -23,7 +23,8 @@ const DematLedgerModal = ({ isOpen, onClose, clientCode, dpAccountNo }: DematLed
     const pageSettings = pageData[0].levels[0].settings
 
 
-    const fetchDematLedger = async () => {
+    // const fetchDematLedger = async () => {
+     const fetchDematLedger = useCallback(async () => {
         try {
             setLoading(true);
             const xmlData = `<dsXml>
@@ -59,13 +60,15 @@ const DematLedgerModal = ({ isOpen, onClose, clientCode, dpAccountNo }: DematLed
         } finally {
             setLoading(false);
         }
-    };
+    }, [clientCode, dpAccountNo]);
+    // };
 
     useEffect(() => {
         if (isOpen) {
             fetchDematLedger();
         }
-    }, [isOpen]);
+     }, [isOpen, fetchDematLedger]);
+    // }, [isOpen]);
 
     if (!isOpen) return null;
 
