@@ -6,12 +6,12 @@ import { saveAs } from 'file-saver';
 import dayjs from 'dayjs';
 
 // Initialize pdfMake vfs
-// @ts-ignore
+
 if (pdfMake.vfs === undefined && pdfFonts && pdfFonts.pdfMake && pdfFonts.pdfMake.vfs) {
-    // @ts-ignore
+ 
     pdfMake.vfs = pdfFonts.pdfMake.vfs;
 } else if (pdfMake.vfs === undefined && pdfFonts && pdfFonts.vfs) {
-    // @ts-ignore
+  
     pdfMake.vfs = pdfFonts.vfs;
 }
 
