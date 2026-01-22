@@ -1,12 +1,18 @@
 declare module 'pdfmake/build/pdfmake' {
+  interface CreatedPdf {
+    download(fileName?: string): void;
+    open(): void;
+    print(): void;
+    getBase64(cb: (base64: string) => void): void;
+    getBlob(cb: (blob: Blob) => void): void;
+    getBuffer(cb: (buffer: Uint8Array) => void): void;
+  }
+
   const pdfMake: {
     vfs?: Record<string, string>;
-    createPdf: (docDefinition: any) => {
-      download: (fileName?: string) => void;
-      open: () => void;
-      print: () => void;
-    };
+    createPdf(docDefinition: any): CreatedPdf;
   };
+
   export default pdfMake;
 }
 
