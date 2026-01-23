@@ -27,7 +27,7 @@ const eslintConfig = [
       "@typescript-eslint/no-unsafe-argument": "off",
       "@typescript-eslint/no-unused-vars": "off",
       "react-hooks/exhaustive-deps": "off",
-      "@typescript-eslint/ban-ts-comment": "off",
+      "@typescript-eslint/ban-ts-comment": "warn",
       "@typescript-eslint/no-non-null-assertion": "error",
       "@typescript-eslint/no-empty-interface": "warn",
       "@typescript-eslint/no-empty-function": "warn"
