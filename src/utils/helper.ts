@@ -1,7 +1,7 @@
 import { THEME_COLORS_STORAGE_KEY, THEME_STORAGE_KEY } from "@/context/ThemeContext";
 import { APP_METADATA_KEY, SECURE_STORAGE_KEY, SECURITY_LIBRARY, ACTION_NAME, BASE_URL, PATH_URL } from "./constants";
 import { toast } from "react-toastify";
-//@ts-ignore
+
 import { Token, Secret } from 'fernet';
 import CryptoJS from 'crypto-js';
 import apiService from "./apiService";
