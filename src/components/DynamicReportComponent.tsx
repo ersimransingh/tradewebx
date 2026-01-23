@@ -935,6 +935,84 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
         setSelectedRows(cleaned);
     }
 
+    // Handle Selectable_Buttons click - calls API with selected rows as X_Data
+    const handleSelectableButtonClick = async (button: any, selectedRows: any[]) => {
+        try {
+            setIsLoading(true);
+
+            const userId = getLocalStorage('userId');
+            const userType = getLocalStorage('userType');
+            const pageName = pageData?.[0]?.wPage || "";
+
+            // Build J_Ui from button API config
+            const jUiConfig = button.API?.J_Ui || {};
+            const jUi = Object.entries(jUiConfig)
+                .map(([key, value]) => {
+                    if (key === 'ActionName' && !value) {
+                        return `"${key}":"${pageName}"`;
+                    }
+                    return `"${key}":"${value}"`;
+                })
+                .join(',');
+
+            // Build J_Api
+            const jApi = `"UserId":"${userId}","UserType":"${userType}"`;
+
+            // Build X_Data from selected rows
+            let xDataItems = '';
+            selectedRows.forEach((row, index) => {
+                let itemXml = '<item>';
+                Object.entries(row).forEach(([key, value]) => {
+                    if (value !== undefined && value !== null && !key.startsWith('_')) {
+                        // Escape XML special characters
+                        const escapedValue = String(value)
+                            .replace(/&/g, '&amp;')
+                            .replace(/</g, '&lt;')
+                            .replace(/>/g, '&gt;')
+                            .replace(/"/g, '&quot;')
+                            .replace(/'/g, '&apos;');
+                        itemXml += `<${key}>${escapedValue}</${key}>`;
+                    }
+                });
+                itemXml += '</item>';
+                xDataItems += itemXml;
+            });
+
+            const X_Data = `<items>${xDataItems}</items>`;
+
+            const xmlData = `<dsXml>
+                <J_Ui>${jUi}</J_Ui>
+                <Sql></Sql>
+                <X_Filter></X_Filter>
+                <X_Filter_Multiple></X_Filter_Multiple>
+                <X_Data>${X_Data}</X_Data>
+                <J_Api>${jApi}</J_Api>
+            </dsXml>`;
+
+            console.log('Selectable Button API Request:', xmlData);
+
+            const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
+
+            if (response?.data?.success) {
+                const rawMessage = response?.data?.message || 'Operation completed successfully';
+                const cleanMessage = rawMessage.replace(/<\/?Message>/g, "");
+                toast.success(cleanMessage);
+                // Refresh data after successful operation
+                fetchData(filters, false);
+            } else {
+                const errorMessage = response?.data?.message || 'Operation failed';
+                const cleanError = errorMessage.replace(/<\/?Message>/g, "");
+                toast.error(cleanError);
+            }
+
+        } catch (error) {
+            console.error('Error in handleSelectableButtonClick:', error);
+            toast.error('An error occurred while processing your request');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     // Handle click on columns with DetailAPI configuration
     const handleDetailColumnClick = async (columnKey: string, rowData: any) => {
 
@@ -2624,7 +2702,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                 ...safePageData.getCurrentLevel(currentLevel)?.settings,
                                 mobileColumns: rs1Settings?.mobileColumns?.[0] || [],
                                 tabletColumns: rs1Settings?.tabletColumns?.[0] || [],
-                                webColumns: rs1Settings?.webColumns?.[0] || [], 
+                                webColumns: rs1Settings?.webColumns?.[0] || [],
                                 // Add level-specific settings
                                 ...(currentLevel > 0 ? {
                                     // Override responsive columns for second level if needed
@@ -2637,6 +2715,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                             summary={safePageData.getCurrentLevel(currentLevel)?.summary}
                             onRowClick={handleRecordClick}
                             onRowSelect={handleRowSelect}
+                            onSelectableButtonClick={handleSelectableButtonClick}
                             tableRef={tableRef}
                             isEntryForm={componentType === "entry" || componentType === "multientry"}
                             handleAction={handleTableAction}

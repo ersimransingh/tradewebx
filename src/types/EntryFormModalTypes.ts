@@ -65,6 +65,7 @@ export interface FormField {
     ValidationAPI: any;
     FieldEnabledTag: string;
     FieldWidth?: string;
+    FieldRows?: string;
     isMandatory?: string;
     wQuery?: {
         Sql: string;

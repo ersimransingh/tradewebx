@@ -52,6 +52,24 @@ export interface FormElement {
     wValue?: string;
     isMultiple?: boolean;
     Srno?: number;
+    ValidationAPI?: {
+        dsXml?: {
+            J_Ui: any;
+            Sql: string;
+            X_Filter?: string;
+            X_Filter_Multiple?: Record<string, string>;
+            J_Api: any;
+        };
+        // Also support flat structure (without dsXml wrapper)
+        J_Ui?: any;
+        Sql?: string;
+        X_Filter?: string;
+        X_Filter_Multiple?: Record<string, string>;
+        X_Filte_Multiple?: Record<string, string>; // Handle typo in some configs
+        J_Api?: any;
+    };
+    FieldVisibleTag?: string;
+    FieldEnabledTag?: string;
 }
 
 interface FormCreatorProps {
@@ -122,6 +140,10 @@ const FormCreator: React.FC<FormCreatorProps> = ({
     const [dropdownOptions, setDropdownOptions] = useState<Record<string, any[]>>({});
     const [loadingDropdowns, setLoadingDropdowns] = useState<Record<string, boolean>>({});
     const [showDatePresets, setShowDatePresets] = useState<Record<string, boolean>>({});
+    // State for field visibility - tracks which fields are hidden (for Flag D)
+    const [fieldVisibility, setFieldVisibility] = useState<Record<string, boolean>>({});
+    // State for field enabled/disabled status
+    const [fieldEnabled, setFieldEnabled] = useState<Record<string, boolean>>({});
 
     // Sort filters by Srno
     const sortedFormData = useMemo(() => {
@@ -314,6 +336,159 @@ const FormCreator: React.FC<FormCreatorProps> = ({
         setFormValues(cleanedValues);
         onFilterChange(cleanedValues);
     }, [onFilterChange]);
+
+    // Handle validation API response for flags S and D
+    const handleValidationApiResponse = (response: string, currFieldKey: string) => {
+        if (!response?.trim().startsWith("<root>")) {
+            response = `<root>${response}</root>`;
+        }
+
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(response, "text/xml");
+
+        const flag = xmlDoc.getElementsByTagName("Flag")[0]?.textContent;
+        const dynamicTags = Array.from(xmlDoc.documentElement.children).filter(
+            (node) => node.tagName !== "Flag" && node.tagName !== "Message"
+        );
+
+        switch (flag) {
+            case 'S':
+                // Success - apply dynamic tag values silently
+                dynamicTags.forEach((tag) => {
+                    const tagName = tag.tagName;
+                    const tagValue = tag.textContent;
+                    setFormValues(prev => ({ ...prev, [tagName]: tagValue }));
+                });
+                break;
+
+            case 'D':
+                // Disable/Enable and Hide/Show fields
+                dynamicTags.forEach((tag) => {
+                    const tagName = tag.tagName;
+                    const tagValue = tag.textContent?.toLowerCase();
+                    const isDisabled = tagValue === 'false';
+
+                    if (tagValue === 'true' || tagValue === 'false') {
+                        // For Flag D: false = hide/disable, true = show/enable
+                        setFieldVisibility(prev => ({ ...prev, [tagName]: !isDisabled }));
+                        setFieldEnabled(prev => ({ ...prev, [tagName]: !isDisabled }));
+
+                        // If field is being hidden/disabled, clear its value
+                        if (isDisabled) {
+                            setFormValues(prev => ({ ...prev, [tagName]: undefined }));
+                        }
+                    } else {
+                        // If it's not a boolean, set the value
+                        setFormValues(prev => ({ ...prev, [tagName]: tag.textContent }));
+                    }
+                });
+                break;
+
+            default:
+                console.log("Unknown or unhandled flag received:", flag);
+        }
+    };
+
+    // Function to handle validation API call on blur/change
+    const handleBlur = async (item: FormElement, fieldKey?: string, fieldValue?: any) => {
+        if (!item.ValidationAPI) return;
+
+        // Support both structures: ValidationAPI.dsXml.* or ValidationAPI.*
+        const validationConfig = item.ValidationAPI.dsXml || item.ValidationAPI;
+        const J_Ui = validationConfig.J_Ui;
+        const Sql = validationConfig.Sql;
+        const J_Api = validationConfig.J_Api;
+        // Handle both X_Filter_Multiple and X_Filte_Multiple (typo in some configs)
+        const X_Filter = validationConfig.X_Filter;
+        const X_Filter_Multiple = validationConfig.X_Filter_Multiple || (validationConfig as any).X_Filte_Multiple;
+
+        let xFilter = '';
+        let xFilterMultiple = '';
+        let shouldCallApi = true;
+
+        // The key to use - for date range, use the specific field key
+        const currentKey = fieldKey || (Array.isArray(item.wKey) ? item.wKey[0] : item.wKey);
+        // The current field value - use passed value or get from formValues
+        const currentValue = fieldValue !== undefined ? fieldValue : formValues[currentKey as string];
+
+        if (X_Filter_Multiple && typeof X_Filter_Multiple === 'object') {
+            Object.entries(X_Filter_Multiple).forEach(([key, placeholder]) => {
+                let resolvedValue;
+                if (typeof placeholder === 'string' && placeholder.startsWith('##') && placeholder.endsWith('##')) {
+                    const formKey = placeholder.slice(2, -2);
+                    // For date fields, format the date
+                    const value = formValues[formKey];
+                    if (value instanceof Date) {
+                        resolvedValue = moment(value).format('YYYYMMDD');
+                    } else {
+                        resolvedValue = value;
+                    }
+                } else {
+                    resolvedValue = placeholder;
+                }
+
+                if (!resolvedValue) {
+                    shouldCallApi = false;
+                } else {
+                    xFilterMultiple += `<${key}>${resolvedValue}</${key}>`;
+                }
+            });
+        }
+
+        if (X_Filter) {
+            let resolvedValue;
+            if (typeof X_Filter === 'string') {
+                if (X_Filter.startsWith('##') && X_Filter.endsWith('##')) {
+                    // Placeholder format: ##fieldName##
+                    const formKey = X_Filter.slice(2, -2);
+                    const value = formValues[formKey];
+                    if (value instanceof Date) {
+                        resolvedValue = moment(value).format('YYYYMMDD');
+                    } else {
+                        resolvedValue = value;
+                    }
+                } else if (X_Filter === '${value}') {
+                    // Direct value placeholder - use current field value
+                    if (currentValue instanceof Date) {
+                        resolvedValue = moment(currentValue).format('YYYYMMDD');
+                    } else {
+                        resolvedValue = currentValue;
+                    }
+                } else {
+                    resolvedValue = X_Filter;
+                }
+            }
+
+            if (!resolvedValue) {
+                shouldCallApi = false;
+            } else {
+                xFilter = resolvedValue;
+            }
+        }
+
+        if (!shouldCallApi) return;
+
+        const jUi = Object.entries(J_Ui || {}).map(([key, value]) => `"${key}":"${value}"`).join(',');
+        const jApi = Object.entries(J_Api || {}).map(([key, value]) => `"${key}":"${value}"`).join(',');
+
+        const xmlData = `<dsXml>
+            <J_Ui>${jUi}</J_Ui>
+            <Sql>${Sql || ''}</Sql>
+            <X_Filter>${xFilter}</X_Filter>
+            <X_Filter_Multiple>${xFilterMultiple}</X_Filter_Multiple>
+            <J_Api>${jApi}</J_Api>
+        </dsXml>`;
+
+        try {
+            const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
+            const columnData = response?.data?.data?.rs0?.[0]?.Column1;
+            if (columnData) {
+                handleValidationApiResponse(columnData, currentKey as string);
+            }
+        } catch (error) {
+            console.error('Validation API error:', error);
+        }
+    };
 
     const handleInputChange = (key: string, value: any) => {
         const newValues = { ...formValues };
@@ -823,15 +998,26 @@ const FormCreator: React.FC<FormCreatorProps> = ({
 
         const renderDateRangeBox = (item: FormElement) => {
           const [fromKey, toKey] = item.wKey as string[];
-        
+
           // Extract backend date limits (if any)
           const fromMin = item.FromMinDate ? moment(item.FromMinDate, "YYYYMMDD").toDate() : undefined;
           const fromMax = item.FromMaxDate ? moment(item.FromMaxDate, "YYYYMMDD").toDate() : undefined;
           const toMin = item.ToMinDate ? moment(item.ToMinDate, "YYYYMMDD").toDate() : undefined;
           const toMax = item.ToMaxDate ? moment(item.ToMaxDate, "YYYYMMDD").toDate() : undefined;
 
+          // Check visibility for individual date fields - default to visible if not set
+          const isFromVisible = fieldVisibility[fromKey] !== false;
+          const isToVisible = fieldVisibility[toKey] !== false;
 
-        
+          // Check enabled state for individual date fields - default to enabled if not set
+          const isFromEnabled = fieldEnabled[fromKey] !== false;
+          const isToEnabled = fieldEnabled[toKey] !== false;
+
+          // If both fields are hidden, don't render the component at all
+          if (!isFromVisible && !isToVisible) {
+            return null;
+          }
+
           return (
             <div className={isHorizontal ? "mb-2" : "mb-4"}>
               <label
@@ -840,85 +1026,105 @@ const FormCreator: React.FC<FormCreatorProps> = ({
               >
                 {item.label}
               </label>
-        
+
               <div className="flex gap-4">
-                {/* From Date */}
-                <div className="flex-1">
-                  <DatePicker
-                    selected={formValues[fromKey]}
-                    onChange={(date: Date) => handleInputChange(fromKey, date)}
-                    dateFormat="dd/MM/yyyy"
-                    className="w-full px-3 py-2 border rounded-md bg-white"
-                    wrapperClassName="w-full"
-                    placeholderText="From Date"
-                    showYearDropdown
-                    showMonthDropdown
-                    yearDropdownItemNumber={50}
-                    scrollableYearDropdown
-                    dropdownMode="select"
-                    // Apply backend limits (if any)
-                    minDate={fromMin}
-                    maxDate={fromMax}
-                  />
-                </div>
-        
-                {/* To Date */}
-                <div className="flex-1">
-                  <DatePicker
-                    selected={formValues[toKey]}
-                    onChange={(date: Date) => handleInputChange(toKey, date)}
-                    dateFormat="dd/MM/yyyy"
-                    className="w-full px-3 py-2 border rounded-md bg-white"
-                    wrapperClassName="w-full"
-                    placeholderText="To Date"
-                    showYearDropdown
-                    showMonthDropdown
-                    yearDropdownItemNumber={50}
-                    scrollableYearDropdown
-                    dropdownMode="select"
-                    // Apply backend limits (if any)
-                    minDate={toMin}
-                    maxDate={toMax}
-                  />
-                </div>
-        
-                {/* Preset Button (unchanged) */}
-                <div className="relative">
-                  <button
-                    className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
-                    onClick={() =>
-                      setShowDatePresets((prev) => ({
-                        ...prev,
-                        [fromKey]: !prev[fromKey],
-                      }))
-                    }
-                    aria-label="Open date presets" 
-                  >
-                    <FaCalendarAlt />
-                  </button>
-                
-                  {showDatePresets[fromKey] && (
-                    <div
-                      className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10"
-                      style={{ backgroundColor: colors.textInputBackground }}
+                {/* From Date - only render if visible */}
+                {isFromVisible && (
+                  <div className="flex-1">
+                    <DatePicker
+                      selected={formValues[fromKey]}
+                      onChange={(date: Date) => {
+                        handleInputChange(fromKey, date);
+                        // Call validation API on change if configured
+                        if (item.ValidationAPI) {
+                          handleBlur(item, fromKey, date);
+                        }
+                      }}
+                      dateFormat="dd/MM/yyyy"
+                      className={`w-full px-3 py-2 border rounded-md ${!isFromEnabled ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+                      wrapperClassName="w-full"
+                      placeholderText="From Date"
+                      showYearDropdown
+                      showMonthDropdown
+                      yearDropdownItemNumber={50}
+                      scrollableYearDropdown
+                      dropdownMode="select"
+                      disabled={!isFromEnabled}
+                      // Apply backend limits (if any)
+                      minDate={fromMin}
+                      maxDate={fromMax}
+                    />
+                  </div>
+                )}
+
+                {/* To Date - only render if visible */}
+                {isToVisible && (
+                  <div className="flex-1">
+                    <DatePicker
+                      selected={formValues[toKey]}
+                      onChange={(date: Date) => {
+                        handleInputChange(toKey, date);
+                        // Call validation API on change if configured
+                        if (item.ValidationAPI) {
+                          handleBlur(item, toKey, date);
+                        }
+                      }}
+                      dateFormat="dd/MM/yyyy"
+                      className={`w-full px-3 py-2 border rounded-md ${!isToEnabled ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+                      wrapperClassName="w-full"
+                      placeholderText="To Date"
+                      showYearDropdown
+                      showMonthDropdown
+                      yearDropdownItemNumber={50}
+                      scrollableYearDropdown
+                      dropdownMode="select"
+                      disabled={!isToEnabled}
+                      // Apply backend limits (if any)
+                      minDate={toMin}
+                      maxDate={toMax}
+                    />
+                  </div>
+                )}
+
+                {/* Preset Button - only show if at least one date field is visible and enabled */}
+                {(isFromVisible || isToVisible) && (isFromEnabled || isToEnabled) && (
+                  <div className="relative">
+                    <button
+                      className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
+                      onClick={() =>
+                        setShowDatePresets((prev) => ({
+                          ...prev,
+                          [fromKey]: !prev[fromKey],
+                        }))
+                      }
+                      aria-label="Open date presets"
                     >
-                      <div className="py-1" role="menu" aria-orientation="vertical">
-                        {contextMenuItems.map((menuItem) => (
-                          <button
-                            key={menuItem.id}
-                            className="block w-full text-left px-4 py-2 text-sm hover:bg-blue-100"
-                            style={{
-                              color: colors.textInputText,
-                            }}
-                            onClick={() => handlePresetSelection(menuItem.id, fromKey, toKey, item)}
-                          >
-                            {menuItem.text}
-                          </button>
-                        ))}
+                      <FaCalendarAlt />
+                    </button>
+
+                    {showDatePresets[fromKey] && (
+                      <div
+                        className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10"
+                        style={{ backgroundColor: colors.textInputBackground }}
+                      >
+                        <div className="py-1" role="menu" aria-orientation="vertical">
+                          {contextMenuItems.map((menuItem) => (
+                            <button
+                              key={menuItem.id}
+                              className="block w-full text-left px-4 py-2 text-sm hover:bg-blue-100"
+                              style={{
+                                color: colors.textInputText,
+                              }}
+                              onClick={() => handlePresetSelection(menuItem.id, fromKey, toKey, item)}
+                            >
+                              {menuItem.text}
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           );
@@ -926,6 +1132,9 @@ const FormCreator: React.FC<FormCreatorProps> = ({
 
 
     const renderTextBox = (item: FormElement) => {
+        const fieldKey = item.wKey as string;
+        const isEnabled = fieldEnabled[fieldKey] !== false;
+
         return (
             <div className={isHorizontal ? "mb-2" : "mb-4"}>
                 <label className={`block text-sm mb-1 ${isHorizontal ? 'font-bold' : 'font-medium'}`} style={{ color: colors.text }}>
@@ -933,25 +1142,30 @@ const FormCreator: React.FC<FormCreatorProps> = ({
                 </label>
                 <input
                     type="text"
-                    className="w-full px-3 py-2 border rounded-md"
+                    className={`w-full px-3 py-2 border rounded-md ${!isEnabled ? 'cursor-not-allowed' : ''}`}
                     style={{
                         borderColor: colors.textInputBorder,
-                        backgroundColor: colors.textInputBackground,
+                        backgroundColor: isEnabled ? colors.textInputBackground : '#f2f2f0',
                         color: colors.textInputText
                     }}
-                    value={formValues[item.wKey as string] || ''}
-                    onChange={(e) => handleInputChange(item.wKey as string, e.target.value)}
+                    value={formValues[fieldKey] || ''}
+                    onChange={(e) => handleInputChange(fieldKey, e.target.value)}
+                    onBlur={() => item.ValidationAPI && handleBlur(item)}
                     placeholder={item.label}
+                    disabled={!isEnabled}
                 />
             </div>
         );
     };
 
     const renderDateBox = (item: FormElement) => {
+      const fieldKey = item.wKey as string;
+      const isEnabled = fieldEnabled[fieldKey] !== false;
+
       // Extract backend values (if present)
       const fromMin = item.FromMinDate ? moment(item.FromMinDate, "YYYYMMDD").toDate() : undefined;
       const fromMax = item.FromMaxDate ? moment(item.FromMaxDate, "YYYYMMDD").toDate() : undefined;
-        
+
       return (
         <div className={isHorizontal ? "mb-2" : "mb-4"}>
           <label
@@ -960,12 +1174,17 @@ const FormCreator: React.FC<FormCreatorProps> = ({
           >
             {item.label}
           </label>
-    
+
           <DatePicker
-            selected={formValues[item.wKey as string]}
-            onChange={(date: Date) => handleInputChange(item.wKey as string, date)}
+            selected={formValues[fieldKey]}
+            onChange={(date: Date) => {
+              handleInputChange(fieldKey, date);
+              if (item.ValidationAPI) {
+                handleBlur(item, fieldKey, date);
+              }
+            }}
             dateFormat="dd/MM/yyyy"
-            className="w-full px-3 py-2 border rounded-md bg-white"
+            className={`w-full px-3 py-2 border rounded-md ${!isEnabled ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
             wrapperClassName="w-full"
             placeholderText="Select Date"
             showYearDropdown
@@ -973,6 +1192,7 @@ const FormCreator: React.FC<FormCreatorProps> = ({
             yearDropdownItemNumber={50}
             scrollableYearDropdown
             dropdownMode="select"
+            disabled={!isEnabled}
             minDate={fromMin}
             maxDate={fromMax}
           />
@@ -982,20 +1202,29 @@ const FormCreator: React.FC<FormCreatorProps> = ({
 
 
     const renderDropDownBox = (item: FormElement) => {
+        const fieldKey = item.wKey as string;
+        const isEnabled = fieldEnabled[fieldKey] !== false;
+
         const options = item.options
             ? item.options.map(opt => ({
                 label: opt.label,
                 value: opt.Value || opt.value
             }))
-            : dropdownOptions[item.wKey as string] || [];
+            : dropdownOptions[fieldKey] || [];
 
-        const isLoading = loadingDropdowns[item.wKey as string];
+        const isLoading = loadingDropdowns[fieldKey];
 
         return (
             <CustomDropdown
                 item={item}
-                value={formValues[item.wKey as string]}
-                onChange={(value) => handleInputChange(item.wKey as string, value)}
+                value={formValues[fieldKey]}
+                onChange={(value) => {
+                    handleInputChange(fieldKey, value);
+                    if (item.ValidationAPI) {
+                        // Pass the new value directly since state update is async
+                        handleBlur(item, fieldKey, value);
+                    }
+                }}
                 options={options}
                 isLoading={isLoading}
                 colors={colors}
@@ -1003,31 +1232,46 @@ const FormCreator: React.FC<FormCreatorProps> = ({
                 handleFormChange={handleFormChange}
                 formValues={formValues}
                 isHorizontal={isHorizontal}
+                isDisabled={!isEnabled}
             />
         );
     };
 
     const renderSearchDropDownBox = (item: FormElement) => {
+        const fieldKey = item.wKey as string;
+        const isEnabled = fieldEnabled[fieldKey] !== false;
+
         if (item.dynamicSearch?.isDynamic && !item?.wQuery) {
           return (
             <AsyncSearchDropdown
               item={item}
-              value={formValues[item.wKey as string]}
-              onChange={(val) => handleInputChange(item.wKey as string, val)}
+              value={formValues[fieldKey]}
+              onChange={(val) => {
+                handleInputChange(fieldKey, val);
+                if (item.ValidationAPI) {
+                  handleBlur(item, fieldKey, val);
+                }
+              }}
               colors={colors}
               formData={sortedFormData}
               formValues={formValues}
               handleFormChange={handleFormChange}
               fetchDependentOptions={fetchDependentOptions}
               isHorizontal={isHorizontal}
+              isDisabled={!isEnabled}
             />
           );
         }else{
             return(
                 <AsyncSearchDropdown
                    item={item}
-                   value={formValues[item.wKey as string]}
-                   onChange={(val) => handleInputChange(item.wKey as string, val)}
+                   value={formValues[fieldKey]}
+                   onChange={(val) => {
+                     handleInputChange(fieldKey, val);
+                     if (item.ValidationAPI) {
+                       handleBlur(item, fieldKey, val);
+                     }
+                   }}
                    colors={colors}
                    formData={sortedFormData}
                    formValues={formValues}
@@ -1036,18 +1280,28 @@ const FormCreator: React.FC<FormCreatorProps> = ({
                      return fetchDropdownOptions(item,searchValue);
                  }}
                    isHorizontal={isHorizontal}
+                   isDisabled={!isEnabled}
                  /> )
         }
     };
 
     const renderCheckBox = (item: FormElement) => {
+        const fieldKey = item.wKey as string;
+        const isEnabled = fieldEnabled[fieldKey] !== false;
+
         return (
             <div className={`${isHorizontal ? "mb-2" : "mb-4"} flex items-center`}>
                 <input
                     type="checkbox"
-                    className="h-4 w-4 rounded border-gray-300"
-                    checked={formValues[item.wKey as string] || false}
-                    onChange={(e) => handleInputChange(item.wKey as string, e.target.checked)}
+                    className={`h-4 w-4 rounded border-gray-300 ${!isEnabled ? 'cursor-not-allowed opacity-50' : ''}`}
+                    checked={formValues[fieldKey] || false}
+                    onChange={(e) => {
+                        handleInputChange(fieldKey, e.target.checked);
+                        if (item.ValidationAPI) {
+                            handleBlur(item, fieldKey, e.target.checked);
+                        }
+                    }}
+                    disabled={!isEnabled}
                     style={{
                         accentColor: colors.primary
                     }}
@@ -1060,6 +1314,17 @@ const FormCreator: React.FC<FormCreatorProps> = ({
     };
 
     const renderFormElement = (item: FormElement) => {
+        // Check field visibility from validation API response (Flag D)
+        // For non-date-range fields, use the wKey directly
+        // For date-range fields, visibility is handled inside renderDateRangeBox
+        if (item.type !== 'WDateRangeBox') {
+            const fieldKey = item.wKey as string;
+            const isVisible = fieldVisibility[fieldKey] !== false;
+            if (!isVisible) {
+                return null;
+            }
+        }
+
         // Check if this is a dependent dropdown with no options or unfulfilled dependencies
         if ((item.type === 'WDropDownBox' || item.type === "WSearchDropDownBox") && item.dependsOn) {
             // Check if all dependencies are fulfilled

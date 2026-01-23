@@ -18,6 +18,7 @@ interface AsyncSearchDropdownProps {
     searchQuery?: string
   ) => Promise<any[]>;
   isHorizontal?: boolean;
+  isDisabled?: boolean;
 }
 
 const AsyncSearchDropdown: React.FC<AsyncSearchDropdownProps> = ({
@@ -29,6 +30,7 @@ const AsyncSearchDropdown: React.FC<AsyncSearchDropdownProps> = ({
   handleFormChange,
   fetchDependentOptions,
   isHorizontal = false,
+  isDisabled = false,
 }) => {
 
 
@@ -161,6 +163,7 @@ const AsyncSearchDropdown: React.FC<AsyncSearchDropdownProps> = ({
         value={selectedOption || null}
         options={options}
         isLoading={isLoading}
+        isDisabled={isDisabled}
         placeholder={value || "Search..."}
         noOptionsMessage={() =>
           isLoading ? "Loading..." : "No results found"

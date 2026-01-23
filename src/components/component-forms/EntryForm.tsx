@@ -713,6 +713,79 @@ const EntryForm: React.FC<EntryFormProps> = ({
                     )}
                 </div>
             );
+
+            case 'WTextArea':
+                const textareaId = `textarea-${field.wKey}`;
+                const textareaErrorId = `error-${field.wKey}`;
+                const textareaRows = field.FieldRows ? parseInt(field.FieldRows, 10) : 3;
+
+                return (
+                    <div
+                        key={`field-${field.Srno}-${field.wKey}-${index}`}
+                        style={field.isBR === "true" ? containerStylesForBr : containerStyle}
+                    >
+                        <label
+                            htmlFor={textareaId}
+                            className="block text-sm font-medium mb-1"
+                            style={{ color: colors.text, wordBreak: "break-all" }}
+                        >
+                            {field.label}
+                            {isRequired && <span className="text-red-500 ml-1">*</span>}
+                        </label>
+
+                        <textarea
+                            id={textareaId}
+                            rows={textareaRows}
+                            aria-required={isRequired ? "true" : undefined}
+                            aria-invalid={fieldErrors[field.wKey] ? "true" : "false"}
+                            aria-describedby={fieldErrors[field.wKey] ? textareaErrorId : undefined}
+                            aria-disabled={!isEnabled ? "true" : undefined}
+                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 resize-vertical ${
+                                !isEnabled
+                                    ? "border-gray-300"
+                                    : fieldErrors[field.wKey]
+                                    ? "border-red-500"
+                                    : "border-gray-700 text-[14px]"
+                            }`}
+                            style={{
+                                borderColor: fieldErrors[field.wKey]
+                                    ? "red"
+                                    : !isEnabled
+                                    ? "#d1d5db"
+                                    : "#344054",
+                                backgroundColor: !isEnabled ? "#f2f2f0" : colors.textInputBackground,
+                                color: isJustUpdated ? "#22c55e" : colors.textInputText,
+                                width: fieldWidth,
+                            }}
+                            value={formValues[field.wKey] || ""}
+                            onChange={(e) => {
+                                let value = e.target.value;
+                                if (field?.isUpper === "Y") {
+                                    value = value.toUpperCase();
+                                }
+                                if (field.FieldSize && value.length <= parseInt(field.FieldSize, 10)) {
+                                    handleInputChange(field.wKey, value);
+                                } else if (!field.FieldSize) {
+                                    handleInputChange(field.wKey, value);
+                                }
+                            }}
+                            onBlur={() => handleBlur(field)}
+                            placeholder={field.label}
+                            disabled={!isEnabled}
+                        />
+
+                        {fieldErrors[field.wKey] && (
+                            <span
+                                id={textareaErrorId}
+                                className="text-red-500 text-sm"
+                                role="alert"
+                            >
+                                {fieldErrors[field.wKey]}
+                            </span>
+                        )}
+                    </div>
+                );
+
             case 'WCheckBox':
             const checkboxId = `checkbox-${field.wKey}`;
             const checkBoxErrorId = `error-${field.wKey}`;

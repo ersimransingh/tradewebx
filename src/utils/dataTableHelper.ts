@@ -166,7 +166,9 @@ export const handleLoopThroughMultiSelectKeyHandlerExcel = async (setIsLoading,f
 
                 if (emailPayloadXmlSend.success === true && secondEmailResponse?.Base64Excel) {
                     const base64 = secondEmailResponse.Base64Excel;
-                    let excelName = secondEmailResponse.ExcelFileName || `Report_${index}.xlsx`;
+                    let excelName = [clientCode, row.ReportType, row.ReportName, row.Segment].map(v => typeof v === "string" ? v.replace(/\s+/g, "").replace(/[^\w.-]/g, "").trim(): "")
+                    .filter(Boolean)
+                    .join("_")  || `Report_${index}.xlsx`;
 
                     if (!excelName.toLowerCase().endsWith(".xlsx")) excelName += ".xlsx";
 
@@ -407,7 +409,9 @@ export const handleLoopThroughMultiSelectKeyHandlerDownloadZipExcel = async (sel
               // Check for Base64XLSX instead of Base64PDF
               if (emailPayloadXmlSend.success === true && emailResponseData?.Base64Excel) {
                   const base64 = emailResponseData.Base64Excel;
-                  let excelName = emailResponseData.ExcelFileName|| `Report_${index}.xlsx`;
+                  let excelName = [clientCode, row.ReportName, row.Segment].map(v => typeof v === "string" ? v.replace(/\s+/g, "").replace(/[^\w.-]/g, "").trim(): "")
+                  .filter(Boolean)
+                  .join("_") || `Report_${index}.xlsx`;
                 
                   // Ensure file ends with .xlsx
                   if (!excelName.toLowerCase().endsWith(".xlsx")) excelName += ".xlsx";

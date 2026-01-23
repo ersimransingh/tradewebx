@@ -141,17 +141,13 @@ const ColumnFilterDropdown: React.FC<{
 
         // If 70% or more is numeric, treat as numeric column
         if (numericPercentage >= 0.7) {
-
             return 'number';
         }
 
         // If 80% or more is pure text/very short/alphanumeric codes, don't show filter
         if (pureTextPercentage >= 0.6) {
-
             return 'none'; // Reduced from 0.8 to 0.6 to be more strict
         }
-
-        // Mixed data - allow text filtering
 
         return 'text';
     }, [data, column]);
@@ -377,6 +373,42 @@ const ColumnFilterDropdown: React.FC<{
                                     </div>
                                 )}
                             </>
+                        ) : filterType === 'text' ? (
+                            <>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Filter Type
+                                    </label>
+                                    <select
+                                        value={localFilter.operator}
+                                        onChange={(e) => setLocalFilter({
+                                            ...localFilter,
+                                            operator: e.target.value as ColumnFilter['operator']
+                                        })}
+                                        className="w-full p-2 border border-gray-300 rounded text-sm"
+                                    >
+                                        <option value="contains">Contains</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Value
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={localFilter.value as string || ''}
+                                        onChange={(e) => {
+                                            setLocalFilter({
+                                                ...localFilter,
+                                                value: e.target.value
+                                            });
+                                        }}
+                                        className="w-full p-2 border border-gray-300 rounded text-sm"
+                                        placeholder="Enter text to search"
+                                    />
+                                </div>
+                            </>
                         ) : (
                             <>
                                 <div>
@@ -453,6 +485,25 @@ const ColumnFilterDropdown: React.FC<{
     );
 };
 
+// Interface for Selectable_Buttons setting
+export interface SelectableButton {
+    name: string;
+    API: {
+        J_Ui: {
+            ActionName: string;
+            Option: string;
+            RequestFrom: string;
+            [key: string]: any;
+        };
+        [key: string]: any;
+    };
+}
+
+interface SelectableButtonsSetting {
+    isCheckbox: boolean;
+    buttons: SelectableButton[];
+}
+
 interface DataTableProps {
     data: any[];
     filtersCheck?: any;
@@ -468,10 +519,12 @@ interface DataTableProps {
             key: string;
             width: number;
         }>;
+        Selectable_Buttons?: SelectableButtonsSetting;
         [key: string]: any;
     };
     onRowClick?: (record: any) => void;
     onRowSelect?: (selectedRows: any[]) => void;
+    onSelectableButtonClick?: (button: SelectableButton, selectedRows: any[]) => void;
     tableRef?: React.RefObject<HTMLDivElement>;
     summary?: any;
     isEntryForm?: boolean;
@@ -508,7 +561,7 @@ interface ValueBasedColor {
 
 interface ColumnFilter {
     type: 'number' | 'text' | 'date';
-    operator: 'gte' | 'lte' | 'equals' | 'dateRange';
+    operator: 'gte' | 'lte' | 'equals' | 'dateRange' | 'contains';
     value: string | number | null;
     fromDate?: string;
     toDate?: string;
@@ -623,7 +676,7 @@ const useScreenSize = () => {
     return screenSize;
 };
 
-const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, onRowSelect, tableRef, summary, isEntryForm = false, handleAction = () => undefined, fullHeight = true, showViewDocument = false, buttonConfig, filtersCheck, pageData, detailColumns, onDetailColumnClick, frozenColumns = [] }) => {
+const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, onRowSelect, onSelectableButtonClick, tableRef, summary, isEntryForm = false, handleAction = () => { }, fullHeight = true, showViewDocument = false, buttonConfig, filtersCheck, pageData, detailColumns, onDetailColumnClick, frozenColumns = [] }) => {
 
     // 🆕 ADDITION: Multi-checkbox toggle handler
     const toggleRowSelection = (row: any, checked: boolean) => {
@@ -828,6 +881,10 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, onRow
 
 
                         return rangeResult;
+
+                    case 'contains':
+                        // Text "like" filter - case insensitive contains search
+                        return stringValue.toLowerCase().includes(String(filter.value).toLowerCase());
 
                     default:
                         return true;
@@ -1054,8 +1111,9 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, onRow
         // Filter out hidden columns
         columnsToShow = columnsToShow.filter(key => !columnsToHide.includes(key));
 
-        //this function is used for multiCheckBoxColumn in income report
-        const multiCheckBoxColumn = settings?.multiCheckBox
+        //this function is used for multiCheckBoxColumn in income report and Selectable_Buttons
+        const showMultiCheckBox = settings?.multiCheckBox || settings?.Selectable_Buttons?.isCheckbox;
+        const multiCheckBoxColumn = showMultiCheckBox
             ? [{
                 key: "_multiSelect",
                 name: "",
@@ -1796,6 +1854,32 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, onRow
                         </button>
                     </div>
                 </>}
+
+            {/* Selectable_Buttons: Render dynamic buttons when isCheckbox is true */}
+            {settings?.Selectable_Buttons?.isCheckbox && settings?.Selectable_Buttons?.buttons?.length > 0 && (
+                <div className='flex flex-wrap gap-2 p-4'>
+                    {settings.Selectable_Buttons.buttons.map((button, index) => (
+                        <button
+                            key={index}
+                            onClick={() => {
+                                if (selectedRows.length === 0) {
+                                    toast.warning("Please select at least one row");
+                                    return;
+                                }
+                                onSelectableButtonClick?.(button, selectedRows);
+                            }}
+                            disabled={selectedRows.length === 0}
+                            className={`py-2 px-6 rounded-md text-sm font-medium transition-all duration-200 ease-in-out ${
+                                selectedRows.length === 0
+                                    ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                                    : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95'
+                            }`}
+                        >
+                            {button.name}
+                        </button>
+                    ))}
+                </div>
+            )}
 
             <DataGrid
                 columns={columns}
