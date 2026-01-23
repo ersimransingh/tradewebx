@@ -35,6 +35,8 @@ export default function AuthGuard({ children }: AuthGuardProps) {
           // Only redirect if we're not already on the signin page
           if (pathname !== '/signin') {
             router.replace(signInUrl);
+            // Don't stop checking while redirecting to prevent rendering protected content
+            return;
           }
           setIsChecking(false);
           setIsAuthenticated(false);
@@ -57,6 +59,8 @@ export default function AuthGuard({ children }: AuthGuardProps) {
           // Only redirect if we're not already on the dashboard
           if (pathname !== '/dashboard') {
             router.replace(dashboardUrl);
+            // Don't stop checking while redirecting
+            return;
           }
           setIsChecking(false);
           setIsAuthenticated(true);
@@ -85,8 +89,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
                 toast.error('Session expired. Please login again.');
                 const signInUrl = '/signin';
                 router.replace(signInUrl);
-                setIsChecking(false);
-                setIsAuthenticated(false);
+                // Don't stop checking while redirecting
                 return;
               }
             }
@@ -124,8 +127,8 @@ export default function AuthGuard({ children }: AuthGuardProps) {
         toast.error('Authentication error. Please login again.');
         // Next.js basePath config handles the base path automatically
         router.replace('/signin');
-        setIsChecking(false);
-        setIsAuthenticated(false);
+        // Don't stop checking while redirecting
+        return;
       }
     };
 
