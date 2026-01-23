@@ -6,7 +6,7 @@ import axios from 'axios';
 import { BASE_URL, PATH_URL } from '@/utils/constants';
 import moment from 'moment';
 import FilterModal from './FilterModal';
-import { FaSync, FaFilter, FaDownload, FaFileCsv, FaFilePdf, FaPlus, FaEdit, FaFileExcel, FaEnvelope, FaSearch, FaTimes, FaEllipsisV, FaRegEnvelope, FaArrowsAltH, FaColumns } from 'react-icons/fa';
+import { FaSync, FaFilter, FaDownload, FaFileCsv, FaFilePdf, FaPlus, FaEdit, FaFileExcel, FaEnvelope, FaSearch, FaTimes, FaEllipsisV, FaRegEnvelope, FaArrowsAltH, FaColumns, FaTable } from 'react-icons/fa';
 import { useTheme } from '@/context/ThemeContext';
 import DataTable, { exportTableToCsv, exportTableToPdf, exportTableToExcel, downloadOption } from './DataTable';
 import { store } from "@/redux/store";
@@ -28,6 +28,7 @@ import MultiEntryDataTables from './MultiEntryDataTables';
 import { recursiveSearch, generatePdf, generateExcel, generateCsv } from '@/utils/multiEntryUtils';
 import MultiFileUploadQueue from './upload/MultiFileUploadQueue';
 import TradeSplit from '@/apppages/TradeSplit';
+import PivotTableModal from './PivotTableModal';
 
 // const { companyLogo, companyName } = useAppSelector((state) => state.common);
 
@@ -322,6 +323,10 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
     const [frozenColumns, setFrozenColumns] = useState<string[]>([]);
     const [availableColumns, setAvailableColumns] = useState<string[]>([]);
     const [textColumns, setTextColumns] = useState<string[]>([]);
+
+    // State for Pivot Table
+    const [isPivotModalOpen, setIsPivotModalOpen] = useState(false);
+
     const handleCustomizeSave = (data: {
         frozenColumns: string[];
         textColumns: string[];
@@ -1770,7 +1775,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                                     Add New Entry
                                                 </button>
                                             )}
-                                            
+
                                             {/* Customize Table Button (Mobile) */}
                                             <button
                                                 onClick={() => {
@@ -1780,15 +1785,15 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                                         const columnsToHide = currentSettings?.hideEntireColumn
                                                             ? currentSettings.hideEntireColumn.split(',').map((col: string) => col.trim())
                                                             : [];
-                                                        
-                                                        const allColumns = Object.keys(apiData[0]).filter(key => 
+
+                                                        const allColumns = Object.keys(apiData[0]).filter(key =>
                                                             !key.startsWith('_') && !columnsToHide.includes(key)
                                                         );
                                                         setAvailableColumns(allColumns);
                                                         setIsCustomizeModalOpen(true);
                                                         setIsMobileMenuOpen(false);
                                                     } else {
-                                                         toast.info("No data available to customize columns.");
+                                                        toast.info("No data available to customize columns.");
                                                     }
                                                 }}
                                                 className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
@@ -1990,19 +1995,19 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                     </div>
                                 </div>
                             )}
-                            
+
                             {/* Customize Table Button (Desktop) */}
                             <div className="relative group">
                                 <button
                                     className="p-2 rounded hover:bg-gray-100 transition-colors"
                                     onClick={() => {
-                                         if (apiData && apiData.length > 0) {
+                                        if (apiData && apiData.length > 0) {
                                             const currentSettings = safePageData.getCurrentLevel(currentLevel)?.settings;
                                             const columnsToHide = currentSettings?.hideEntireColumn
                                                 ? currentSettings.hideEntireColumn.split(',').map((col: string) => col.trim())
                                                 : [];
-                                            
-                                            const allColumns = Object.keys(apiData[0]).filter(key => 
+
+                                            const allColumns = Object.keys(apiData[0]).filter(key =>
                                                 !key.startsWith('_') && !columnsToHide.includes(key)
                                             );
                                             setAvailableColumns(allColumns);
@@ -2127,8 +2132,8 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                                     } if (apiData?.length > 25000) {
                                                         toast.warning(`Excel export allowed up to 25,000 records. You have ${apiData?.length} records.`);
                                                         return; // stop here, don't export
-                                                    }   
-                                                    else {    
+                                                    }
+                                                    else {
                                                         exportTableToExcel(tableRef.current, jsonData, apiData, pageData, appMetadata, textColumns);
                                                     }
                                                 }}
@@ -2163,7 +2168,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                                 style={{ color: colors.text }}
                                                 aria-label="Export to PDF"
                                             >
-                                                <FaFilePdf size={20} className='text-red-600'/>
+                                                <FaFilePdf size={20} className='text-red-600' />
                                             </button>
                                             <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
                                                 Export to PDF
@@ -2171,6 +2176,29 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                             </div>
                                         </div>
                                     )}
+
+                                    {/* Pivot Table Button */}
+                                    <div className="relative group">
+                                        <button
+                                            className="p-2 rounded hover:bg-gray-100 transition-colors"
+                                            onClick={() => {
+                                                if (apiData?.length > 0) {
+                                                    setIsPivotModalOpen(true);
+                                                } else {
+                                                    toast.info("No data available for Pivot Table");
+                                                }
+                                            }}
+                                            style={{ color: colors.text }}
+                                            aria-label="Pivot Table"
+                                        >
+                                            <FaTable size={20} />
+                                        </button>
+                                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                                            Pivot Table
+                                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-800"></div>
+                                        </div>
+                                    </div>
+
                                 </>
                             )}
                             {apiData && apiData?.length > 0 && (
@@ -2327,6 +2355,14 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                 textColumns={textColumns}
                 onSave={handleCustomizeSave}
             />
+
+            {/* Pivot Table Modal */}
+            <PivotTableModal
+                isOpen={isPivotModalOpen}
+                onClose={() => setIsPivotModalOpen(false)}
+                data={searchTerm ? filteredApiData : apiData}
+            />
+
             {/* Download Modal */}
             <FilterModal
                 isOpen={isDownloadModalOpen}
@@ -2683,96 +2719,96 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                         `Showing ${filteredApiData.length} of ${apiData?.length} records` :
                                         `Total Records: ${apiData?.length}`
                                     } | Response Time: {(apiResponseTime / 1000).toFixed(2)}s
+                                </div>
                             </div>
-                        </div>
-                        {componentType === "tradesplit" ? 
-                         (<TradeSplit
-                            data={filteredApiData}
-                            settings={safePageData.getCurrentLevel(currentLevel)?.settings} 
-                            filters={filters}
-                            isAutoWidth={isAutoWidth}
-                         />) : 
-                         componentType === "multireport" ? (
-                            <MultiEntryDataTables 
-                                data={filteredApiData}
-                                settings={safePageData.getCurrentLevel(currentLevel)?.settings} 
-                            />
-                        ) : (
-                            <>
-                        <DataTable
-                            data={filteredApiData}
-                            settings={{
-                                ...safePageData.getCurrentLevel(currentLevel)?.settings,
-                                mobileColumns: rs1Settings?.mobileColumns?.[0] || [],
-                                tabletColumns: rs1Settings?.tabletColumns?.[0] || [],
-                                webColumns: rs1Settings?.webColumns?.[0] || [],
-                                // Add level-specific settings
-                                ...(currentLevel > 0 ? {
-                                    // Override responsive columns for second level if needed
-                                    mobileColumns: rs1Settings?.mobileColumns?.[0] || [],
-                                    tabletColumns: rs1Settings?.tabletColumns?.[0] || [],
-                                    webColumns: rs1Settings?.webColumns?.[0] || []
-                                } : {}),
-                                ...(isAutoWidth ? { columnWidth: undefined, isAutoWidth: true } : {})
-                            }}
-                            summary={safePageData.getCurrentLevel(currentLevel)?.summary}
-                            onRowClick={handleRecordClick}
-                            onRowSelect={handleRowSelect}
-                            onSelectableButtonClick={handleSelectableButtonClick}
-                            tableRef={tableRef}
-                            isEntryForm={componentType === "entry" || componentType === "multientry"}
-                            handleAction={handleTableAction}
-                            fullHeight={Object.keys(additionalTables).length > 0 ? false : true}
-                            showViewDocument={safePageData.getCurrentLevel(currentLevel)?.settings?.ShowViewDocument}
-                            buttonConfig={pageData?.[0]?.buttonConfig}
-                            filtersCheck={filters}
-                            pageData={pageData}
-                            detailColumns={safePageData.getCurrentLevel(currentLevel)?.settings?.DetailColumn}
-                            onDetailColumnClick={handleDetailColumnClick}
-                            frozenColumns={frozenColumns}
-                        />
-                        {Object.keys(additionalTables).length > 0 && (
-                            <div>
-                                {Object.entries(additionalTables).map(([tableKey, tableData]) => {
-                                    // Get the title from jsonData based on the table key
-                                    const tableTitle = jsonData?.TableHeadings?.[0]?.[tableKey]?.[0] || tableKey.toUpperCase();
-                                    return (
-                                        <div key={tableKey} className="mt-3">
-                                            <h3 className="text-lg font-semibold mb-4" style={{ color: colors.text }}>
-                                                {tableTitle}
-                                            </h3>
-                                            <DataTable
-                                                data={tableData}
-                                                settings={{
-                                                    ...safePageData.getCurrentLevel(currentLevel)?.settings,
+                            {componentType === "tradesplit" ?
+                                (<TradeSplit
+                                    data={filteredApiData}
+                                    settings={safePageData.getCurrentLevel(currentLevel)?.settings}
+                                    filters={filters}
+                                    isAutoWidth={isAutoWidth}
+                                />) :
+                                componentType === "multireport" ? (
+                                    <MultiEntryDataTables
+                                        data={filteredApiData}
+                                        settings={safePageData.getCurrentLevel(currentLevel)?.settings}
+                                    />
+                                ) : (
+                                    <>
+                                        <DataTable
+                                            data={filteredApiData}
+                                            settings={{
+                                                ...safePageData.getCurrentLevel(currentLevel)?.settings,
+                                                mobileColumns: rs1Settings?.mobileColumns?.[0] || [],
+                                                tabletColumns: rs1Settings?.tabletColumns?.[0] || [],
+                                                webColumns: rs1Settings?.webColumns?.[0] || [],
+                                                // Add level-specific settings
+                                                ...(currentLevel > 0 ? {
+                                                    // Override responsive columns for second level if needed
                                                     mobileColumns: rs1Settings?.mobileColumns?.[0] || [],
                                                     tabletColumns: rs1Settings?.tabletColumns?.[0] || [],
-                                                    webColumns: rs1Settings?.webColumns?.[0] || [],
-                                                    // Add level-specific settings
-                                                    ...(currentLevel > 0 ? {
-                                                        // Override responsive columns for second level if needed
-                                                        mobileColumns: rs1Settings?.mobileColumns?.[0] || [],
-                                                        tabletColumns: rs1Settings?.tabletColumns?.[0] || [],
-                                                        webColumns: rs1Settings?.webColumns?.[0] || []
-                                                    } : {}),
-                                                    ...(isAutoWidth ? { columnWidth: undefined, isAutoWidth: true } : {})
-                                                }}
-                                                summary={safePageData.getCurrentLevel(currentLevel)?.summary}
-                                                tableRef={tableRef}
-                                                fullHeight={false}
-                                                buttonConfig={pageData?.[0]?.buttonConfig}
-                                                filtersCheck={filters}
-                                                pageData={pageData}
-                                            />
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
-                            </>
-                        )}
+                                                    webColumns: rs1Settings?.webColumns?.[0] || []
+                                                } : {}),
+                                                ...(isAutoWidth ? { columnWidth: undefined, isAutoWidth: true } : {})
+                                            }}
+                                            summary={safePageData.getCurrentLevel(currentLevel)?.summary}
+                                            onRowClick={handleRecordClick}
+                                            onRowSelect={handleRowSelect}
+                                            onSelectableButtonClick={handleSelectableButtonClick}
+                                            tableRef={tableRef}
+                                            isEntryForm={componentType === "entry" || componentType === "multientry"}
+                                            handleAction={handleTableAction}
+                                            fullHeight={Object.keys(additionalTables).length > 0 ? false : true}
+                                            showViewDocument={safePageData.getCurrentLevel(currentLevel)?.settings?.ShowViewDocument}
+                                            buttonConfig={pageData?.[0]?.buttonConfig}
+                                            filtersCheck={filters}
+                                            pageData={pageData}
+                                            detailColumns={safePageData.getCurrentLevel(currentLevel)?.settings?.DetailColumn}
+                                            onDetailColumnClick={handleDetailColumnClick}
+                                            frozenColumns={frozenColumns}
+                                        />
+                                        {Object.keys(additionalTables).length > 0 && (
+                                            <div>
+                                                {Object.entries(additionalTables).map(([tableKey, tableData]) => {
+                                                    // Get the title from jsonData based on the table key
+                                                    const tableTitle = jsonData?.TableHeadings?.[0]?.[tableKey]?.[0] || tableKey.toUpperCase();
+                                                    return (
+                                                        <div key={tableKey} className="mt-3">
+                                                            <h3 className="text-lg font-semibold mb-4" style={{ color: colors.text }}>
+                                                                {tableTitle}
+                                                            </h3>
+                                                            <DataTable
+                                                                data={tableData}
+                                                                settings={{
+                                                                    ...safePageData.getCurrentLevel(currentLevel)?.settings,
+                                                                    mobileColumns: rs1Settings?.mobileColumns?.[0] || [],
+                                                                    tabletColumns: rs1Settings?.tabletColumns?.[0] || [],
+                                                                    webColumns: rs1Settings?.webColumns?.[0] || [],
+                                                                    // Add level-specific settings
+                                                                    ...(currentLevel > 0 ? {
+                                                                        // Override responsive columns for second level if needed
+                                                                        mobileColumns: rs1Settings?.mobileColumns?.[0] || [],
+                                                                        tabletColumns: rs1Settings?.tabletColumns?.[0] || [],
+                                                                        webColumns: rs1Settings?.webColumns?.[0] || []
+                                                                    } : {}),
+                                                                    ...(isAutoWidth ? { columnWidth: undefined, isAutoWidth: true } : {})
+                                                                }}
+                                                                summary={safePageData.getCurrentLevel(currentLevel)?.summary}
+                                                                tableRef={tableRef}
+                                                                fullHeight={false}
+                                                                buttonConfig={pageData?.[0]?.buttonConfig}
+                                                                filtersCheck={filters}
+                                                                pageData={pageData}
+                                                            />
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+                        </div>
                     </div>
-                </div>
                 ))}
 
 
