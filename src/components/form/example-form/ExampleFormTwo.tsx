@@ -38,7 +38,7 @@ export default function ExampleFormTwo() {
     { value: "usa", label: "United States" },
     { value: "canada", label: "Canada" },
   ];
-  const handleSelectGender = (value: string) => undefined;
+  const handleSelectGender = () => undefined;
 
   const handleRadioChange = (value: string) => {
     setSelectedOption(value);

@@ -6,17 +6,16 @@ import { FaPlus, FaSave, FaTrash } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import ConfirmationModal from './Modals/ConfirmationModal';
 import CaseConfirmationModal from './Modals/CaseConfirmationModal';
-import { MdArrowBack, MdOutlineClose } from "react-icons/md";
-import { EntryFormModalProps, FormField, ChildEntryModalProps, TabData, GroupedFormData, GuardianEntryModalProps } from '@/types';
+import { MdOutlineClose } from "react-icons/md";
+import { EntryFormModalProps, FormField, TabData } from '@/types';
 import EntryForm from './component-forms/EntryForm';
 import { handleValidationForDisabledField } from './component-forms/form-helper';
 import apiService from '@/utils/apiService';
 import SaveConfirmationModal from './Modals/SaveConfirmationModal';
-import { extractTagsForTabsDisabling, generateUniqueId, getFieldValue, groupFormData, parseXMLStringToObject, validateForm, convertXmlToModifiedFormData } from './component-forms/form-helper/utils';
-import { formatTextSplitString, getLocalStorage, sanitizeValueSpecialChar, sanitizePayload } from '@/utils/helper';
+import { extractTagsForTabsDisabling, getFieldValue, parseXMLStringToObject, validateForm, convertXmlToModifiedFormData } from './component-forms/form-helper/utils';
+import { getLocalStorage, sanitizeValueSpecialChar, sanitizePayload } from '@/utils/helper';
 import { useTheme } from '@/context/ThemeContext';
 import Button from './ui/button/Button';
-import { DataGrid } from 'react-data-grid';
 import { handleNextValidationFields, executeEditValidateApi } from './component-forms/form-helper/apiHelper';
 import AccessibleModalEntry from './a11y/AccessibleModalEntry';
 import ChildEntryModal from './EntryForm/ChildEntryModal';
@@ -24,7 +23,7 @@ import GuardianEntryForm from './EntryForm/GuardianEntryForm';
 import TabContent from './EntryForm/TabContent';
 import ChildEntriesTable from './EntryForm/ChildEntriesTable';
 // Placeholder if columnWidthMap is not defined
-const columnWidthMap: Record<string, number> = {};
+// const columnWidthMap: Record<string, number> = {};
 
 
 const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageData, editData, action, setEntryEditData, refreshFunction, isTabs, childModalZindex = 'z-200', parentModalZindex = 'z-100', pageName }) => {
@@ -307,7 +306,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                 const initialTabLoadingDropdowns: Record<string, Record<string, boolean>> = {};
                 const initialTabTableData: Record<string, any[]> = {};
 
-                tabs.forEach((tab, index) => {
+                tabs.forEach((tab ) => {
                     const tabKey = tab.TabName;
                     initialTabFormValues[tabKey] = {};
                     initialTabDropdownOptions[tabKey] = {};
@@ -577,7 +576,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
         });
 
         // --- Part 3.2: Fetch Dependent Options for Tabs ---
-        newTabsData.forEach((tab, index) => {
+        newTabsData.forEach((tab) => {
             const tabKey = tab.TabName;
             
             tab.Data.forEach((field: FormField) => {
@@ -1862,19 +1861,19 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
         }
     };
 
-    const getAllColumns = (data: any[]): string[] => {
-        const allColumns = new Set<string>();
-        data.forEach(entry => {
-            if (entry && typeof entry === 'object') {
-                Object.keys(entry).forEach(key => {
-                    if (key !== "SerialNo" && key !== "Id") {
-                        allColumns.add(key);
-                    }
-                });
-            }
-        });
-        return Array.from(allColumns);
-    };
+    // const getAllColumns = (data: any[]): string[] => {
+    //     const allColumns = new Set<string>();
+    //     data.forEach(entry => {
+    //         if (entry && typeof entry === 'object') {
+    //             Object.keys(entry).forEach(key => {
+    //                 if (key !== "SerialNo" && key !== "Id") {
+    //                     allColumns.add(key);
+    //                 }
+    //             });
+    //         }
+    //     });
+    //     return Array.from(allColumns);
+    // };
 
     // Create column width mapping from pageData settings
     const getColumnWidthMap = (): Record<string, number> => {
@@ -2129,7 +2128,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
             Master: [masterFormValues],
         }
 
-        tabsData.forEach((tabs, index) => {
+        tabsData.forEach((tabs) => {
             const currentKey = tabs.TabName;
             if (tabs.Settings.isTable === "true") {
                 allData[tabs.TabName] = tabTableData[currentKey]
@@ -2281,7 +2280,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
     };
 
     // In your component
-    const dynamicColumns = getAllColumns(childEntriesTable);
+    // const dynamicColumns = getAllColumns(childEntriesTable);
 
     const handleTabTableDataEdit = (row: any, idx: any) => {
         const currentTab = tabsData[activeTabIndex];

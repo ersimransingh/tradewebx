@@ -328,7 +328,7 @@ const FormCreator: React.FC<FormCreatorProps> = ({
 
     const handleFormChange = useCallback((newValues: any) => {
         const cleanedValues = Object.fromEntries(
-            Object.entries(newValues).filter(([_, value]) =>
+            Object.entries(newValues).filter(([value]) =>
                 value !== undefined && value !== null
             )
         );

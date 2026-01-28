@@ -1,6 +1,6 @@
 import React from 'react';
 import { DataGrid } from 'react-data-grid';
-import { FaSave, FaTrash, FaPlus } from 'react-icons/fa';
+import { FaSave } from 'react-icons/fa';
 import { MdArrowBack, MdOutlineClose } from "react-icons/md";
 import { toast } from 'react-toastify';
 import Button from '../ui/button/Button';
@@ -78,7 +78,6 @@ const TabContent: React.FC<TabContentProps> = ({
     tabsModal,
     setTabsModal,
     isMinor,
-    setIsMinor,
     handleClearTabTableRowEntry,
     handleAddTabsFormTableRow,
     submitTabsFormData,

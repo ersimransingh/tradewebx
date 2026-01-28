@@ -13,7 +13,7 @@ export default function DefaultInputs() {
     { value: "template", label: "Template" },
     { value: "development", label: "Development" },
   ];
-  const handleSelectChange = (value: string) => undefined;
+  const handleSelectChange = () => undefined;
   return (
     <ComponentCard title="Default Inputs">
       <div className="space-y-6">

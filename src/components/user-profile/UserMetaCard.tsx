@@ -177,10 +177,10 @@ export default function UserMetaCard() {
     );
   };
 
-  const handleSave = () => {
-    // Handle save logic here
-    closeModal();
-  };
+  // const handleSave = () => {
+  //   // Handle save logic here
+  //   closeModal();
+  // };
 
   // Custom styles based on theme
   const cardStyle = {
