@@ -20,7 +20,7 @@ export default function ExampleFormOne() {
     { value: "template", label: "Option 2" },
     { value: "development", label: "Option 3" },
   ];
-  const handleSelectChange = (value: string) => undefined;
+  const handleSelectChange = () => undefined;
 
   const handleTextareaChange = (value: string) => {
     setMessage(value);

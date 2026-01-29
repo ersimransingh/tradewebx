@@ -97,7 +97,6 @@ const ApiConfiguration = () => {
 
   const DEFAULT_GRID_BG = "#eaf3ff";
 const DEFAULT_GRID_BORDER = "#b6d4fe";
-const DEFAULT_GRID_HEADER = "#dbeafe";
 
 const isDefaultThemeGrid = colors?.color1 === "#fffef9";
 
