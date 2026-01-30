@@ -2658,60 +2658,6 @@ export const exportTableToPdf = async (
 
 };
 
-// export const downloadOption = async (
-//     jsonData: any,
-//     appMetadata: any,
-//     allData: any[],
-//     pageData: any,
-//     filters: any,
-//     currentLevel: any,
-// ) => {
-
-//     const userId = getLocalStorage('userId') || '';
-
-//     const filterXml = buildFilterXml(filters, userId);
-//     console.log(filterXml, 'filterXml');
-
-
-//     const xmlData1 = ` 
-//     <dsXml>
-//     <J_Ui>${JSON.stringify(pageData[0].levels[currentLevel].J_Ui).slice(1, -1)},"ReportDisplay":"D"</J_Ui>
-//     <Sql></Sql>
-//     <X_Filter>
-//     ${filterXml}
-//     </X_Filter>
-//         <J_Api>"UserId":"${userId}","UserType":"${getLocalStorage('userType')}","AccYear":24,"MyDbPrefix":"SVVS","MemberCode":"undefined","SecretKey":"undefined"</J_Api>
-//     </dsXml>`;
-
-//     try {
-//         const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData1);
-
-       
-//         // Pull out the first rs0 entry
-//         const rs0 = response.data?.data?.rs0;
-//         const errorFlag = response?.data?.rs0
-
-//         if(errorFlag[0]?.ErrorFlag === 'E') {
-//             console.log('inside error');
-//             toast.error(`${errorFlag[0].ErrorMessage}`)
-//         }
-//         if (Array.isArray(rs0) && rs0.length > 0) {
-//             const { PDFName, Base64PDF } = rs0[0];
-//             if (PDFName && Base64PDF) {
-//                 // Kick off the download
-//                 downloadPdf(PDFName, Base64PDF);
-//             } else {
-//                 toast.error('Response missing PDFName or Base64PDF');
-//             }
-//         } else {
-//             toast.error('Unexpected response format:', response.data);
-//         }
-//     } catch (err) {
-//         toast.error('Not available Donwload');
-//     }
-
-// }
-
 export const downloadOption = async (
     jsonData: any,
     appMetadata: any,
@@ -2749,7 +2695,6 @@ export const downloadOption = async (
         
         // Check for error flag BEFORE processing data [web:9]
         if (Array.isArray(rs0) && rs0.length > 0 && rs0[0].ErrorFlag === 'E') {
-            console.log('API Error detected');
             toast.error(rs0[0].ErrorMessage || 'Report generation failed');
             return;  // Exit early on business error
         }
