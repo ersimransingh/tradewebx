@@ -200,11 +200,36 @@ const JobSchedule = () => {
         setIsEditModalOpen(true);
     };
 
-    const handleSaveJob = (updatedData: any) => {
-        console.log("Saving Job Payload:", updatedData);
-        // Here you would typically call the API to save
-        // after save success, refresh grid
-        toast.success("Job payload logged to console");
+    const handleSaveJob = async (updatedJob: any) => {
+        setLoading(true);
+        try {
+            // Merge original object with updates to ensure all fields are present
+            const mergedJob = { ...selectedJob, ...updatedJob };
+
+            const xmlData = `<dsXml>
+                <J_Ui>"ActionName":"JobSchedule","Option":"Edit"</J_Ui>
+                <X_Filter></X_Filter>
+                <X_Data>
+                    ${Object.entries(mergedJob).map(([key, value]) => `<${key}>${value || ''}</${key}>`).join('\n                    ')}
+                </X_Data>
+                <J_Api>"UserId":"${getLocalStorage('userId')}", "UserType":"${getLocalStorage('userType')}"</J_Api>
+            </dsXml>`;
+
+            const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
+            
+            if (response.data.success) {
+                toast.success("Job updated successfully");
+                setIsEditModalOpen(false);
+                fetchJobSchedule(); // Refresh grid
+            } else {
+                toast.error("Failed to update job: " + (response.data.message || "Unknown error"));
+            }
+        } catch (error) {
+            console.error("Error saving job:", error);
+            toast.error("An error occurred while saving the job");
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleQuickRun = async (jobId: number) => {

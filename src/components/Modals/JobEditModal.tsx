@@ -144,7 +144,7 @@ const JobEditModal: React.FC<JobEditModalProps> = ({ isOpen, onClose, jobData, o
                         <label className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
                         <DatePicker
                             selected={startTime}
-                            onChange={(date) => setStartTime(date)}
+                            onChange={(date: Date | null) => setStartTime(date)}
                             showTimeSelect
                             showTimeSelectOnly
                             timeIntervals={15}
@@ -157,7 +157,7 @@ const JobEditModal: React.FC<JobEditModalProps> = ({ isOpen, onClose, jobData, o
                         <label className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
                         <DatePicker
                             selected={endTime}
-                            onChange={(date) => setEndTime(date)}
+                            onChange={(date: Date | null) => setEndTime(date)}
                             showTimeSelect
                             showTimeSelectOnly
                             timeIntervals={15}
