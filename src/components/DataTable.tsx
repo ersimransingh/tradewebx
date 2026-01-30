@@ -2666,12 +2666,10 @@ export const downloadOption = async (
     filters: any,
     currentLevel: any,
 ) => {
-
     const userId = getLocalStorage('userId') || '';
 
     const filterXml = buildFilterXml(filters, userId);
     console.log(filterXml, 'filterXml');
-
 
     const xmlData1 = ` 
     <dsXml>
@@ -2686,22 +2684,37 @@ export const downloadOption = async (
     try {
         const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData1);
 
-        // Pull out the first rs0 entry
-        const rs0 = response.data?.data?.rs0;
+        // Safely check response structure first [web:7][cite:1]
+        const data = response.data?.data || response.data;
+        if (!data) {
+            toast.error('Invalid response structure');
+            return;
+        }
+
+        const rs0 = data.rs0;
+        
+        // Check for error flag BEFORE processing data [web:9]
+        if (Array.isArray(rs0) && rs0.length > 0 && rs0[0].ErrorFlag === 'E') {
+            toast.error(rs0[0].ErrorMessage || 'Report generation failed');
+            return;  // Exit early on business error
+        }
+
+        // Now process success case
         if (Array.isArray(rs0) && rs0.length > 0) {
             const { PDFName, Base64PDF } = rs0[0];
             if (PDFName && Base64PDF) {
-                // Kick off the download
                 downloadPdf(PDFName, Base64PDF);
             } else {
-                toast.error('Response missing PDFName or Base64PDF');
+                toast.error('PDF data missing in response');
             }
         } else {
-            toast.error('Unexpected response format:', response.data);
+            toast.error('No report data returned');
         }
     } catch (err) {
-        toast.error('Not available Donwload');
+        console.error('Download error:', err);
+        toast.error('Download not available');  // Fixed typo: "Donwload" → "Download"
     }
+};
 
-}
+
 export default DataTable;
