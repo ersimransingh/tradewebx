@@ -456,7 +456,7 @@ const FileUploadChunked: React.FC<FileUploadChunkedProps> = ({
     workerRef.current = worker;
 
     worker.onmessage = (e) => {
-      const { type, data, totalRows, progress: workerProgress, error } = e.data;
+      const { type, data, totalRows, error } = e.data;
 
       if (type === 'start') {
         setProgress(prev => ({
@@ -697,31 +697,31 @@ const FileUploadChunked: React.FC<FileUploadChunkedProps> = ({
   };
 
   // Pause/Resume
-  const handlePauseResume = () => {
-    if (isPaused) {
-      shouldContinueRef.current = true;
-      setIsPaused(false);
-      startUpload();
-    } else {
-      shouldContinueRef.current = false;
-      setIsPaused(true);
-      setProgress(prev => ({ ...prev, status: 'paused' }));
-    }
-  };
+  // const handlePauseResume = () => {
+  //   if (isPaused) {
+  //     shouldContinueRef.current = true;
+  //     setIsPaused(false);
+  //     startUpload();
+  //   } else {
+  //     shouldContinueRef.current = false;
+  //     setIsPaused(true);
+  //     setProgress(prev => ({ ...prev, status: 'paused' }));
+  //   }
+  // };
 
-  // Cancel upload
-  const handleCancel = () => {
-    shouldContinueRef.current = false;
-    if (parserAbortRef.current) {
-      parserAbortRef.current.abort();
-    }
-    if (workerRef.current) {
-      workerRef.current.terminate();
-      workerRef.current = null;
-    }
-    setProgress(prev => ({ ...prev, status: 'cancelled' }));
-    toast.info('Upload cancelled');
-  };
+  // // Cancel upload
+  // const handleCancel = () => {
+  //   shouldContinueRef.current = false;
+  //   if (parserAbortRef.current) {
+  //     parserAbortRef.current.abort();
+  //   }
+  //   if (workerRef.current) {
+  //     workerRef.current.terminate();
+  //     workerRef.current = null;
+  //   }
+  //   setProgress(prev => ({ ...prev, status: 'cancelled' }));
+  //   toast.info('Upload cancelled');
+  // };
 
   // Retry failed chunks
   const handleRetryFailed = async () => {

@@ -6,17 +6,16 @@ import { FaPlus, FaSave, FaTrash } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import ConfirmationModal from './Modals/ConfirmationModal';
 import CaseConfirmationModal from './Modals/CaseConfirmationModal';
-import { MdArrowBack, MdOutlineClose } from "react-icons/md";
-import { EntryFormModalProps, FormField, ChildEntryModalProps, TabData, GroupedFormData, GuardianEntryModalProps } from '@/types';
+import { MdOutlineClose } from "react-icons/md";
+import { EntryFormModalProps, FormField, TabData } from '@/types';
 import EntryForm from './component-forms/EntryForm';
 import { handleValidationForDisabledField } from './component-forms/form-helper';
 import apiService from '@/utils/apiService';
 import SaveConfirmationModal from './Modals/SaveConfirmationModal';
-import { extractTagsForTabsDisabling, generateUniqueId, getFieldValue, groupFormData, parseXMLStringToObject, validateForm, convertXmlToModifiedFormData } from './component-forms/form-helper/utils';
-import { formatTextSplitString, getLocalStorage, sanitizeValueSpecialChar, sanitizePayload } from '@/utils/helper';
+import { extractTagsForTabsDisabling, getFieldValue, parseXMLStringToObject, validateForm, convertXmlToModifiedFormData } from './component-forms/form-helper/utils';
+import { getLocalStorage, sanitizeValueSpecialChar, sanitizePayload } from '@/utils/helper';
 import { useTheme } from '@/context/ThemeContext';
 import Button from './ui/button/Button';
-import { DataGrid } from 'react-data-grid';
 import { handleNextValidationFields, executeEditValidateApi } from './component-forms/form-helper/apiHelper';
 import AccessibleModalEntry from './a11y/AccessibleModalEntry';
 import ChildEntryModal from './EntryForm/ChildEntryModal';
@@ -24,7 +23,7 @@ import GuardianEntryForm from './EntryForm/GuardianEntryForm';
 import TabContent from './EntryForm/TabContent';
 import ChildEntriesTable from './EntryForm/ChildEntriesTable';
 // Placeholder if columnWidthMap is not defined
-const columnWidthMap: Record<string, number> = {};
+// const columnWidthMap: Record<string, number> = {};
 
 
 const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageData, editData, action, setEntryEditData, refreshFunction, isTabs, childModalZindex = 'z-200', parentModalZindex = 'z-100', pageName }) => {

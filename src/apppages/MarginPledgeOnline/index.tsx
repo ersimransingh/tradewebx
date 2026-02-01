@@ -6,7 +6,6 @@ import { ACTION_NAME, BASE_URL, PATH_URL } from '@/utils/constants';
 import apiService from '@/utils/apiService';
 import { getLocalStorage } from '@/utils/helper';
 import { useLocalStorage } from '@/hooks/useLocalListner';
-import { toast } from 'react-toastify';
 
 type TableRow = {
   [key: string]: string;
@@ -14,9 +13,9 @@ type TableRow = {
   Value: string;
 };
 
-type ApiRow = {
-  [key: string]: string | number | null;
-};
+// type ApiRow = {
+//   [key: string]: string | number | null;
+// };
 
 type PledgeRedirectParam = {
   APIUrl: string;

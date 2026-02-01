@@ -15,7 +15,7 @@ export default function SelectInputs() {
 
   const [selectedValues, setSelectedValues] = useState<string[]>([]);
 
-  const handleSelectChange = (value: string) => undefined;
+  const handleSelectChange = () => undefined;
 
   const multiOptions = [
     { value: "1", text: "Option 1", selected: false },

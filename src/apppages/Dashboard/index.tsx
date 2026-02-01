@@ -491,9 +491,9 @@ function Dashboard() {
                 <J_Api>"UserId":"${getLocalStorage('userId')}", "UserType":"${getLocalStorage('userType')}"</J_Api>
             </dsXml>`;
 
-            const startTime = Date.now();
+            // const startTime = Date.now();
             const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
-            const endTime = Date.now();
+            // const endTime = Date.now();
 
             const newData = response.data.data.rs0 || [];
             setDashboardData(newData);
