@@ -14,7 +14,7 @@ const SSOContent = () => {
     const router = useRouter()
     const searchParams = useSearchParams()
     const dispatch = useAppDispatch()
-    const [isLoading, setIsLoading] = useState(true)
+    // const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState("")
     const hasAttemptedLogin = useRef(false)
 
@@ -48,7 +48,7 @@ const SSOContent = () => {
             // Check if we have any parameters
             if (Object.keys(queryParams).length === 0) {
                 setError('No query parameters found')
-                setIsLoading(false)
+                // setIsLoading(false)
                 hasAttemptedLogin.current = false; // Reset so user can retry
                 return
             }
@@ -152,7 +152,7 @@ const SSOContent = () => {
                 const errorMessage = data.message || 'SSO login failed'
                 setError(errorMessage)
                 dispatch(setAuthError(errorMessage))
-                setIsLoading(false)
+                // setIsLoading(false)
                 hasAttemptedLogin.current = false; // Reset so user can retry
             }
         } catch (err) {
@@ -163,7 +163,7 @@ const SSOContent = () => {
 
             setError(errorMessage)
             dispatch(setAuthError(errorMessage))
-            setIsLoading(false)
+            // setIsLoading(false)
             hasAttemptedLogin.current = false; // Reset so user can retry
         }
     }, [searchParams, dispatch, router])

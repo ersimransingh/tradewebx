@@ -21,7 +21,6 @@ const ChildEntryModal: React.FC<ChildEntryModalProps> = ({
     setFieldErrors,
     setFormData,
     resetChildForm,
-    isEdit,
     onChildFormSubmit,
     setValidationModal,
     viewAccess,
