@@ -12,6 +12,7 @@ import FileUploadWithCropForNormalForm from "./formComponents/FileUploadWithCrop
 import CustomDateTimePicker from "./formComponents/CustomDateTimePicker";
 import CustomDatePicker from "./formComponents/CustomDatePicker";
 import { convertXmlToModifiedFormData } from "./form-helper/utils";
+import RichTextEditor from "./formComponents/RichTextEditor";
 
 const DropdownField: React.FC<{
     field: FormField;
@@ -777,6 +778,52 @@ const EntryForm: React.FC<EntryFormProps> = ({
                         {fieldErrors[field.wKey] && (
                             <span
                                 id={textareaErrorId}
+                                className="text-red-500 text-sm"
+                                role="alert"
+                            >
+                                {fieldErrors[field.wKey]}
+                            </span>
+                        )}
+                    </div>
+                );
+
+            case 'WRichTextEditor':
+                const richTextId = `richtext-${field.wKey}`;
+                const richTextErrorId = `error-${field.wKey}`;
+
+                return (
+                    <div
+                        key={`field-${field.Srno}-${field.wKey}-${index}`}
+                        style={field.isBR === "true" ? containerStylesForBr : containerStyle}
+                    >
+                        <label
+                            htmlFor={richTextId}
+                            className="block text-sm font-medium mb-1"
+                            style={{ color: colors.text, wordBreak: "break-all" }}
+                        >
+                            {field.label}
+                            {isRequired && <span className="text-red-500 ml-1">*</span>}
+                        </label>
+
+                        <RichTextEditor
+                            id={richTextId}
+                            value={formValues[field.wKey] || ""}
+                            onChange={(html) => handleInputChange(field.wKey, html)}
+                            onBlur={() => handleBlur(field)}
+                            disabled={!isEnabled}
+                            error={!!fieldErrors[field.wKey]}
+                            placeholder={field.label}
+                            maxLength={field.FieldSize ? parseInt(field.FieldSize, 10) : undefined}
+                            colors={colors}
+                            isJustUpdated={isJustUpdated}
+                            ariaRequired={isRequired}
+                            ariaInvalid={!!fieldErrors[field.wKey]}
+                            ariaDescribedBy={fieldErrors[field.wKey] ? richTextErrorId : undefined}
+                        />
+
+                        {fieldErrors[field.wKey] && (
+                            <span
+                                id={richTextErrorId}
                                 className="text-red-500 text-sm"
                                 role="alert"
                             >

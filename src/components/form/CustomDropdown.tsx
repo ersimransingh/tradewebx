@@ -142,6 +142,7 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
         options={visibleOptions}
         value={selectedOption}
         isMulti={item.isMultiple}
+        isClearable={true}
         closeMenuOnSelect={!item.isMultiple}
         blurInputOnSelect={!item.isMultiple}
         onChange={handleChange}

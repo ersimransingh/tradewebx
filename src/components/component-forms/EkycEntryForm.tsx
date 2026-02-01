@@ -15,6 +15,7 @@ import OtpVerificationModal from "./formComponents/OtpVerificationComponent";
 import LoaderOverlay from "../Loaders/LoadingSpinner";
 import CustomDatePicker from "./formComponents/CustomDatePicker";
 import apiService from "@/utils/apiService";
+import RichTextEditor from "./formComponents/RichTextEditor";
 
 
 const DropdownField: React.FC<{
@@ -672,6 +673,34 @@ const EkycEntryForm: React.FC<EntryFormProps> = ({
                             aria-disabled={!isEnabled}
                             tabIndex={0}                          //  allows focus always
                             aria-labelledby={`label-${field.wKey}`} //  NVDA reads label + value
+                        />
+                        {hasError && (
+                            <span className="text-red-500 text-sm">{fieldErrors[field.wKey]}</span>
+                        )}
+                    </div>
+                );
+
+            case 'WRichTextEditor':
+                return (
+                    <div key={`richText-${field.Srno}-${field.wKey}`} className={marginBottom}>
+                        <label id={`label-${field.wKey}`} className="block text-sm font-medium mb-1" style={{ color: colors.text }}>
+                            {field.label}
+                            {isRequired && <span className="text-red-500 ml-1">*</span>}
+                        </label>
+                        <RichTextEditor
+                            id={`richtext-${field.wKey}`}
+                            value={formValues[field.wKey] || ""}
+                            onChange={(html) => handleInputChange(field.wKey, html)}
+                            onBlur={() => handleBlur(field)}
+                            disabled={!isEnabled}
+                            error={!!hasError}
+                            placeholder={field.label}
+                            maxLength={field.FieldSize ? parseInt(field.FieldSize, 10) : undefined}
+                            colors={colors}
+                            isJustUpdated={isJustUpdated}
+                            ariaRequired={isRequired}
+                            ariaInvalid={!!hasError}
+                            ariaDescribedBy={hasError ? `error-${field.wKey}` : undefined}
                         />
                         {hasError && (
                             <span className="text-red-500 text-sm">{fieldErrors[field.wKey]}</span>

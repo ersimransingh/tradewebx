@@ -164,6 +164,7 @@ const AsyncSearchDropdown: React.FC<AsyncSearchDropdownProps> = ({
         options={options}
         isLoading={isLoading}
         isDisabled={isDisabled}
+        isClearable={true}
         placeholder={value || "Search..."}
         noOptionsMessage={() =>
           isLoading ? "Loading..." : "No results found"

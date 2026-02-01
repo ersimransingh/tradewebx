@@ -18,6 +18,7 @@ import BodProcess from "@/apppages/BodProcess";
 import UserAccessMenu from "@/apppages/UserAccessMenu";
 import UploadFile from "@/apppages/UploadFile";
 import QueryFormPage from "@/apppages/QueryForm";
+import JobSchedule from "@/apppages/JobSchedule";
 // Define static route components
 const staticRoutes: Record<string, React.ReactNode> = {
   dashboard: <Dashboard />,
@@ -34,7 +35,8 @@ const staticRoutes: Record<string, React.ReactNode> = {
   bodProcess: <BodProcess />,
   useraccess: <UserAccessMenu />,
   uploadFile: <UploadFile />,
-  queryform: <QueryFormPage />
+  queryform: <QueryFormPage />,
+  jobschedule: <JobSchedule />,
 };
 
 export default function DynamicPage({ params }: { params: any | Promise<any> }) {

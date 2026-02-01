@@ -193,7 +193,8 @@ export default function UserMetaCard() {
   };
 
   const secondaryTextStyle = {
-    color: colors.secondary,
+    // color: colors.secondary,
+    color: colors.buttonBackground,
   };
 
   // const socialButtonStyle = {

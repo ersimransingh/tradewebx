@@ -20,7 +20,7 @@ import TableStyling from './ui/table/TableStyling';
 import apiService from '@/utils/apiService';
 import { useLocalStorage } from '@/hooks/useLocalListner';
 import Loader from './Loader';
-import { handleLoopThroughMultiSelectKeyHandler, handleLoopThroughMultiSelectKeyHandlerDownloadZip, handleLoopThroughMultiSelectKeyHandlerDownloadZipExcel, handleLoopThroughMultiSelectKeyHandlerExcel } from '@/utils/dataTableHelper';
+import { handleDownloadZipByFormat, handleSendEmailByFormat } from '@/utils/dataTableHelper';
 import { ensureContrastColor,getReadableTextColor } from '@/utils/helper';
 
 
@@ -713,8 +713,8 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, onRow
     const [userType] = useLocalStorage('userType', null);
     const [isLoading, setIsLoading] = useState(false);
 
-
-
+    const fundLogic = settings.FundRequestOTP
+    
     // 🆕 Auto-select all rows on load if multiCheckBox is enabled
     useEffect(() => {
         if (settings?.multiCheckBox && data?.length > 0) {
@@ -984,7 +984,13 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, onRow
 
         return data.map((row, index) => {
             const newRow = { ...row };
-            const rowId = row.id || index;
+            // Determine unique row ID
+            let rowId = row.id || index;
+            if (settings?.primaryKey && newRow[settings.primaryKey]) {
+                rowId = newRow[settings.primaryKey];
+            } else if (!row.id) {
+                 rowId = index;
+            }
 
             // Handle date formatting
             if (settings?.dateFormat?.key) {
@@ -1014,7 +1020,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, onRow
             }
 
             // Handle value-based text colors
-            if (settings?.valueBasedTextColor) {
+                if (settings?.valueBasedTextColor) {
                 settings.valueBasedTextColor.forEach((colorRule: any) => {
                     const columns = colorRule.key.split(',').map((key: any) => key.trim());
                     columns.forEach((column: any) => {
@@ -1044,7 +1050,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, onRow
                 _id: rowId
             };
         });
-    }, [data, settings?.dateFormat, settings?.decimalColumns, settings?.valueBasedTextColor, expandedRows, selectedRows]);
+    }, [data, settings?.dateFormat, settings?.decimalColumns, settings?.valueBasedTextColor, expandedRows, selectedRows, settings?.primaryKey]);
 
     // Apply filters to the formatted data
     const filteredData = useMemo(() => {
@@ -1165,7 +1171,7 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, onRow
                         const allSelected = allIds.length > 0 && allIds.every(id => selectedIds.includes(id));
 
                         // Don't show header checkbox for single selection mode
-                        if (showViewDocument) {
+                        if (showViewDocument || (fundLogic && userType === 'branch')) {
                             return (
                                 <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
                                     <span style={{ fontSize: '12px', color: '#666' }}>Select</span>
@@ -1191,11 +1197,11 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, onRow
                     },
                     renderCell: ({ row }) => (
                         <input
-                            type={showViewDocument ? "radio" : "checkbox"}
-                            name={showViewDocument ? "singleSelection" : undefined}
+                            type={(fundLogic && userType === 'branch') ?  "radio" : showViewDocument ? "radio" : "checkbox"}
+                            name={(fundLogic && userType === 'branch') ?  "singleSelection" :showViewDocument ? "singleSelection" : undefined}
                             checked={selectedRows.some(r => r._id === row._id)}
                             onChange={(e) => {
-                                if (showViewDocument) {
+                                if (showViewDocument || fundLogic) {
                                     // Single selection mode - replace the entire selection
                                     const updated = e.target.checked ? [row] : [];
                                     setSelectedRows(updated);
@@ -1796,6 +1802,8 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, onRow
         }, 20);
     }
 
+    const [formatType, setFormatType] = useState('Pdf'); // 'Pdf' or 'Excel'
+    
     return (
         <div
             ref={tableRef}
@@ -1806,43 +1814,63 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, onRow
                     <Loader />
                 </div>
             )}
+            
+            {/* Show Selected Count */}
+            {selectedRows.length > 0 && (
+                <div className="px-4 py-2 font-medium text-blue-700 bg-blue-50 border-b border-blue-100 flex items-center justify-between">
+                    <span>
+                        <span className="font-bold">{selectedRows.length}</span> record{selectedRows.length !== 1 ? 's' : ''} selected
+                    </span>
+                    {/* Optional: Clear selection button could go here */}
+                     <button
+                        onClick={() => {
+                            setSelectedRows([]);
+                            onRowSelect?.([]);
+                        }}
+                        className="text-xs text-blue-600 hover:text-blue-800 underline"
+                    >
+                        Clear Selection
+                    </button>
+                </div>
+            )}
+
             {settings.multiCheckBox &&
                 <>
-                    <div className='flex'>
+                    {/* <div className='flex'>
                         <button
                             style={{
-                                background: colors?.color3 || "#f0f0f0",
+                                background: colors.buttonBackground,
                                 color: getReadableTextColor(bgColor),  // If background is light → black text, else white text
                             }}
-                            onClick={() => handleLoopThroughMultiSelectKeyHandler(setIsLoading, filtersCheck, userId, pageData, selectedRows, userType, sendEmailMultiCheckbox, setSelectedRows)}
+                            onClick={() => handleLoopThroughMultiSelectKeyHandler2(setIsLoading, filtersCheck, userId, pageData, selectedRows, userType, sendEmailMultiCheckbox, setSelectedRows)}
                             className="bg-[#00732F] text-white py-2 px-8 rounded-md shadow-lg transform transition-transform duration-200 ease-in-out active:scale-95 w-auto font-medium flex items-center m-4 mr-2"
                         >
-                            Send Pdf Mail
+                            Send PDF/XLS Mail
                         </button>
 
-                        <button
+                        {/* <button
                             style={{
-                                background: colors?.color3 || "#f0f0f0",
-                                color: getReadableTextColor(bgColor),  // If background is light → black text, else white text
-                            }}
+                                background: colors.buttonBackground,
+                                color: getReadableTextColor(buttonBgColor),
+                              }}
                             onClick={() => handleLoopThroughMultiSelectKeyHandlerExcel(setIsLoading, filtersCheck, userId, pageData, selectedRows, userType, sendEmailMultiCheckbox, setSelectedRows)}
                             className="bg-[#00732F] text-white py-2 px-8 rounded-md shadow-lg transform transition-transform duration-200 ease-in-out active:scale-95 w-auto font-medium flex items-center m-4 mr-2"
                         >
                             Send Excel Mail
-                        </button>
+                        </button> */}
 
-                        <button
+                        {/* <button
                             style={{
-                                background: colors?.color3 || "#f0f0f0",
+                                background: colors.buttonBackground,
                                 color: getReadableTextColor(bgColor),  // If background is light → black text, else white text
                             }}
-                            onClick={() => handleLoopThroughMultiSelectKeyHandlerDownloadZip(selectedRows, setIsLoading, filtersCheck, userId, userType, setSelectedRows)}
+                            onClick={() => handleLoopThroughMultiSelectKeyHandlerDownloadZip2(selectedRows, setIsLoading, filtersCheck, userId, userType, setSelectedRows)}
                             className="bg-[#00732F] text-white py-2 px-8 rounded-md shadow-lg transform transition-transform duration-200 ease-in-out active:scale-95 w-auto font-medium flex items-center m-4 mr-2"
                         >
-                            Download Pdf Zip
-                        </button>
+                            Download PDF/XLS Zip
+                        </button> */}
                         {/* handleLoopThroughMultiSelectKeyHandlerDownloadExcel */}
-                        <button
+                        {/* <button
                             style={{
                                 background: colors?.color3 || "#f0f0f0",
                                 color: getReadableTextColor(bgColor),  // If background is light → black text, else white text
@@ -1851,7 +1879,64 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, onRow
                             className="bg-[#00732F] text-white py-2 px-8 rounded-md shadow-lg transform transition-transform duration-200 ease-in-out active:scale-95 w-auto font-medium flex items-center m-4 mr-2"
                         >
                             Download Excel Zip
+                        </button> */}
+                    {/* </div> */} 
+
+                    <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg border rounded-xl">
+                      {/* ComboBox: PDF or Excel */}
+                      <div className="flex items-center gap-2 min-w-[140px]">
+                        <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Format:</label>
+                        <select
+                          value={formatType}
+                          onChange={(e) => setFormatType(e.target.value)}
+                          className="w-full h-[40px] pl-4 pr-10 py-1.5 text-sm font-medium rounded border border-gray-400 bg-white text-gray-800 appearance-none focus:outline-none focus:ring-2 focus:ring-[#3EB489]"
+                          style={{
+                            backgroundColor: colors?.textInputBackground || 'white',
+                            boxShadow: '0 0 0 1px rgba(0,0,0,0.05)',
+                            transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+                          }}
+                        >
+                          <option value="Pdf">📄 PDF</option>
+                          <option value="Excel">📊 Excel</option>
+                        </select>
+                      </div>
+                      
+                      {/* 2 Buttons */}
+                      <div className="flex gap-2">
+                        {/* Button 1: Send Email (based on ComboBox selection) */}
+                        <button
+                          style={{
+                            background: colors.buttonBackground,
+                            color: getReadableTextColor(bgColor),  // If background is light → black text, else white text
+                        }}
+                          onClick={() => handleSendEmailByFormat(setIsLoading, filtersCheck, userId, pageData, selectedRows, userType, sendEmailMultiCheckbox, setSelectedRows, formatType)}
+                          disabled={selectedRows.length === 0}
+                          className={`px-6 py-2 rounded-md shadow-lg transform transition-all duration-200 ease-in-out active:scale-95 font-medium flex items-center gap-2 text-sm ${
+                            selectedRows.length === 0
+                              ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                              : 'bg-blue-600 hover:bg-blue-700 text-white'
+                          }`}
+                        >
+                          📧 Send Email ({formatType})
                         </button>
+                      
+                        {/* Button 2: Download Zip (based on ComboBox selection) */}
+                        <button
+                            style={{
+                                background: colors.buttonBackground,
+                                color: getReadableTextColor(bgColor),  // If background is light → black text, else white text
+                            }}
+                          onClick={() => handleDownloadZipByFormat(selectedRows, setIsLoading, filtersCheck, userId, userType, setSelectedRows, formatType)}
+                          disabled={selectedRows.length === 0}
+                          className={`px-6 py-2 rounded-md shadow-lg transform transition-all duration-200 ease-in-out active:scale-95 font-medium flex items-center gap-2 text-sm ${
+                            selectedRows.length === 0
+                              ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                              : 'bg-green-600 hover:bg-green-700 text-white'
+                          }`}
+                        >
+                          💾 Download Zip ({formatType})
+                        </button>
+                      </div>
                     </div>
                 </>}
 
@@ -2239,7 +2324,7 @@ export const exportTableToCsv = (
 
 
 // pdfMake.vfs = pdfFonts?.pdfMake?.vfs;
-pdfMake.vfs = pdfFonts.vfs;
+pdfMake.vfs = (pdfFonts as any).vfs;
 
 const convertBmpToPng = (bmpBase64: string): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -2570,11 +2655,9 @@ export const downloadOption = async (
     filters: any,
     currentLevel: any,
 ) => {
-
     const userId = getLocalStorage('userId') || '';
 
     const filterXml = buildFilterXml(filters, userId);
-
 
 
     const xmlData1 = ` 
@@ -2590,22 +2673,37 @@ export const downloadOption = async (
     try {
         const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData1);
 
-        // Pull out the first rs0 entry
-        const rs0 = response.data?.data?.rs0;
+        // Safely check response structure first [web:7][cite:1]
+        const data = response.data?.data || response.data;
+        if (!data) {
+            toast.error('Invalid response structure');
+            return;
+        }
+
+        const rs0 = data.rs0;
+        
+        // Check for error flag BEFORE processing data [web:9]
+        if (Array.isArray(rs0) && rs0.length > 0 && rs0[0].ErrorFlag === 'E') {
+            toast.error(rs0[0].ErrorMessage || 'Report generation failed');
+            return;  // Exit early on business error
+        }
+
+        // Now process success case
         if (Array.isArray(rs0) && rs0.length > 0) {
             const { PDFName, Base64PDF } = rs0[0];
             if (PDFName && Base64PDF) {
-                // Kick off the download
                 downloadPdf(PDFName, Base64PDF);
             } else {
-                toast.error('Response missing PDFName or Base64PDF');
+                toast.error('PDF data missing in response');
             }
         } else {
-            toast.error('Unexpected response format:', response.data);
+            toast.error('No report data returned');
         }
     } catch (err) {
-        toast.error('Not available Donwload');
+        console.error('Download error:', err);
+        toast.error('Download not available');  // Fixed typo: "Donwload" → "Download"
     }
+};
 
-}
+
 export default DataTable;

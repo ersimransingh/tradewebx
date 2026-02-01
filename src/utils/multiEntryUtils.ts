@@ -6,13 +6,13 @@ import { saveAs } from 'file-saver';
 import dayjs from 'dayjs';
 
 // Initialize pdfMake vfs
-
-if (pdfMake.vfs === undefined && pdfFonts && pdfFonts.pdfMake && pdfFonts.pdfMake.vfs) {
- 
-    pdfMake.vfs = pdfFonts.pdfMake.vfs;
-} else if (pdfMake.vfs === undefined && pdfFonts && pdfFonts.vfs) {
-  
-    pdfMake.vfs = pdfFonts.vfs;
+// @ts-ignore
+if (pdfMake.vfs === undefined && pdfFonts && (pdfFonts as any).pdfMake && (pdfFonts as any).pdfMake.vfs) {
+    // @ts-ignore
+    pdfMake.vfs = (pdfFonts as any).pdfMake.vfs;
+} else if (pdfMake.vfs === undefined && pdfFonts && (pdfFonts as any).vfs) {
+    // @ts-ignore
+    pdfMake.vfs = (pdfFonts as any).vfs;
 }
 
 // Helper: Convert BMP to PNG for PDF/Excel
