@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect,useCallback } from "react";
-// import { useModal } from "../../hooks/useModal";
+import { useModal } from "../../hooks/useModal";
 import { useTheme } from "../../context/ThemeContext";
 import { useSearchParams } from "next/navigation";
 
@@ -10,7 +10,7 @@ import apiService from "@/utils/apiService";
 import { decryptData, getLocalStorage } from "@/utils/helper";
 
 export default function UserMetaCard() {
-  // const { closeModal } = useModal();
+  const { closeModal } = useModal();
   const { colors } = useTheme();
   const searchParams = useSearchParams();
   const [profileData, setProfileData] = useState(null);
@@ -177,10 +177,10 @@ export default function UserMetaCard() {
     );
   };
 
-  // const handleSave = () => {
-  //   // Handle save logic here
-  //   closeModal();
-  // };
+  const handleSave = () => {
+    // Handle save logic here
+    closeModal();
+  };
 
   // Custom styles based on theme
   const cardStyle = {

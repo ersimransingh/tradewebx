@@ -281,7 +281,6 @@ export default function QueryFormPage() {
     try {
       return JSON.parse(getLocalStorage(APP_METADATA_KEY))
     } catch (err) {
-      console.error(err)
       return store.getState().common
     }
   })();

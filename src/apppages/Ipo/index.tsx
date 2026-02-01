@@ -37,12 +37,12 @@ const Ipo = () => {
 
   const [clientCode] = useLocalStorage('clientCode', null);
 
-  // const config = {
-  //   headers: {
-  //     Authorization: `Bearer ${authToken}`,
-  //     "Content-Type": "application/xml",
-  //   },
-  // };
+  const config = {
+    headers: {
+      Authorization: `Bearer ${authToken}`,
+      "Content-Type": "application/xml",
+    },
+  };
 
 
   configDetails(authToken);

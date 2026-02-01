@@ -8,9 +8,11 @@ import { groupFormData, validateForm } from '../component-forms/form-helper/util
 
 const GuardianEntryForm: React.FC<GuardianEntryModalProps> = ({
     colors,
+    isOpen,
     onClose,
     masterValues,
     formData,
+    masterFormData,
     formValues,
     setFormValues,
     dropdownOptions,
@@ -25,7 +27,9 @@ const GuardianEntryForm: React.FC<GuardianEntryModalProps> = ({
     setValidationModal,
     viewAccess,
     isLoading,
+    setChildEntriesTable,
     setDropDownOptions,
+    childModalZindex
 }) => {
     const isChildInvalid = Object.values(fieldErrors).some(error => error);
 

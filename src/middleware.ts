@@ -38,9 +38,9 @@ export function middleware(request: NextRequest) {
     // Security: Rate limiting for API endpoints
     if (request.nextUrl.pathname.startsWith('/api/')) {
         // Get IP from headers (X-Forwarded-For or X-Real-IP)
-        // const forwardedFor = request.headers.get('x-forwarded-for');
-        // const realIp = request.headers.get('x-real-ip');
-        // const ip = forwardedFor?.split(',')[0] || realIp || 'unknown';
+        const forwardedFor = request.headers.get('x-forwarded-for');
+        const realIp = request.headers.get('x-real-ip');
+        const ip = forwardedFor?.split(',')[0] || realIp || 'unknown';
 
         // This is a simplified rate limiting - in production, use Redis or similar
         // For now, we'll just log suspicious activity

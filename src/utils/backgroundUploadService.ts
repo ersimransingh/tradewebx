@@ -3,6 +3,7 @@ import {
   BackgroundUploadQueue,
   UploadQueueStats,
   ChunkData,
+  FailedChunk,
 } from '@/types/upload';
 import {
   parseCSVStream,

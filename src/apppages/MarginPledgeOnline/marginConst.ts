@@ -1,6 +1,7 @@
 import apiService from "@/utils/apiService";
 import { ACTION_NAME, BASE_URL, PATH_URL } from "@/utils/constants"
 import { getLocalStorage } from "@/utils/helper";
+import axios from "axios"
 import { toast } from "react-toastify";
 
 export const tableHeader = ['Code', 'Name', 'ISIN', 'Rate', 'Holding', 'Value', 'HairCut', 'Net Value', 'Request', 'Value']
@@ -98,7 +99,7 @@ export const tableApiCall = async (selectedDemat, setTableHeaders, setTableRows)
 
 
 //this func will be used when futur process get completed by Backend
-export const pledgeRedirectApiCall = async () => {
+export const pledgeRedirectApiCall = async (pledgeRedirectApiCall) => {
 
   // const URL = `${pledgeRedirectApiCall}`
 

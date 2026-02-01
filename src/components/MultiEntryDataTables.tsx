@@ -243,9 +243,9 @@ const ExpandableRow = ({ row, primitiveKeys, arrayKeys, level, colors, fonts, in
         }
         
          // 3. Left Alignment Check
-        //  const leftAlignedColumns = settings?.leftAlignedColumns || settings?.leftAlignedColums
-        //  ? (settings?.leftAlignedColumns || settings?.leftAlignedColums).split(',').map((col: string) => col.trim())
-        //  : [];
+         const leftAlignedColumns = settings?.leftAlignedColumns || settings?.leftAlignedColums
+         ? (settings?.leftAlignedColumns || settings?.leftAlignedColums).split(',').map((col: string) => col.trim())
+         : [];
         //  const isLeftAligned = leftAlignedColumns.includes(key);
 
 

@@ -253,7 +253,7 @@ class ApiService {
                             this.failedQueue.push({ resolve, reject });
                         }).then(() => {
                             // Log token before retrying queued request
-                            // const queuedToken = this.getAuthToken();
+                            const queuedToken = this.getAuthToken();
                            
                             return axios(originalRequest);
                         }).catch(err => {
@@ -554,8 +554,8 @@ class ApiService {
                 storeLocalStorage('refreshToken', tokenData.RefreshToken);
 
                 // Verify tokens were stored correctly
-                // const storedAccessToken = getLocalStorage('auth_token');
-                // const storedRefreshToken = getLocalStorage('refreshToken');
+                const storedAccessToken = getLocalStorage('auth_token');
+                const storedRefreshToken = getLocalStorage('refreshToken');
 
                
             } else {

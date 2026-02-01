@@ -123,8 +123,8 @@ const refreshAuthToken = async (): Promise<string> => {
       storeLocalStorage('refreshToken', tokenData.RefreshToken);
 
       // Verify tokens were stored correctly
-      // const storedAccessToken = getLocalStorage('auth_token');
-      // const storedRefreshToken = getLocalStorage('refreshToken');
+      const storedAccessToken = getLocalStorage('auth_token');
+      const storedRefreshToken = getLocalStorage('refreshToken');
 
       return tokenData.AccessToken;
     } else {
@@ -169,7 +169,7 @@ api.interceptors.response.use(
           failedQueue.push({ resolve, reject });
         }).then(() => {
           // Log token before retrying queued request
-          // const queuedToken = getAuthToken();
+          const queuedToken = getAuthToken();
          
           // The request interceptor will automatically inject the fresh token
           return api(originalRequest);

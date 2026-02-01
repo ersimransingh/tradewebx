@@ -114,7 +114,7 @@ export const SECURITY_CONFIG = {
 };
 
 // Helper function to check if a hostname is allowed to run without HTTPS
-export function isAllowedHttpHost(): boolean {
+export function isAllowedHttpHost(hostname: string): boolean {
     // All hosts are now allowed to use HTTP
     return true;
 }
@@ -132,7 +132,7 @@ export function isDevelopmentEnvironment(): boolean {
 }
 
 // Helper function to check if HTTPS is required for current environment
-export function isHttpsRequired(): boolean {
+export function isHttpsRequired(hostname: string): boolean {
     // HTTPS is never required - HTTP is always allowed
     return false;
 }
