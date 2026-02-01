@@ -306,7 +306,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                 const initialTabLoadingDropdowns: Record<string, Record<string, boolean>> = {};
                 const initialTabTableData: Record<string, any[]> = {};
 
-                tabs.forEach((tab ) => {
+                tabs.forEach((tab, index) => {
                     const tabKey = tab.TabName;
                     initialTabFormValues[tabKey] = {};
                     initialTabDropdownOptions[tabKey] = {};
@@ -576,7 +576,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
         });
 
         // --- Part 3.2: Fetch Dependent Options for Tabs ---
-        newTabsData.forEach((tab) => {
+        newTabsData.forEach((tab, index) => {
             const tabKey = tab.TabName;
             
             tab.Data.forEach((field: FormField) => {
@@ -1861,19 +1861,19 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
         }
     };
 
-    // const getAllColumns = (data: any[]): string[] => {
-    //     const allColumns = new Set<string>();
-    //     data.forEach(entry => {
-    //         if (entry && typeof entry === 'object') {
-    //             Object.keys(entry).forEach(key => {
-    //                 if (key !== "SerialNo" && key !== "Id") {
-    //                     allColumns.add(key);
-    //                 }
-    //             });
-    //         }
-    //     });
-    //     return Array.from(allColumns);
-    // };
+    const getAllColumns = (data: any[]): string[] => {
+        const allColumns = new Set<string>();
+        data.forEach(entry => {
+            if (entry && typeof entry === 'object') {
+                Object.keys(entry).forEach(key => {
+                    if (key !== "SerialNo" && key !== "Id") {
+                        allColumns.add(key);
+                    }
+                });
+            }
+        });
+        return Array.from(allColumns);
+    };
 
     // Create column width mapping from pageData settings
     const getColumnWidthMap = (): Record<string, number> => {
@@ -2128,7 +2128,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
             Master: [masterFormValues],
         }
 
-        tabsData.forEach((tabs) => {
+        tabsData.forEach((tabs, index) => {
             const currentKey = tabs.TabName;
             if (tabs.Settings.isTable === "true") {
                 allData[tabs.TabName] = tabTableData[currentKey]
@@ -2280,7 +2280,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
     };
 
     // In your component
-    // const dynamicColumns = getAllColumns(childEntriesTable);
+    const dynamicColumns = getAllColumns(childEntriesTable);
 
     const handleTabTableDataEdit = (row: any, idx: any) => {
         const currentTab = tabsData[activeTabIndex];
