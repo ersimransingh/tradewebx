@@ -23,7 +23,7 @@ import EditTableRowModal from './EditTableRowModal';
 import FormCreator from './FormCreator';
 import Loader from './Loader';
 import apiService from '@/utils/apiService';
-import { decryptData, getLocalStorage, parseSettingsFromXml } from '@/utils/helper';
+import { decryptData, displayAndDownloadFile, getLocalStorage, parseSettingsFromXml } from '@/utils/helper';
 import { toast } from "react-toastify";
 import MultiEntryDataTables from './MultiEntryDataTables';
 import { recursiveSearch, generatePdf, generateExcel, generateCsv } from '@/utils/multiEntryUtils';
@@ -1029,6 +1029,20 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
             console.log('Selectable Button API Request:', xmlData);
 
             const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
+
+            // Handle download type buttons
+            if (button.type === 'download') {
+                const fileContents = response?.data?.fileContents;
+                const fileDownloadName = response?.data?.fileDownloadName;
+
+                if (fileContents) {
+                    displayAndDownloadFile(fileContents, fileDownloadName);
+                    toast.success('File downloaded successfully');
+                } else {
+                    toast.error('No file content received from server');
+                }
+                return;
+            }
 
             if (response?.data?.success) {
                 const rawMessage = response?.data?.message || 'Operation completed successfully';

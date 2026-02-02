@@ -499,6 +499,7 @@ const ColumnFilterDropdown: React.FC<{
 // Interface for Selectable_Buttons setting
 export interface SelectableButton {
     name: string;
+    type?: string;
     API: {
         J_Ui: {
             ActionName: string;
