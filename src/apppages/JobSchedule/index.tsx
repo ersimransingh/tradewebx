@@ -8,8 +8,10 @@ import { useEffect, useState } from "react";
 import { DataGrid, Column } from "react-data-grid";
 import "react-data-grid/lib/styles.css";
 import LogModal from "@/components/Modals/LogModal";
+import JobEditModal from "@/components/Modals/JobEditModal";
 import { toast } from "react-toastify";
 import Loader from "@/components/Loader";
+import { FaEdit } from "react-icons/fa";
 
 const JobSchedule = () => {
     const { colors } = useTheme();
@@ -20,9 +22,13 @@ const JobSchedule = () => {
     const [columns, setColumns] = useState<Column<any>[]>([]);
     const [loading, setLoading] = useState(false);
 
-    // Modal State
+    // log Modal State
     const [isLogModalOpen, setIsLogModalOpen] = useState(false);
     const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
+
+     // Edit Modal State
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [selectedJob, setSelectedJob] = useState<any>(null);
 
     const fetchJobSchedule = async () => {
         const currentPageData = pageData?.[0]?.levels[0];
@@ -47,6 +53,20 @@ const JobSchedule = () => {
             if (data.length > 0) {
                 // Append Actions Columns
                 const actionColumns: Column<any>[] = [
+                     {
+                        key: "Edit",
+                        name: "Edit",
+                        width: 60,
+                        renderCell: (props) => (
+                            <button
+                                onClick={() => handleEdit(props.row)}
+                                className="text-blue-600 hover:text-blue-800 flex items-center justify-center w-full h-full"
+                                title="Edit Job"
+                            >
+                                <FaEdit size={16} />
+                            </button>
+                        ),
+                    },
                     {
                         key: "Log",
                         name: "Log",
@@ -175,6 +195,43 @@ const JobSchedule = () => {
         setIsLogModalOpen(true);
     };
 
+    const handleEdit = (job: any) => {
+        setSelectedJob(job);
+        setIsEditModalOpen(true);
+    };
+
+    const handleSaveJob = async (updatedJob: any) => {
+        setLoading(true);
+        try {
+            // Merge original object with updates to ensure all fields are present
+            const mergedJob = { ...selectedJob, ...updatedJob };
+
+            const xmlData = `<dsXml>
+                <J_Ui>"ActionName":"JobSchedule","Option":"Edit"</J_Ui>
+                <X_Filter></X_Filter>
+                <X_Data>
+                    ${Object.entries(mergedJob).map(([key, value]) => `<${key}>${value || ''}</${key}>`).join('\n                    ')}
+                </X_Data>
+                <J_Api>"UserId":"${getLocalStorage('userId')}", "UserType":"${getLocalStorage('userType')}"</J_Api>
+            </dsXml>`;
+
+            const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
+            
+            if (response.data.success) {
+                toast.success("Job updated successfully");
+                setIsEditModalOpen(false);
+                fetchJobSchedule(); // Refresh grid
+            } else {
+                toast.error("Failed to update job: " + (response.data.message || "Unknown error"));
+            }
+        } catch (error) {
+            console.error("Error saving job:", error);
+            toast.error("An error occurred while saving the job");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleQuickRun = async (jobId: number) => {
         try {
             const xmlData = `<dsXml>
@@ -224,10 +281,19 @@ const JobSchedule = () => {
                 />
             </div>
 
-            <LogModal 
-                isOpen={isLogModalOpen} 
-                onClose={() => setIsLogModalOpen(false)} 
-                jobId={selectedJobId} 
+            {isLogModalOpen && (
+                <LogModal
+                    isOpen={isLogModalOpen}
+                    onClose={() => setIsLogModalOpen(false)}
+                    jobId={selectedJobId}
+                    pageData={pageData}
+                />
+            )}
+            <JobEditModal
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                jobData={selectedJob}
+                onSave={handleSaveJob}
             />
         </div>
     );
