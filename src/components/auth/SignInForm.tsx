@@ -396,6 +396,7 @@ export default function SignInForm() {
       storeLocalStorage('temp_token', '');
       console.log('Redirecting to dashboard');
       const isFirstLogin = currentLoginData.firstLogin === 'Y';
+      sessionStorage.setItem('just_logged_in', 'true');
       if(isFirstLogin) router.push('/changepassword');
       else router.push('/dashboard');
     }

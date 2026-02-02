@@ -5,13 +5,13 @@ import nextDynamic from 'next/dynamic';
 import { ApexOptions } from "apexcharts";
 import Link from 'next/link';
 import { useTheme } from "@/context/ThemeContext";
-import { ACTION_NAME, PATH_URL } from '@/utils/constants';
-import { BASE_URL } from '@/utils/constants';
+import { ACTION_NAME, PATH_URL, BASE_URL } from '@/utils/constants';
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
 import { fetchLastTradingDate, fetchInitializeLogin } from '@/redux/features/common/commonSlice';
 import AsyncSearchDropdown from  '@/components/form/DropDown/AsyncSearchDropdown';
 import apiService from '@/utils/apiService';
 import { encryptData, getLocalStorage } from '@/utils/helper';
+import { toast } from 'react-toastify';
 
 const ReactApexChart = nextDynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -658,6 +658,61 @@ function Dashboard() {
         clearSessionData();
         // Note: We don't clear the dashboard data cache here as it's handled in the data fetching logic
     }, [auth.userId, clearSessionData]); // Clear cache when user ID changes (login/logout)
+
+    // Fetch messages once after login
+    useEffect(() => {
+        const justLoggedIn = sessionStorage.getItem('just_logged_in');
+        if (justLoggedIn === 'true') {
+            sessionStorage.removeItem('just_logged_in');
+
+            const fetchMessages = async () => {
+                try {
+                    const userId = getLocalStorage('userId');
+                    const userType = getLocalStorage('userType');
+
+                    const xmlData = `<dsXml>
+                        <J_Ui>"ActionName":"${ACTION_NAME}", "Option":"GetMessage","Level":1, "RequestFrom":"W"</J_Ui>
+                        <Sql></Sql>
+                        <X_Filter></X_Filter>
+                        <X_GFilter></X_GFilter>
+                        <J_Api>"UserId":"${userId}", "UserType":"${userType}"</J_Api>
+                    </dsXml>`;
+
+                    const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
+                    console.log('GetMessage API Response:', response);
+
+                    const messages = response?.data?.data?.rs0 || [];
+                    messages.forEach((msg: { MessageType: string; MessageText: string }) => {
+                        const toastOptions = {
+                            autoClose: false as const,
+                            closeOnClick: false,
+                            style: { whiteSpace: 'pre-wrap' as const, wordBreak: 'break-word' as const },
+                        };
+
+                        switch (msg.MessageType?.toUpperCase()) {
+                            case 'SUCCESS':
+                                toast.success(msg.MessageText, toastOptions);
+                                break;
+                            case 'ERROR':
+                                toast.error(msg.MessageText, toastOptions);
+                                break;
+                            case 'WARNING':
+                                toast.warning(msg.MessageText, toastOptions);
+                                break;
+                            case 'INFO':
+                            default:
+                                toast.info(msg.MessageText, toastOptions);
+                                break;
+                        }
+                    });
+                } catch (error) {
+                    console.error('Error fetching messages:', error);
+                }
+            };
+
+            fetchMessages();
+        }
+    }, []);
 
     if (loading) {
         return (

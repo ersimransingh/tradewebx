@@ -123,6 +123,7 @@ export default function OTPVerificationForm() {
 
         // Clean up temporary token
         storeLocalStorage('temp_token', '');
+        sessionStorage.setItem('just_logged_in', 'true');
         if(firstLogin === 'Y')router.push('/changepassword');
         else router.push('/dashboard');
       } else {
