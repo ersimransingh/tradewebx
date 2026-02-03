@@ -1963,6 +1963,10 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, onRow
                                     toast.warning("Please select at least one row");
                                     return;
                                 }
+                                if (button.type === 'download' && selectedRows.length > 1) {
+                                    toast.warning("Please select only one entry for download");
+                                    return;
+                                }
                                 onSelectableButtonClick?.(button, selectedRows);
                             }}
                             disabled={selectedRows.length === 0}

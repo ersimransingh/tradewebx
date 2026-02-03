@@ -1030,30 +1030,36 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
 
             const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
 
+            const rs0 = response?.data?.data?.rs0;
+
             // Handle download type buttons
             if (button.type === 'download') {
-                const fileContents = response?.data?.fileContents;
-                const fileDownloadName = response?.data?.fileDownloadName;
-
-                if (fileContents) {
-                    displayAndDownloadFile(fileContents, fileDownloadName);
-                    toast.success('File downloaded successfully');
+                const fileData = rs0?.[0];
+                if (fileData?.Base64PDF) {
+                    displayAndDownloadFile(fileData.Base64PDF, fileData.PDFName);
                 } else {
                     toast.error('No file content received from server');
                 }
                 return;
             }
 
-            if (response?.data?.success) {
-                const rawMessage = response?.data?.message || 'Operation completed successfully';
-                const cleanMessage = rawMessage.replace(/<\/?Message>/g, "");
-                toast.success(cleanMessage);
-                // Refresh data after successful operation
-                fetchData(filters, false);
-            } else {
+            // Handle non-download type buttons - show toasts based on MessageType
+            if (rs0?.length) {
+                let hasSuccess = false;
+                rs0.forEach((item: any) => {
+                    if (item.MessageType === 'SUCCESS' && item.MessageText?.trim()) {
+                        toast.success(item.MessageText.trim());
+                        hasSuccess = true;
+                    } else if (item.MessageType === 'ERROR' && item.MessageText?.trim()) {
+                        toast.error(item.MessageText.trim());
+                    }
+                });
+                if (hasSuccess) {
+                    fetchData(filters, false);
+                }
+            } else if (response?.data?.success === false) {
                 const errorMessage = response?.data?.message || 'Operation failed';
-                const cleanError = errorMessage.replace(/<\/?Message>/g, "");
-                toast.error(cleanError);
+                toast.error(errorMessage);
             }
 
         } catch (error) {
