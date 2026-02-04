@@ -1047,11 +1047,12 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
             if (rs0?.length) {
                 let hasSuccess = false;
                 rs0.forEach((item: any) => {
+                    const cleanMessage = item.MessageText ?.replace(/<br\s*\/?>/gi, '')?.trim();
                     if (item.MessageType === 'SUCCESS' && item.MessageText?.trim()) {
-                        toast.success(item.MessageText.trim());
+                        toast.success(cleanMessage);
                         hasSuccess = true;
                     } else if (item.MessageType === 'ERROR' && item.MessageText?.trim()) {
-                        toast.error(item.MessageText.trim());
+                        toast.error(cleanMessage);
                     }
                 });
                 if (hasSuccess) {
