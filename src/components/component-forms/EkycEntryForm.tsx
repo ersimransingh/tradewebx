@@ -16,6 +16,7 @@ import LoaderOverlay from "../Loaders/LoadingSpinner";
 import CustomDatePicker from "./formComponents/CustomDatePicker";
 import apiService from "@/utils/apiService";
 import RichTextEditor from "./formComponents/RichTextEditor";
+import { EyeCloseIcon, EyeIcon } from "@/icons";
 
 
 const DropdownField: React.FC<{
@@ -181,6 +182,7 @@ const EkycEntryForm: React.FC<EntryFormProps> = ({
     const [showMobileOtpModal, setShowMobileOtpModal] = useState(false);
     const [currentOtpField, setCurrentOtpField] = useState<any>(null);
     const [isThirdPartyLoading, setIsThirdPartyLoading] = useState(false);
+    const [passwordVisibility, setPasswordVisibility] = useState<Record<string, boolean>>({});
 
     const marginBottom = 'mb-1';
 
@@ -674,6 +676,148 @@ const EkycEntryForm: React.FC<EntryFormProps> = ({
                             tabIndex={0}                          //  allows focus always
                             aria-labelledby={`label-${field.wKey}`} //  NVDA reads label + value
                         />
+                        {hasError && (
+                            <span className="text-red-500 text-sm">{fieldErrors[field.wKey]}</span>
+                        )}
+                    </div>
+                );
+
+            case 'WPasswordBox':
+                const isPasswordVisible = !!passwordVisibility[field.wKey];
+                if (!viewMode && (field.redirectUrl === "true" || field.OTPRequire)) {
+                    return (
+                        <div key={`passwordBox-${field.Srno}-${field.wKey}`} className={marginBottom}>
+                            <label id={`label-${field.wKey}`} className="block text-sm font-medium mb-1" style={{ color: colors.text }}>
+                                {field.label}
+                                {isRequired && <span className="text-red-500 ml-1">*</span>}
+                            </label>
+                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                                <div className="relative w-full">
+                                    <input
+                                        id={`input-${field.wKey}`}
+                                        type={isPasswordVisible ? "text" : "password"}
+                                        className={`rounded-r-none w-full px-3 py-1 pr-10 border border-r-0 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${hasError ? 'border-red-500' : 'border-gray-300'}`}
+                                        style={{
+                                            borderColor: hasError ? 'red' : '#d1d5db',
+                                            backgroundColor: "#f2f2f0",
+                                            color: isJustUpdated ? "#22c55e" : colors.textInputText,
+                                            borderTopRightRadius: 0,
+                                            borderBottomRightRadius: 0
+                                        }}
+                                        value={formValues[field.wKey] || ''}
+                                        readOnly={true}
+                                        placeholder={field.label}
+                                        aria-readonly="true"
+                                        aria-disabled="true"
+                                        aria-labelledby={`label-${field.wKey}`}
+                                        aria-describedby={`desc-${field.wKey}`}
+                                        tabIndex={0}
+                                    />
+                                    <button
+                                        type="button"
+                                        className="absolute right-2 top-1/2 -translate-y-1/2"
+                                        onClick={() =>
+                                            setPasswordVisibility(prev => ({
+                                                ...prev,
+                                                [field.wKey]: !prev[field.wKey]
+                                            }))
+                                        }
+                                        aria-label={isPasswordVisible ? "Hide password" : "Show password"}
+                                        aria-pressed={isPasswordVisible}
+                                        disabled={viewMode}
+                                        style={{ color: colors.text }}
+                                    >
+                                        {isPasswordVisible ? <EyeIcon /> : <EyeCloseIcon />}
+                                    </button>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    className="rounded-l-none px-3 py-1 border rounded-md border-black"
+                                    disabled={viewMode}
+                                    aria-label={`Modify ${field.label}`}
+                                    style={{
+                                        backgroundColor: colors.background,
+                                        color: colors.text,
+                                        borderTopLeftRadius: 0,
+                                        borderBottomLeftRadius: 0,
+                                        height: '34px'
+                                    }}
+                                    onClick={() => {
+                                        handleThirdActions(field)
+                                    }}
+                                >
+                                    Modify
+                                </button>
+
+                            </div>
+                            {(field.GetResponseFlag === "true" && !viewMode) && (
+                                <span
+                                    className="text-blue-500 underline cursor-pointer hover:text-blue-700 mt-1 inline-block"
+                                    style={{ height: '35px', lineHeight: '35px' }}
+                                    onClick={() => {
+                                        handleThirdPartyApi(field, "thirdparty")
+                                    }}
+                                >
+                                    Get bank status
+                                </span>
+                            )}
+                            {hasError && (
+                                <span className="text-red-500 text-sm">{fieldErrors[field.wKey]}</span>
+                            )}
+                        </div>
+                    );
+                }
+                return (
+                    <div key={`passwordBox-${field.Srno}-${field.wKey}`} className={marginBottom}>
+                        <label id={`label-${field.wKey}`} className="block text-sm font-medium mb-1" style={{ color: colors.text }}>
+                            {field.label}
+                            {isRequired && <span className="text-red-500 ml-1">*</span>}
+                        </label>
+                        <div className="relative">
+                            <input
+                                type={isPasswordVisible ? "text" : "password"}
+                                className={`w-full px-3 py-1 pr-10 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${!isEnabled ? 'border-gray-300' : hasError ? 'border-red-500' : 'border-gray-700'
+                                    }`}
+                                style={{
+                                    borderColor: hasError ? 'red' : !isEnabled ? '#d1d5db' : "#344054",
+                                    backgroundColor: !isEnabled ? "#f2f2f0" : colors.textInputBackground,
+                                    color: isJustUpdated ? "#22c55e" : colors.textInputText
+                                }}
+                                value={formValues[field.wKey] || ''}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (field.FieldType === 'INT' && !/^[0-9]*$/.test(value)) {
+                                        return;
+                                    }
+                                    if (value.length <= parseInt(field.FieldSize, 10)) {
+                                        handleInputChange(field.wKey, value);
+                                    }
+                                }}
+                                onBlur={() => handleBlur(field)}
+                                placeholder={field.label}
+                                readOnly={!isEnabled}
+                                aria-disabled={!isEnabled}
+                                tabIndex={0}
+                                aria-labelledby={`label-${field.wKey}`}
+                            />
+                            <button
+                                type="button"
+                                className="absolute right-2 top-1/2 -translate-y-1/2"
+                                onClick={() =>
+                                    setPasswordVisibility(prev => ({
+                                        ...prev,
+                                        [field.wKey]: !prev[field.wKey]
+                                    }))
+                                }
+                                aria-label={isPasswordVisible ? "Hide password" : "Show password"}
+                                aria-pressed={isPasswordVisible}
+                                disabled={!isEnabled}
+                                style={{ color: colors.text }}
+                            >
+                                {isPasswordVisible ? <EyeIcon /> : <EyeCloseIcon />}
+                            </button>
+                        </div>
                         {hasError && (
                             <span className="text-red-500 text-sm">{fieldErrors[field.wKey]}</span>
                         )}

@@ -7,6 +7,7 @@ import moment from 'moment';
 import axios from 'axios';
 import { BASE_URL, PATH_URL } from '@/utils/constants';
 import { useTheme } from '@/context/ThemeContext';
+import { EyeCloseIcon, EyeIcon } from '@/icons';
 import { FaCalendarAlt } from 'react-icons/fa';
 import CustomDropdown from './form/CustomDropdown';
 import apiService from '@/utils/apiService';
@@ -146,6 +147,7 @@ const FormCreator: React.FC<FormCreatorProps> = ({
     const [fieldVisibility, setFieldVisibility] = useState<Record<string, boolean>>({});
     // State for field enabled/disabled status
     const [fieldEnabled, setFieldEnabled] = useState<Record<string, boolean>>({});
+    const [passwordVisibility, setPasswordVisibility] = useState<Record<string, boolean>>({});
 
     // Sort filters by Srno
     const sortedFormData = useMemo(() => {
@@ -1131,6 +1133,52 @@ const FormCreator: React.FC<FormCreatorProps> = ({
         };
 
 
+    const renderPasswordBox = (item: FormElement) => {
+        const fieldKey = item.wKey as string;
+        const isEnabled = fieldEnabled[fieldKey] !== false;
+        const isPasswordVisible = !!passwordVisibility[fieldKey];
+
+        return (
+            <div className={isHorizontal ? "mb-2" : "mb-4"}>
+                <label className={`block text-sm mb-1 ${isHorizontal ? 'font-bold' : 'font-medium'}`} style={{ color: colors.text }}>
+                    {item.label}
+                </label>
+                <div className="relative">
+                    <input
+                        type={isPasswordVisible ? "text" : "password"}
+                        className={`w-full px-3 py-2 pr-10 border rounded-md ${!isEnabled ? 'cursor-not-allowed' : ''}`}
+                        style={{
+                            borderColor: colors.textInputBorder,
+                            backgroundColor: isEnabled ? colors.textInputBackground : '#f2f2f0',
+                            color: colors.textInputText
+                        }}
+                        value={formValues[fieldKey] || ''}
+                        onChange={(e) => handleInputChange(fieldKey, e.target.value)}
+                        onBlur={() => item.ValidationAPI && handleBlur(item)}
+                        placeholder={item.label}
+                        disabled={!isEnabled}
+                    />
+                    <button
+                        type="button"
+                        className="absolute right-2 top-1/2 -translate-y-1/2"
+                        onClick={() =>
+                            setPasswordVisibility(prev => ({
+                                ...prev,
+                                [fieldKey]: !prev[fieldKey]
+                            }))
+                        }
+                        aria-label={isPasswordVisible ? "Hide password" : "Show password"}
+                        aria-pressed={isPasswordVisible}
+                        disabled={!isEnabled}
+                        style={{ color: colors.text }}
+                    >
+                        {isPasswordVisible ? <EyeIcon /> : <EyeCloseIcon />}
+                    </button>
+                </div>
+            </div>
+        );
+    };
+
     const renderTextBox = (item: FormElement) => {
         const fieldKey = item.wKey as string;
         const isEnabled = fieldEnabled[fieldKey] !== false;
@@ -1361,6 +1409,8 @@ const FormCreator: React.FC<FormCreatorProps> = ({
                 return renderDateRangeBox(item);
             case 'WTextBox':
                 return renderTextBox(item);
+            case 'WPasswordBox':
+                return renderPasswordBox(item);
             case 'WDateBox':
                 return renderDateBox(item);
             case 'WDropDownBox':

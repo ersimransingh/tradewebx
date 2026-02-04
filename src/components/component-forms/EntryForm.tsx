@@ -1,5 +1,6 @@
 import { useTheme } from "@/context/ThemeContext";
 import { EntryFormProps, FormField } from "@/types";
+import { EyeCloseIcon, EyeIcon } from "@/icons";
 import moment from "moment";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
@@ -243,6 +244,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
 }) => {
     const { colors } = useTheme();
     const marginBottom = 'mb-1';
+    const [passwordVisibility, setPasswordVisibility] = useState<Record<string, boolean>>({});
 
     const handleInputChange = (key: string, value: any) => {
         const formattedValue = value instanceof Date ? moment(value).format('YYYYMMDD') : value;
@@ -706,6 +708,96 @@ const EntryForm: React.FC<EntryFormProps> = ({
                     {fieldErrors[field.wKey] && (
                         <span
                             id={errorId}
+                            className="text-red-500 text-sm"
+                            role="alert"
+                        >
+                            {fieldErrors[field.wKey]}
+                        </span>
+                    )}
+                </div>
+            );
+
+          case "WPasswordBox":
+            const passwordInputId = `input-${field.wKey}`;
+            const passwordErrorId = `error-${field.wKey}`;
+            const isPasswordVisible = !!passwordVisibility[field.wKey];
+
+            return (
+                <div
+                    key={`field-${field.Srno}-${field.wKey}-${index}`}
+                    style={field.isBR === "true" ? containerStylesForBr : containerStyle}
+                >
+                    <label
+                        htmlFor={passwordInputId}
+                        className="block text-sm font-medium mb-1"
+                        style={{ color: colors.text, wordBreak: "break-all" }}
+                    >
+                        {field.label}
+                        {isRequired && <span className="text-red-500 ml-1">*</span>}
+                    </label>
+
+                    <div className="relative" style={{ width: fieldWidth }}>
+                        <input
+                            id={passwordInputId}
+                            type={isPasswordVisible ? "text" : "password"}
+                            aria-required={isRequired ? "true" : undefined}
+                            aria-invalid={fieldErrors[field.wKey] ? "true" : "false"}
+                            aria-describedby={fieldErrors[field.wKey] ? passwordErrorId : undefined}
+                            aria-disabled={!isEnabled ? "true" : undefined}
+                            className={`w-full px-3 py-1 pr-10 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${
+                                !isEnabled
+                                    ? "border-gray-300"
+                                    : fieldErrors[field.wKey]
+                                    ? "border-red-500"
+                                    : "border-gray-700 text-[14px]"
+                            }`}
+                            style={{
+                                borderColor: fieldErrors[field.wKey]
+                                    ? "red"
+                                    : !isEnabled
+                                    ? "#d1d5db"
+                                    : "#344054",
+                                backgroundColor: !isEnabled ? "#f2f2f0" : colors.textInputBackground,
+                                color: isJustUpdated ? "#22c55e" : colors.textInputText,
+                                height: "30px",
+                                width: fieldWidth,
+                            }}
+                            value={formValues[field.wKey] || ""}
+                            onChange={(e) => {
+                                let value = e.target.value;
+                                if (field?.isUpper === "Y") {
+                                    value = value.toUpperCase();
+                                }
+                                if (field.FieldType === "INT" && !/^[0-9]*$/.test(value)) return;
+                                if (value.length <= parseInt(field.FieldSize, 10)) {
+                                    handleInputChange(field.wKey, value);
+                                }
+                            }}
+                            onBlur={() => handleBlur(field)}
+                            placeholder={field.label}
+                            disabled={!isEnabled}
+                        />
+                        <button
+                            type="button"
+                            className="absolute right-2 top-1/2 -translate-y-1/2"
+                            onClick={() =>
+                                setPasswordVisibility(prev => ({
+                                    ...prev,
+                                    [field.wKey]: !prev[field.wKey]
+                                }))
+                            }
+                            aria-label={isPasswordVisible ? "Hide password" : "Show password"}
+                            aria-pressed={isPasswordVisible}
+                            disabled={!isEnabled}
+                            style={{ color: colors.text }}
+                        >
+                            {isPasswordVisible ? <EyeIcon /> : <EyeCloseIcon />}
+                        </button>
+                    </div>
+
+                    {fieldErrors[field.wKey] && (
+                        <span
+                            id={passwordErrorId}
                             className="text-red-500 text-sm"
                             role="alert"
                         >

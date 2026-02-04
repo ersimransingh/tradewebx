@@ -7,6 +7,7 @@ import { toast } from 'react-toastify';
 import { ACTION_NAME, BASE_URL, PATH_URL } from '@/utils/constants';
 import CustomDropdown from './form/CustomDropdown';
 import { useTheme } from '@/context/ThemeContext';
+import { EyeCloseIcon, EyeIcon } from "@/icons";
 import EntryFormModal from './EntryFormModal';
 import KycPage from "@/apppages/KycPage";
 import { clearMakerSates, displayAndDownloadFile, dynamicXmlGenratingFn, getLocalStorage, sanitizeValueSpecialChar, storeLocalStorage } from "@/utils/helper";
@@ -22,7 +23,7 @@ interface RowData {
 interface EditableColumn {
     ValidationAPI: any;
     Srno: number;
-    type: "WTextBox" | "WDropDownBox" | "WDateBox";
+    type: "WTextBox" | "WPasswordBox" | "WDropDownBox" | "WDateBox";
     label: string;
     wKey: string;
     showLabel: boolean;
@@ -162,6 +163,7 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
     // loading state for save/process button
     const [isSaving, setIsSaving] = useState(false);
     const [showOtp, setShowOtp] = useState(false);
+    const [passwordVisibility, setPasswordVisibility] = useState<Record<string, boolean>>({});
     const [userId] = useLocalStorage('userId', null);
 
 
@@ -1160,6 +1162,8 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
                                                     {getOrderedColumns(Object.keys(row)).map((key) => {
                                                         const value = row[key];
                                                         const editable = getEditableColumn(key);
+                                                        const visibilityKey = `${rowIndex}_${key}`;
+                                                        const isPasswordVisible = !!passwordVisibility[visibilityKey];
 
                                                         return (
                                                             <div key={key} className="mb-2">
@@ -1173,7 +1177,54 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
                                                                     {key}
                                                                 </label>
                                                                 {editable ? (
-                                                                    editable.type === "WTextBox" ? (
+                                                                    editable.type === "WPasswordBox" ? (
+                                                                        <div className="relative">
+                                                                            <input
+                                                                                type={isPasswordVisible ? "text" : "password"}
+                                                                                value={value ?? ""}
+                                                                                onChange={(e) =>
+                                                                                    handleInputChange(rowIndex, key, e.target.value)
+                                                                                }
+                                                                                onFocus={() =>
+                                                                                    setPreviousValues(prev => ({
+                                                                                        ...prev,
+                                                                                        [`${rowIndex}_${key}`]: value
+                                                                                    }))
+                                                                                }
+                                                                                onBlur={(e) => {
+                                                                                    handleInputBlur(rowIndex, key, previousValues[`${rowIndex}_${key}`], e.target.value);
+                                                                                    setPreviousValues(prev => {
+                                                                                        const updated = { ...prev };
+                                                                                        delete updated[`${rowIndex}_${key}`];
+                                                                                        return updated;
+                                                                                    });
+                                                                                }}
+                                                                                placeholder={editable.wPlaceholder}
+                                                                                className="w-full border border-gray-300 rounded px-3 py-2 pr-10"
+                                                                                style={{
+                                                                                    fontFamily: fonts.content,
+                                                                                    color: colors.text,
+                                                                                    backgroundColor: colors.textInputBackground,
+                                                                                    borderColor: colors.textInputBorder,
+                                                                                }}
+                                                                            />
+                                                                            <button
+                                                                                type="button"
+                                                                                className="absolute right-2 top-1/2 -translate-y-1/2"
+                                                                                onClick={() =>
+                                                                                    setPasswordVisibility(prev => ({
+                                                                                        ...prev,
+                                                                                        [visibilityKey]: !prev[visibilityKey]
+                                                                                    }))
+                                                                                }
+                                                                                aria-label={isPasswordVisible ? "Hide password" : "Show password"}
+                                                                                aria-pressed={isPasswordVisible}
+                                                                                style={{ color: colors.text }}
+                                                                            >
+                                                                                {isPasswordVisible ? <EyeIcon /> : <EyeCloseIcon />}
+                                                                            </button>
+                                                                        </div>
+                                                                    ) : editable.type === "WTextBox" ? (
                                                                         <input
                                                                             type="text"
                                                                             value={value ?? ""}
@@ -1350,6 +1401,8 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
                                                             const editable = getEditableColumn(key);
                                                             const isValueNumeric = isNumeric(value);
                                                             const hasChar = hasCharacterField(key);
+                                                            const visibilityKey = `${rowIndex}_${key}`;
+                                                            const isPasswordVisible = !!passwordVisibility[visibilityKey];
 
                                                             // Get columns that should be left-aligned even if they contain numbers
                                                             const leftAlignedColumns = settings?.leftAlignedColumns || settings?.leftAlignedColums
@@ -1367,7 +1420,55 @@ const EditTableRowModal: React.FC<EditTableRowModalProps> = ({
                                                                     }}
                                                                 >
                                                                     {editable ? (
-                                                                        editable.type === "WTextBox" ? (
+                                                                        editable.type === "WPasswordBox" ? (
+                                                                            <div className="relative">
+                                                                                <input
+                                                                                    type={isPasswordVisible ? "text" : "password"}
+                                                                                    aria-label="Enter Value"
+                                                                                    value={value ?? ""}
+                                                                                    onChange={(e) =>
+                                                                                        handleInputChange(rowIndex, key, e.target.value)
+                                                                                    }
+                                                                                    onFocus={() =>
+                                                                                        setPreviousValues(prev => ({
+                                                                                            ...prev,
+                                                                                            [`${rowIndex}_${key}`]: value
+                                                                                        }))
+                                                                                    }
+                                                                                    onBlur={(e) => {
+                                                                                        handleInputBlur(rowIndex, key, previousValues[`${rowIndex}_${key}`], e.target.value);
+                                                                                        setPreviousValues(prev => {
+                                                                                            const updated = { ...prev };
+                                                                                            delete updated[`${rowIndex}_${key}`];
+                                                                                            return updated;
+                                                                                        });
+                                                                                    }}
+                                                                                    placeholder={editable.wPlaceholder}
+                                                                                    className="w-full border border-gray-300 rounded px-2 py-1 pr-10"
+                                                                                    style={{
+                                                                                        fontFamily: fonts.content,
+                                                                                        color: colors.text,
+                                                                                        backgroundColor: colors.textInputBackground,
+                                                                                        borderColor: colors.textInputBorder,
+                                                                                    }}
+                                                                                />
+                                                                                <button
+                                                                                    type="button"
+                                                                                    className="absolute right-2 top-1/2 -translate-y-1/2"
+                                                                                    onClick={() =>
+                                                                                        setPasswordVisibility(prev => ({
+                                                                                            ...prev,
+                                                                                            [visibilityKey]: !prev[visibilityKey]
+                                                                                        }))
+                                                                                    }
+                                                                                    aria-label={isPasswordVisible ? "Hide password" : "Show password"}
+                                                                                    aria-pressed={isPasswordVisible}
+                                                                                    style={{ color: colors.text }}
+                                                                                >
+                                                                                    {isPasswordVisible ? <EyeIcon /> : <EyeCloseIcon />}
+                                                                                </button>
+                                                                            </div>
+                                                                        ) : editable.type === "WTextBox" ? (
                                                                             <input
                                                                                 type="text"
                                                                                 aria-label="Enter Value"
