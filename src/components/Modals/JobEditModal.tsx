@@ -6,6 +6,9 @@ import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import { toast } from 'react-toastify';
 import moment from 'moment';
+import apiService from '@/utils/apiService';
+import { BASE_URL, PATH_URL } from '@/utils/constants';
+import { getLocalStorage } from '@/utils/helper';
 
 interface JobEditModalProps {
     isOpen: boolean;
@@ -39,6 +42,10 @@ const JobEditModal: React.FC<JobEditModalProps> = ({ isOpen, onClose, jobData, o
     const [endTime, setEndTime] = useState<Date | null>(null);
     const [isActive, setIsActive] = useState<any>(null);
 
+    const [alertEmailID, setAlertEmailID] = useState<string>('');
+    const [emailParamCode, setEmailParamCode] = useState<any>(null);
+    const [emailParamOptions, setEmailParamOptions] = useState<any[]>([]);
+
     useEffect(() => {
         if (isOpen && jobData) {
             setOccurrence(occurrenceOptions.find(opt => opt.value === jobData.Occurrence) || null);
@@ -57,8 +64,43 @@ const JobEditModal: React.FC<JobEditModalProps> = ({ isOpen, onClose, jobData, o
             setEndTime(parseTime(jobData.EndTime));
             
             setIsActive(isActiveOptions.find(opt => opt.value === (jobData.IsActive || 'Yes')) || isActiveOptions[0]);
-        }
+            
+            setAlertEmailID(jobData.AlertEmailID || '');
+         }
     }, [isOpen, jobData]);
+
+    useEffect(() => {
+        if (isOpen) {
+            const fetchOptions = async () => {
+                try {
+                    const xmlData = `<dsXml>
+                        <J_Ui>"ActionName":"JobSchedule","Option":"EmailParamCode"</J_Ui>
+                        <Sql></Sql>
+                        <X_Filter></X_Filter>
+                        <X_Filter_Multiple></X_Filter_Multiple>
+                        <J_Api>"UserId":"${getLocalStorage('userId')}", "UserType":"${getLocalStorage('userType')}"</J_Api>
+                    </dsXml>`;
+                    const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
+                    if (response.data && response.data.success) {
+                         const data = response.data.data.rs0 || [];
+                         const options = data.map((item: any) => ({
+                             value: item.Value, 
+                             label: item.DisplayName 
+                         }));
+                         setEmailParamOptions(options);
+
+                         if (jobData?.EmailParamCode) {
+                             const found = options.find((opt: any) => opt.value === jobData.EmailParamCode);
+                             setEmailParamCode(found || null);
+                         }
+                    }
+                } catch (e) {
+                    console.error("Error fetching email param options", e);
+                }
+            };
+            fetchOptions();
+        }
+    }, [isOpen]); // We depend on isOpen. jobData is used inside but we can just let it re-run if isOpen changes.
 
     const handleSave = () => {
         // Validation
@@ -77,7 +119,9 @@ const JobEditModal: React.FC<JobEditModalProps> = ({ isOpen, onClose, jobData, o
             JobDescription: jobDescription,
             StartTime: startTime ? moment(startTime).format("HH:mm:ss") : '',
             EndTime: endTime ? moment(endTime).format("HH:mm:ss") : '',
-            IsActive: isActive?.value
+            IsActive: isActive?.value,
+            AlertEmailID: alertEmailID,
+            EmailParamCode: emailParamCode?.value
         };
 
         onSave(payload);
@@ -138,6 +182,30 @@ const JobEditModal: React.FC<JobEditModalProps> = ({ isOpen, onClose, jobData, o
                         />
                     </div>
                 )}
+
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                         <label className="block text-sm font-medium text-gray-700 mb-1">Alert Email ID</label>
+                         <input
+                            type="text"
+                            value={alertEmailID}
+                            onChange={(e) => setAlertEmailID(e.target.value)}
+                            className="w-full p-2 border border-gray-300 rounded text-sm"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Email Param Code</label>
+                        <Select
+                            options={emailParamOptions}
+                            value={emailParamCode}
+                            onChange={setEmailParamCode}
+                            className="text-sm"
+                            menuPortalTarget={document.body}
+                            styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
+                            isClearable
+                        />
+                    </div>
+                </div>
 
                 <div className="grid grid-cols-2 gap-4">
                     <div>

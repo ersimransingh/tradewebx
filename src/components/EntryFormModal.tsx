@@ -1326,7 +1326,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                     initialValues[field.wKey] = moment(field.wValue).format('YYYYMMDD');
                 }
                 else if (editData) {
-                    initialValues[field.wKey] = field.wValue;
+                    initialValues[field.wKey] = editData[field.wKey] || field.wValue;
                 }
             });
             setChildFormValues(initialValues);

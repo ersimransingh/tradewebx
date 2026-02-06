@@ -11,7 +11,7 @@ import LogModal from "@/components/Modals/LogModal";
 import JobEditModal from "@/components/Modals/JobEditModal";
 import { toast } from "react-toastify";
 import Loader from "@/components/Loader";
-import { FaEdit } from "react-icons/fa";
+import { FaEdit, FaSpinner } from "react-icons/fa";
 
 const JobSchedule = () => {
     const { colors } = useTheme();
@@ -19,8 +19,9 @@ const JobSchedule = () => {
     const pageData: any = findPageData(menuItems, "JobSchedule");
 
     const [rows, setRows] = useState<any[]>([]);
-    const [columns, setColumns] = useState<Column<any>[]>([]);
+    const [dynamicColumns, setDynamicColumns] = useState<Column<any>[]>([]);
     const [loading, setLoading] = useState(false);
+    const [runningJobId, setRunningJobId] = useState<number | null>(null);
 
     // log Modal State
     const [isLogModalOpen, setIsLogModalOpen] = useState(false);
@@ -29,6 +30,46 @@ const JobSchedule = () => {
      // Edit Modal State
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [selectedJob, setSelectedJob] = useState<any>(null);
+
+    const handleQuickRun = async (jobId: number) => {
+        setRunningJobId(jobId);
+        try {
+            const xmlData = `<dsXml>
+                <J_Ui>"ActionName":"${ACTION_NAME}","Option":"JOBQUICKRUN"</J_Ui>
+                <Sql></Sql>
+                <X_Filter>
+                    <JobId>${jobId}</JobId>
+                </X_Filter>
+                <X_GFilter></X_GFilter>
+                <J_Api>"UserId":"${getLocalStorage('userId')}", "UserType":"${getLocalStorage('userType')}"</J_Api>
+            </dsXml>`;
+
+            const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
+            const result = response?.data?.data?.rs0?.[0] || {};
+            
+            if (result.STATUS === "SUCCESS") {
+                toast.success(result.Message || "Job executed successfully");
+                fetchJobSchedule(); 
+            } else {
+                toast.error(result.Message || "Failed to trigger job");
+            }
+        } catch (error) {
+            console.error("Error triggering quick run:", error);
+            toast.error("Failed to trigger job");
+        } finally {
+            setRunningJobId(null);
+        }
+    };
+
+    const handleViewLog = (jobId: number) => {
+        setSelectedJobId(jobId);
+        setIsLogModalOpen(true);
+    };
+
+    const handleEdit = (job: any) => {
+        setSelectedJob(job);
+        setIsEditModalOpen(true);
+    };
 
     const fetchJobSchedule = async () => {
         const currentPageData = pageData?.[0]?.levels[0];
@@ -51,64 +92,6 @@ const JobSchedule = () => {
             const data = response?.data?.data?.rs0 || [];
 
             if (data.length > 0) {
-                // Append Actions Columns
-                const actionColumns: Column<any>[] = [
-                     {
-                        key: "Edit",
-                        name: "Edit",
-                        width: 60,
-                        renderCell: (props) => (
-                            <button
-                                onClick={() => handleEdit(props.row)}
-                                className="text-blue-600 hover:text-blue-800 flex items-center justify-center w-full h-full"
-                                title="Edit Job"
-                            >
-                                <FaEdit size={16} />
-                            </button>
-                        ),
-                    },
-                    {
-                        key: "Log",
-                        name: "Log",
-                        width: 100,
-                        renderCell: (props) => (
-                            <button
-                                onClick={() => handleViewLog(props.row.JobID)}
-                                style={{
-                                    background: colors.buttonBackground,
-                                    color: colors.buttonText,
-                                    padding: "4px 8px",
-                                    borderRadius: "4px",
-                                    cursor: "pointer",
-                                    border: "none"
-                                }}
-                            >
-                                View Log
-                            </button>
-                        ),
-                    },
-                    {
-                        key: "QuickRun",
-                        name: "Quick Run",
-                        width: 100,
-                        renderCell: (props) => (
-                            <button
-                                onClick={() => handleQuickRun(props.row.JobID)}
-                                style={{
-                                    background: "#28a745", // Green for run
-                                    color: "#fff",
-                                    padding: "4px 8px",
-                                    borderRadius: "4px",
-                                    cursor: "pointer",
-                                    border: "none"
-                                }}
-                            >
-                                Run
-                            </button>
-                        ),
-                    }
-                ];
-
                 //Dynamic Columns
                 const keys = Object.keys(data[0]);
                 
@@ -118,9 +101,9 @@ const JobSchedule = () => {
                 // Filter out LastRunStatus from general dynamic columns
                 const otherKeys = keys.filter(k => k.toLowerCase() !== "lastrunstatus");
 
-                const dynamicColumns: Column<any>[] = otherKeys.map((key) => {
+                const newDynamicColumns: Column<any>[] = otherKeys.map((key) => {
                     // Calculate dynamic width based on content
-                    const maxContentLength = data.reduce((max, row) => {
+                    const maxContentLength = data.reduce((max: number, row: any) => {
                         const cellValue = String(row[key] || "");
                         return Math.max(max, cellValue.length);
                     }, key.length);
@@ -144,10 +127,8 @@ const JobSchedule = () => {
                     };
                 });
 
-                const finalColumns = [...actionColumns];
-
                 if (lastRunKey) {
-                    finalColumns.push({
+                    newDynamicColumns.unshift({
                         key: lastRunKey,
                         name: lastRunKey,
                         resizable: true,
@@ -173,12 +154,11 @@ const JobSchedule = () => {
                     });
                 }
 
-                finalColumns.push(...dynamicColumns);
-                setColumns(finalColumns);
+                setDynamicColumns(newDynamicColumns);
                 setRows(data);
             } else {
                 setRows([]);
-                setColumns([]);
+                setDynamicColumns([]);
             }
 
         } catch (error) {
@@ -188,16 +168,6 @@ const JobSchedule = () => {
         } finally {
             setLoading(false);
         }
-    };
-
-    const handleViewLog = (jobId: number) => {
-        setSelectedJobId(jobId);
-        setIsLogModalOpen(true);
-    };
-
-    const handleEdit = (job: any) => {
-        setSelectedJob(job);
-        setIsEditModalOpen(true);
     };
 
     const handleSaveJob = async (updatedJob: any) => {
@@ -232,36 +202,80 @@ const JobSchedule = () => {
         }
     };
 
-    const handleQuickRun = async (jobId: number) => {
-        try {
-            const xmlData = `<dsXml>
-                <J_Ui>"ActionName":"${ACTION_NAME}","Option":"JOBQUICKRUN"</J_Ui>
-                <Sql></Sql>
-                <X_Filter>
-                    <JobId>${jobId}</JobId>
-                </X_Filter>
-                <X_GFilter></X_GFilter>
-                <J_Api>"UserId":"${getLocalStorage('userId')}", "UserType":"${getLocalStorage('userType')}"</J_Api>
-            </dsXml>`;
-
-            const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
-            const result = response?.data?.data?.rs0?.[0] || {};
-            
-            if (result.STATUS === "SUCCESS") {
-                toast.success(result.Message || "Job executed successfully");
-                fetchJobSchedule(); 
-            } else {
-                toast.error(result.Message || "Failed to trigger job");
-            }
-        } catch (error) {
-            console.error("Error triggering quick run:", error);
-            toast.error("Failed to trigger job");
-        }
-    };
-
     useEffect(() => {
         fetchJobSchedule();
     }, []);
+
+    // Combine static actions and dynamic columns
+    const columns = [
+        {
+            key: "Edit",
+            name: "Edit",
+            width: 60,
+            renderCell: (props: any) => (
+                <button
+                    onClick={() => handleEdit(props.row)}
+                    className="text-blue-600 hover:text-blue-800 flex items-center justify-center w-full h-full"
+                    title="Edit Job"
+                >
+                    <FaEdit size={16} />
+                </button>
+            ),
+        },
+        {
+            key: "Log",
+            name: "Log",
+            width: 100,
+            renderCell: (props: any) => (
+                <button
+                    onClick={() => handleViewLog(props.row.JobID)}
+                    style={{
+                        background: colors.buttonBackground,
+                        color: colors.buttonText,
+                        padding: "4px 8px",
+                        borderRadius: "4px",
+                        cursor: "pointer",
+                        border: "none"
+                    }}
+                >
+                    View Log
+                </button>
+            ),
+        },
+        {
+            key: "QuickRun",
+            name: "Quick Run",
+            width: 100,
+            renderCell: (props: any) => (
+                <button
+                    onClick={() => handleQuickRun(props.row.JobID)}
+                    disabled={runningJobId === props.row.JobID}
+                    style={{
+                        background: "#28a745", // Green for run
+                        color: "#fff",
+                        padding: "4px 8px",
+                        borderRadius: "4px",
+                        cursor: runningJobId === props.row.JobID ? "not-allowed" : "pointer",
+                        border: "none",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "5px",
+                        minWidth: "60px"
+                    }}
+                >
+                    {runningJobId === props.row.JobID ? (
+                        <>
+                            <FaSpinner className="animate-spin" /> Running
+                        </>
+                    ) : (
+                        "Run"
+                    )}
+                </button>
+            ),
+        },
+        ...dynamicColumns
+    ];
 
     return (
         <div style={{ padding: 20, background: colors.background, minHeight: "100vh" }}>
