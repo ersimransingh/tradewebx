@@ -260,7 +260,7 @@ export const parseSettingsFromXml = (xmlString: string) => {
 };
 
 
-export function displayAndDownloadFile(base64: string, fileDownloadName?: string) {
+export function displayAndDownloadFile(base64: string, fileDownloadName?: string, contentType?: string) {
     const fileType = getFileTypeFromBase64(base64);
     const mimeMap: Record<string, string> = {
         pdf: 'application/pdf',
@@ -273,7 +273,7 @@ export function displayAndDownloadFile(base64: string, fileDownloadName?: string
         zip: 'application/zip',
     };
 
-    const mimeType = mimeMap[fileType] || 'application/octet-stream';
+    const mimeType = contentType || mimeMap[fileType] || 'application/octet-stream';
 
 
     const byteCharacters = atob(base64);

@@ -1034,9 +1034,12 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
 
             // Handle download type buttons
             if (button.type === 'download') {
-                const fileData = rs0?.[0];
-                if (fileData?.Base64PDF) {
-                    displayAndDownloadFile(fileData.Base64PDF, fileData.PDFName);
+                const fileData = Array.isArray(rs0) ? rs0?.[0] : rs0;
+                const base64Content = fileData?.fileContents || fileData?.Base64PDF;
+                const fileName = fileData?.fileDownloadName || fileData?.PDFName;
+                const contentType = fileData?.contentType;
+                if (base64Content) {
+                    displayAndDownloadFile(base64Content, fileName, contentType);
                 } else {
                     toast.error('No file content received from server');
                 }
@@ -2041,7 +2044,8 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                                     toast.warning("Please select at least one row");
                                                     return;
                                                 }
-                                                if (button.type === 'download' && selectedRows.length > 1) {
+                                                const allowMultiple = button.multiple !== false;
+                                                if (button.type === 'download' && !allowMultiple && selectedRows.length > 1) {
                                                     toast.warning("Please select only one entry for download");
                                                     return;
                                                 }
