@@ -1694,6 +1694,10 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
     const safePageData = safePageDataAccess(pageData, validationResult);
     const showTypeList = safePageData.getSetting('levels.0.settings.showTypstFlag') || false;
     const showFilterHorizontally = safePageData.getSetting('filterType') === "onPage";
+    const selectableButtonsSetting = safePageData.getCurrentLevel(currentLevel)?.settings?.Selectable_Buttons;
+    const hasSelectableButtons = Boolean(
+        selectableButtonsSetting?.isCheckbox && (selectableButtonsSetting?.buttons?.length || 0) > 0
+    );
 
     return (
         <div className=""
@@ -1897,7 +1901,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                                     Export to Excel
                                                 </button>
                                             )}
-                                            {isMasterButtonEnabled('Email') && (
+                                            {!hasSelectableButtons && isMasterButtonEnabled('Email') && (
                                                 <button
                                                     onClick={() => {
                                                         setPdfParams([tableRef.current, jsonData, appMetadata, apiData, pageData, filters, currentLevel, 'email']);
@@ -1931,7 +1935,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                             )}
                                             {Object.keys(additionalTables).length == 0 && (
                                                 <>
-                                                    {isMasterButtonEnabled('CSV') && (
+                                                    {!hasSelectableButtons && isMasterButtonEnabled('CSV') && (
                                                         <button
                                                             onClick={() => {
                                                                 exportTableToCsv(tableRef.current, jsonData, apiData, pageData);
@@ -1945,7 +1949,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                                             Export to CSV
                                                         </button>
                                                     )}
-                                                    {!showTypeList && isMasterButtonEnabled('PDF') && (
+                                                    {!hasSelectableButtons && !showTypeList && isMasterButtonEnabled('PDF') && (
                                                         <button
                                                             onClick={() => {
                                                                 exportTableToPdf(tableRef.current, jsonData, appMetadata, apiData, pageData, filters, currentLevel, 'download');
@@ -2027,6 +2031,34 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
 
                         {/* Desktop View - Show all buttons */}
                         <div className="hidden md:flex gap-2">
+                            {hasSelectableButtons && (
+                                <div className="flex items-center gap-2">
+                                    {selectableButtonsSetting.buttons.map((button: any, index: number) => (
+                                        <button
+                                            key={`${button.name}-${index}`}
+                                            onClick={() => {
+                                                if (selectedRows.length === 0) {
+                                                    toast.warning("Please select at least one row");
+                                                    return;
+                                                }
+                                                if (button.type === 'download' && selectedRows.length > 1) {
+                                                    toast.warning("Please select only one entry for download");
+                                                    return;
+                                                }
+                                                handleSelectableButtonClick(button, selectedRows);
+                                            }}
+                                            disabled={selectedRows.length === 0}
+                                            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ease-in-out ${
+                                                selectedRows.length === 0
+                                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                                    : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95'
+                                            }`}
+                                        >
+                                            {button.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                             {selectedRows.length > 0 && safePageData.getCurrentLevel(currentLevel)?.settings?.EditableColumn && isRowButtonEnabled('Edit') && (
                                 <div className="relative group">
                                     <button
@@ -2096,71 +2128,75 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                 </div>
                             </div>
 
-                            {/* Group & Sum Button */}
-                            <div className="relative group">
-                                <button
-                                    className="p-2 rounded hover:bg-gray-100 transition-colors"
-                                    onClick={() => {
-                                        if (apiData && apiData.length > 0) {
-                                            const currentSettings = safePageData.getCurrentLevel(currentLevel)?.settings;
-                                            const columnsToHide = currentSettings?.hideEntireColumn
-                                                ? currentSettings.hideEntireColumn.split(',').map((col: string) => col.trim())
-                                                : [];
+                            {!hasSelectableButtons && (
+                                <>
+                                    {/* Group & Sum Button */}
+                                    <div className="relative group">
+                                        <button
+                                            className="p-2 rounded hover:bg-gray-100 transition-colors"
+                                            onClick={() => {
+                                                if (apiData && apiData.length > 0) {
+                                                    const currentSettings = safePageData.getCurrentLevel(currentLevel)?.settings;
+                                                    const columnsToHide = currentSettings?.hideEntireColumn
+                                                        ? currentSettings.hideEntireColumn.split(',').map((col: string) => col.trim())
+                                                        : [];
 
-                                            const allColumns = Object.keys(apiData[0]).filter(key =>
-                                                !key.startsWith('_') && !columnsToHide.includes(key)
-                                            );
-                                            setAvailableColumns(allColumns);
-                                            setIsGroupSumModalOpen(true);
-                                        } else {
-                                            toast.info("No data available for grouping.");
-                                        }
-                                    }}
-                                    style={{ color: colors.text }}
-                                    aria-label="Group & Sum"
-                                >
-                                    <FaCalculator size={20} />
-                                </button>
-                                <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
-                                    Group & Sum
-                                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-800"></div>
-                                </div>
-                            </div>
-
-                            {isMasterButtonEnabled('Email') && (
-                                <div className="relative group">
-                                    <button
-                                        className="p-2 rounded hover:bg-gray-100 transition-colors"
-                                        onClick={() => {
-                                            setPdfParams([tableRef.current, jsonData, appMetadata, apiData, pageData, filters, currentLevel, 'email']);
-                                            setIsConfirmModalOpen(true);
-                                        }}
-                                        style={{ color: colors.text }}
-                                        aria-label="Email Report"
-                                    >
-                                        <FaEnvelope size={20} />
-                                    </button>
-                                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
-                                        Email Report
-                                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-800"></div>
+                                                    const allColumns = Object.keys(apiData[0]).filter(key =>
+                                                        !key.startsWith('_') && !columnsToHide.includes(key)
+                                                    );
+                                                    setAvailableColumns(allColumns);
+                                                    setIsGroupSumModalOpen(true);
+                                                } else {
+                                                    toast.info("No data available for grouping.");
+                                                }
+                                            }}
+                                            style={{ color: colors.text }}
+                                            aria-label="Group & Sum"
+                                        >
+                                            <FaCalculator size={20} />
+                                        </button>
+                                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                                            Group & Sum
+                                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-800"></div>
+                                        </div>
                                     </div>
-                                </div>
-                            )}
 
-                            <div className="relative group">
-                                <button
-                                    className="p-2 rounded hover:bg-gray-100 transition-colors"
-                                    onClick={() => setIsAutoWidth(!isAutoWidth)}
-                                    style={{ color: isAutoWidth ? '#3b82f6' : colors.text }}
-                                    aria-label="Toggle Auto Width"
-                                >
-                                    <FaArrowsAltH size={20} />
-                                </button>
-                                <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
-                                    {isAutoWidth ? "Reset Column Widths" : "Fit Columns to Width"}
-                                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-800"></div>
-                                </div>
-                            </div>
+                                    {isMasterButtonEnabled('Email') && (
+                                        <div className="relative group">
+                                            <button
+                                                className="p-2 rounded hover:bg-gray-100 transition-colors"
+                                                onClick={() => {
+                                                    setPdfParams([tableRef.current, jsonData, appMetadata, apiData, pageData, filters, currentLevel, 'email']);
+                                                    setIsConfirmModalOpen(true);
+                                                }}
+                                                style={{ color: colors.text }}
+                                                aria-label="Email Report"
+                                            >
+                                                <FaEnvelope size={20} />
+                                            </button>
+                                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                                                Email Report
+                                                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-800"></div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="relative group">
+                                        <button
+                                            className="p-2 rounded hover:bg-gray-100 transition-colors"
+                                            onClick={() => setIsAutoWidth(!isAutoWidth)}
+                                            style={{ color: isAutoWidth ? '#3b82f6' : colors.text }}
+                                            aria-label="Toggle Auto Width"
+                                        >
+                                            <FaArrowsAltH size={20} />
+                                        </button>
+                                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                                            {isAutoWidth ? "Reset Column Widths" : "Fit Columns to Width"}
+                                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-800"></div>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
 
                             {isMasterButtonEnabled('ExportEmail') && (
                                 <div className="relative group">
@@ -2201,7 +2237,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                             )}
                             {Object.keys(additionalTables).length == 0 && (
                                 <>
-                                    {isMasterButtonEnabled('CSV') && (
+                                    {!hasSelectableButtons && isMasterButtonEnabled('CSV') && (
                                         <div className="relative group">
                                             <button
                                                 className="p-2 rounded hover:bg-gray-100 transition-colors"
@@ -2250,7 +2286,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                         </div>
                                     )}
 
-                                    {!showTypeList && isMasterButtonEnabled('PDF') && (
+                                    {!hasSelectableButtons && !showTypeList && isMasterButtonEnabled('PDF') && (
                                         <div className="relative group">
                                             <button
                                                 onClick={() => {

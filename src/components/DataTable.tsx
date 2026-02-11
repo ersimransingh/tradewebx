@@ -1952,36 +1952,6 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, onRow
                     </div>
                 </>}
 
-            {/* Selectable_Buttons: Render dynamic buttons when isCheckbox is true */}
-            {settings?.Selectable_Buttons?.isCheckbox && settings?.Selectable_Buttons?.buttons?.length > 0 && (
-                <div className='flex flex-wrap gap-2 p-4'>
-                    {settings.Selectable_Buttons.buttons.map((button, index) => (
-                        <button
-                            key={index}
-                            onClick={() => {
-                                if (selectedRows.length === 0) {
-                                    toast.warning("Please select at least one row");
-                                    return;
-                                }
-                                if (button.type === 'download' && selectedRows.length > 1) {
-                                    toast.warning("Please select only one entry for download");
-                                    return;
-                                }
-                                onSelectableButtonClick?.(button, selectedRows);
-                            }}
-                            disabled={selectedRows.length === 0}
-                            className={`py-2 px-6 rounded-md text-sm font-medium transition-all duration-200 ease-in-out ${
-                                selectedRows.length === 0
-                                    ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
-                                    : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95'
-                            }`}
-                        >
-                            {button.name}
-                        </button>
-                    ))}
-                </div>
-            )}
-
             <DataGrid
                 columns={columns}
                 rows={rows}
