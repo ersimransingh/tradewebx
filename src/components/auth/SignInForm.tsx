@@ -814,7 +814,8 @@ export default function SignInForm() {
   const errorAlertId = useId();
 
   return (
-    <div className="flex flex-col flex-1 lg:w-1/2 w-full bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-800">
+    // <div className="flex flex-col flex-1 lg:w-1/2 w-full bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-800">
+    <div className="flex flex-col lg:w-1/2 w-full min-h-screen  bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-800">
       <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto ">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
           <div>

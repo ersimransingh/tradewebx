@@ -2533,7 +2533,8 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                     backgroundColor: colors.cardBackground,
                     borderColor: '#e5e7eb'
                 }}>
-                    <div className="flex items-center justify-between mb-0">
+                    {/* <div className="flex items-center justify-between mb-0"> */}
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
                         <div
                             className="flex flex-wrap gap-4 items-start"
                             style={{
@@ -2547,7 +2548,8 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                 isHorizontal={true}
                             />
                         </div>
-                        <div className="flex gap-2">
+                        {/* <div className="flex gap-2"> */}
+                        <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
 
                             <button
                                 className="px-3 py-1 text-sm rounded"
