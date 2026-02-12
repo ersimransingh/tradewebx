@@ -767,7 +767,7 @@ function Dashboard() {
         >
             {(auth.userType === 'branch' || auth.userType === 'user') && (
                 <div className="mb-4">
-                    <div className="flex gap-3 items-end">
+                    <div className="flex flex-col sm:flex-row gap-3 items-end">
                         <div className="flex-1">
                             <div className="flex items-center gap-2">
                                <AsyncSearchDropdown
