@@ -160,9 +160,6 @@ export default function MarginPledgeOnline() {
 
   const EncryptedJsonOutput = async(json:any) => {
 
-    console.log(json,'jsonsssssss');
-    
-
     const jsonXML = `
     <dsXml> 
     <J_Ui>"ActionName":"MARGINPLEDGECDSL","Option":"ENCRYPTDATA","Level":1,"RequestFrom":"W"</J_Ui> 
@@ -177,16 +174,11 @@ export default function MarginPledgeOnline() {
     <J_Api>"UserId":"${getLocalStorage('userId')}", "UserType":"${getLocalStorage('userType')}"</J_Api>
     </dsXml>
     `
-    
-    console.log(jsonXML,'jsonXML');
-    
 
     try {
       const request = await apiService.postWithAuth(BASE_URL + PATH_URL, jsonXML);
-      const josnEncrynt = request.data.data.rs0[0].EncryptedData
-      console.log(josnEncrynt,'josnEncrynt');
-      
-      if(request.success === true){
+      const josnEncrynt = request?.data?.data?.rs0[0]?.EncryptedData      
+      if(request?.success === true){
         return josnEncrynt
       }
       
