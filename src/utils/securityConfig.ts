@@ -150,7 +150,7 @@ export function getSecurityHeaders(): Record<string, string> {
         "media-src 'self' http: https:",
         "object-src 'none'",
         "base-uri 'self'",
-        "form-action 'self' https://dematgw.nsdl.com",
+        `form-action 'self' https://*.nsdl.com https://*.cdslindia.com`,
         "frame-ancestors 'none'"
         // No upgrade-insecure-requests to allow HTTP
     ].join('; ');

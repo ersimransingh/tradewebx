@@ -158,15 +158,47 @@ export default function MarginPledgeOnline() {
     }
   };
 
-  const pledgeRedirectApiCDSLCall = () => {
+  const EncryptedJsonOutput = async(json:any) => {
+
+    const jsonXML = `
+    <dsXml> 
+    <J_Ui>"ActionName":"MARGINPLEDGECDSL","Option":"ENCRYPTDATA","Level":1,"RequestFrom":"W"</J_Ui> 
+    <Sql></Sql>
+    <X_Filter></X_Filter>
+    <X_Data>
+    <RequestJson>
+    <![CDATA[${JSON.stringify(json)}]]>
+    </RequestJson>
+    </X_Data>
+    <X_GFilter></X_GFilter>
+    <J_Api>"UserId":"${getLocalStorage('userId')}", "UserType":"${getLocalStorage('userType')}"</J_Api>
+    </dsXml>
+    `
+
+    try {
+      const request = await apiService.postWithAuth(BASE_URL + PATH_URL, jsonXML);
+      const josnEncrynt = request?.data?.data?.rs0[0]?.EncryptedData      
+      if(request?.success === true){
+        return josnEncrynt
+      }
+      
+    } catch (error) {
+      console.warn(error)
+    }
+  }
+
+  const pledgeRedirectApiCDSLCall = async() => {
     try {
       const redirectData = pledgeRedirectData?.[0]?.DATA;
       if (!redirectData) return;
 
       const { APIUrl, DPId, ReqId, Version } = redirectData.Param;
+
       const pledgedtls = redirectData.JsonOutput;
 
-      const form = document.createElement('form');
+      const pledgedtlsEncrypt =   EncryptedJsonOutput(pledgedtls)
+
+      const form =  document.createElement('form');
       form.method = 'POST';
       form.action = APIUrl;
       form.target = '_blank';
@@ -183,10 +215,11 @@ export default function MarginPledgeOnline() {
       addHiddenField('dpid', DPId);
       addHiddenField('reqid', ReqId);
       addHiddenField('version', Version);
-      addHiddenField('pledgedtls', pledgedtls);
-
+      addHiddenField('pledgedtls', await pledgedtlsEncrypt);
       document.body.appendChild(form);
+     
       form.submit();
+      console.log(form,'formcdsl');
       setTimeout(() => document.body.removeChild(form), 1000);
     } catch (error) {
       console.error("Pledge API Error:", error);
@@ -283,7 +316,7 @@ export default function MarginPledgeOnline() {
                         className={`p-2 ${rightAlignKeys.includes(key) ? 'text-right' : 'text-center'}`}
                         style={{
                           border: `1px solid ${colors?.color1 || '#f0f0f0'}`,
-                          background: colors?.primary || '#f0f0f0',
+                          background: colors?.buttonBackground || '#f0f0f0',
                           width: ['ReqValue'].includes(key) ? '130px' : undefined,
                         }}
                       >
@@ -354,7 +387,7 @@ export default function MarginPledgeOnline() {
                 onClick={tableAllData}
                 disabled={buttonDisable}
                 style={{
-                  backgroundColor: buttonDisable ? '#ccc' : colors.primary,
+                  backgroundColor: buttonDisable ? '#ccc' : colors.buttonBackground,
                   cursor: buttonDisable ? 'not-allowed' : 'pointer',
                 }}
                 className={`text-white py-2 px-8 rounded-md shadow-lg transform transition-transform duration-200 ease-in-out font-medium ${buttonDisable ? 'opacity-50' : 'active:scale-90'}`}
