@@ -17,20 +17,20 @@ const nextConfig: NextConfig = {
 
   // Security headers configuration
   async headers() {
-    // Generate CSP policy that allows both HTTP and HTTPS
+    // Generate production-grade CSP policy (no unsafe-inline / unsafe-eval)
     const cspPolicy = [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com",
+      "script-src 'self' https://cdn.jsdelivr.net https://unpkg.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
-      "img-src 'self' data: http: https: blob:",
+      "img-src 'self' data: https: blob:",
       "font-src 'self' data: https://fonts.gstatic.com",
-      "connect-src 'self' http: https: wss:",
-      "media-src 'self' http: https:",
+      "connect-src 'self' https: wss:",
+      "media-src 'self' https:",
       "object-src 'none'",
       "base-uri 'self'",
-      "form-action 'self'",
-      "frame-ancestors 'none'"
-      // No upgrade-insecure-requests to allow HTTP
+      "form-action 'self' https://*.nsdl.com https://*.cdslindia.com",
+      "frame-ancestors 'none'",
+      "upgrade-insecure-requests"
     ].join('; ');
 
     return [

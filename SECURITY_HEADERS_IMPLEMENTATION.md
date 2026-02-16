@@ -16,10 +16,10 @@ This document outlines the comprehensive security headers implementation for the
 - Blocks object embedding
 - Enforces HTTPS for all connections
 
-**Configuration**:
+**Configuration (production-ready)**:
 ```javascript
 "default-src 'self'",
-"script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com",
+"script-src 'self' https://cdn.jsdelivr.net https://unpkg.com",
 "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
 "img-src 'self' data: https: blob:",
 "font-src 'self' data: https://fonts.gstatic.com",

@@ -60,7 +60,7 @@ Modify security headers in `src/utils/securityConfig.ts`:
 
 ```typescript
 SECURITY_HEADERS: {
-    CSP_POLICY: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:; frame-ancestors 'none';",
+    CSP_POLICY: "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; img-src 'self' data: https: blob:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https: wss:; media-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self' https://*.nsdl.com https://*.cdslindia.com; frame-ancestors 'none'; upgrade-insecure-requests;",
     HSTS_MAX_AGE: '31536000', // 1 year
     X_FRAME_OPTIONS: 'DENY',
     X_CONTENT_TYPE_OPTIONS: 'nosniff',
