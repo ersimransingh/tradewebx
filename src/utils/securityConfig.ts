@@ -122,13 +122,25 @@ export function isHttpsRequired(hostname: string): boolean {
 }
 
 // Helper function to get security headers
-export function getSecurityHeaders(): Record<string, string> {
-    const isProd = process.env.NODE_ENV === 'production';
+export function getSecurityHeaders(nonce?: string): Record<string, string> {
+    const forceProdCsp = process.env.NEXT_FORCE_PROD_CSP === 'true';
+    const isProd = process.env.NODE_ENV === 'production' || forceProdCsp;
 
-    // Environment-aware CSP: strict in prod, localhost-friendly in dev
-    const scriptDirectives = isProd
-        ? "script-src 'self' https://cdn.jsdelivr.net https://unpkg.com"
-        : "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com";
+    // Environment-aware CSP with nonce support
+    const scriptParts = [
+        "script-src",
+        "'self'",
+        "https://cdn.jsdelivr.net",
+        "https://unpkg.com",
+    ];
+
+    if (nonce) {
+        scriptParts.push(`'nonce-${nonce}'`, "'strict-dynamic'");
+    } else if (!isProd) {
+        scriptParts.push("'unsafe-inline'", "'unsafe-eval'");
+    }
+
+    const scriptDirectives = scriptParts.join(' ');
 
     const cspPolicy = [
         "default-src 'self'",

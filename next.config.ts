@@ -15,48 +15,13 @@ const nextConfig: NextConfig = {
     unoptimized: true, // Disable image optimization to serve images directly
   },
 
-  // Security headers configuration
+  // Security headers configuration (static assets); CSP is applied dynamically in middleware
   async headers() {
-    const isProd = process.env.NODE_ENV === 'production';
-
-    // Environment-aware CSP: strict in prod, permissive enough for localhost dev
-    const scriptDirectives = isProd
-      ? "script-src 'self' https://cdn.jsdelivr.net https://unpkg.com"
-      : "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com";
-
-    const cspPolicy = [
-      "default-src 'self'",
-      scriptDirectives,
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
-      isProd
-        ? "img-src 'self' data: https: blob:"
-        : "img-src 'self' data: http: https: blob:",
-      "font-src 'self' data: https://fonts.gstatic.com",
-      isProd
-        ? "connect-src 'self' https: wss:"
-        : "connect-src 'self' http: https: ws: wss: http://localhost:* ws://localhost:*",
-      isProd
-        ? "media-src 'self' https:"
-        : "media-src 'self' http: https:",
-      "object-src 'none'",
-      "base-uri 'self'",
-      "form-action 'self' https://*.nsdl.com https://*.cdslindia.com",
-      "frame-ancestors 'none'",
-      isProd ? "upgrade-insecure-requests" : null,
-    ]
-      .filter(Boolean)
-      .join('; ');
-
     return [
       {
         // Apply security headers to all routes
         source: '/(.*)',
         headers: [
-          // Content Security Policy
-          {
-            key: 'Content-Security-Policy',
-            value: cspPolicy
-          },
           // X-Frame-Options - Prevents clickjacking
           {
             key: 'X-Frame-Options',

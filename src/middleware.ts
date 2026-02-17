@@ -9,6 +9,13 @@ function isDevelopmentMode(): boolean {
 }
 
 export function middleware(request: NextRequest) {
+    // Per-request nonce for CSP
+    const nonce = crypto.randomUUID();
+    const securityHeaders = getSecurityHeaders(nonce);
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set('x-nonce', nonce);
+    requestHeaders.set('x-nextjs-nonce', nonce);
+    requestHeaders.set('content-security-policy', securityHeaders['Content-Security-Policy']);
     // HTTPS enforcement removed - HTTP is now allowed for all hosts
 
     // Security: Block suspicious requests
@@ -56,27 +63,31 @@ export function middleware(request: NextRequest) {
 
     // For auth pages, allow access with security headers
     if (isAuthPage) {
-        const response = NextResponse.next();
-        addSecurityHeaders(response);
+        const response = NextResponse.next({
+            request: { headers: requestHeaders },
+        });
+        addSecurityHeaders(response, securityHeaders, nonce);
         return response;
     }
 
     // For all other pages, allow access and let client-side handle authentication
     // The client-side will redirect to login if no token is found in localStorage
-    const response = NextResponse.next();
-    addSecurityHeaders(response);
+    const response = NextResponse.next({
+        request: { headers: requestHeaders },
+    });
+    addSecurityHeaders(response, securityHeaders, nonce);
     return response;
 }
 
 // Add security headers to response
-function addSecurityHeaders(response: NextResponse): void {
-    // Get security headers from configuration
-    const securityHeaders = getSecurityHeaders();
-
+function addSecurityHeaders(response: NextResponse, securityHeaders: Record<string, string>, nonce: string): void {
     // Set all security headers
     Object.entries(securityHeaders).forEach(([key, value]) => {
         response.headers.set(key, value);
     });
+
+    // Expose nonce for server components/scripts if needed
+    response.headers.set('x-nonce', nonce);
 
     // HSTS header is not set - HTTP is allowed
     // const hstsHeader = getHstsHeader();
