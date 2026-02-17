@@ -135,7 +135,8 @@ export function getSecurityHeaders(nonce?: string): Record<string, string> {
     ];
 
     if (nonce) {
-        scriptParts.push(`'nonce-${nonce}'`, "'strict-dynamic'");
+        // Allow inline scripts with a nonce; avoid 'strict-dynamic' so host allowlists still apply
+        scriptParts.push(`'nonce-${nonce}'`);
     } else if (!isProd) {
         scriptParts.push("'unsafe-inline'", "'unsafe-eval'");
     }
@@ -157,6 +158,7 @@ export function getSecurityHeaders(nonce?: string): Record<string, string> {
             ? "media-src 'self' https:"
             : "media-src 'self' http: https:",
         "object-src 'none'",
+        "worker-src 'self' blob:",
         "base-uri 'self'",
         "form-action 'self' https://*.nsdl.com https://*.cdslindia.com",
         "frame-ancestors 'none'",
