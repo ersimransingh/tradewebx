@@ -20,9 +20,13 @@ const nextConfig: NextConfig = {
     const isProd = process.env.NODE_ENV === 'production';
 
     // Environment-aware CSP: strict in prod, permissive enough for localhost dev
+    const scriptDirectives = isProd
+      ? "script-src 'self' https://cdn.jsdelivr.net https://unpkg.com"
+      : "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com";
+
     const cspPolicy = [
       "default-src 'self'",
-      "script-src 'self' https://cdn.jsdelivr.net https://unpkg.com",
+      scriptDirectives,
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
       isProd
         ? "img-src 'self' data: https: blob:"

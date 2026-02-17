@@ -19,7 +19,7 @@ This document outlines the comprehensive security headers implementation for the
 **Configuration (env-aware)**:
 ```javascript
 "default-src 'self'",
-"script-src 'self' https://cdn.jsdelivr.net https://unpkg.com",
+"script-src 'self' https://cdn.jsdelivr.net https://unpkg.com", // dev adds 'unsafe-inline' 'unsafe-eval'
 "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
 "img-src 'self' data: https: blob:", // add http: in development
 "font-src 'self' data: https://fonts.gstatic.com",
