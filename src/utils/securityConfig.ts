@@ -135,8 +135,9 @@ export function getSecurityHeaders(nonce?: string): Record<string, string> {
     ];
 
     if (nonce) {
-        // Allow inline scripts with a nonce; avoid 'strict-dynamic' so host allowlists still apply
-        scriptParts.push(`'nonce-${nonce}'`);
+        // Allow inline scripts with a nonce and use strict-dynamic so
+        // scripts loaded by nonce-authorised scripts (e.g. Next.js chunks) are also trusted.
+        scriptParts.push(`'nonce-${nonce}'`, "'strict-dynamic'");
     } else if (!isProd) {
         scriptParts.push("'unsafe-inline'", "'unsafe-eval'");
     }
