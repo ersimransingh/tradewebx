@@ -16,20 +16,20 @@ This document outlines the comprehensive security headers implementation for the
 - Blocks object embedding
 - Enforces HTTPS for all connections
 
-**Configuration (production-ready)**:
+**Configuration (env-aware)**:
 ```javascript
 "default-src 'self'",
 "script-src 'self' https://cdn.jsdelivr.net https://unpkg.com",
 "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
-"img-src 'self' data: https: blob:",
+"img-src 'self' data: https: blob:", // add http: in development
 "font-src 'self' data: https://fonts.gstatic.com",
-"connect-src 'self' https: wss:",
-"media-src 'self' https:",
+"connect-src 'self' https: wss:",    // add http:, ws:, localhost:* in development
+"media-src 'self' https:",            // add http: in development
 "object-src 'none'",
 "base-uri 'self'",
-"form-action 'self'",
+"form-action 'self' https://*.nsdl.com https://*.cdslindia.com",
 "frame-ancestors 'none'",
-"upgrade-insecure-requests"
+"upgrade-insecure-requests" // omitted in development
 ```
 
 ### 2. X-Frame-Options

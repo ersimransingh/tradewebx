@@ -123,21 +123,29 @@ export function isHttpsRequired(hostname: string): boolean {
 
 // Helper function to get security headers
 export function getSecurityHeaders(): Record<string, string> {
-    // Strict CSP without unsafe-inline/unsafe-eval
+    const isProd = process.env.NODE_ENV === 'production';
+
+    // Environment-aware CSP: strict in prod, localhost-friendly in dev
     const cspPolicy = [
         "default-src 'self'",
         "script-src 'self' https://cdn.jsdelivr.net https://unpkg.com",
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
-        "img-src 'self' data: https: blob:",
+        isProd
+            ? "img-src 'self' data: https: blob:"
+            : "img-src 'self' data: http: https: blob:",
         "font-src 'self' data: https://fonts.gstatic.com",
-        "connect-src 'self' https: wss:",
-        "media-src 'self' https:",
+        isProd
+            ? "connect-src 'self' https: wss:"
+            : "connect-src 'self' http: https: ws: wss: http://localhost:* ws://localhost:*",
+        isProd
+            ? "media-src 'self' https:"
+            : "media-src 'self' http: https:",
         "object-src 'none'",
         "base-uri 'self'",
         "form-action 'self' https://*.nsdl.com https://*.cdslindia.com",
         "frame-ancestors 'none'",
-        "upgrade-insecure-requests"
-    ].join('; ');
+        isProd ? "upgrade-insecure-requests" : null,
+    ].filter(Boolean).join('; ');
 
     return {
         // Content Security Policy
