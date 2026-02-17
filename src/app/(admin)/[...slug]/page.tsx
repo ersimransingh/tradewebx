@@ -42,10 +42,11 @@ const staticRoutes: Record<string, React.ReactNode> = {
 export default function DynamicPage({ params }: { params: any | Promise<any> }) {
   const menuItems = useAppSelector(selectAllMenuItems);
   const menuStatus = useAppSelector(selectMenuStatus);
-  const unwrappedParams = params instanceof Promise ? React.use(params) : params;
-  const route = unwrappedParams.slug[0];
-  const subRoute = unwrappedParams.slug[1];
-  const subSubRoute = unwrappedParams.slug[2];
+  // Next passes params synchronously to client components; avoid conditional hook usage
+  const unwrappedParams = params as any;
+  const route = unwrappedParams.slug?.[0];
+  const subRoute = unwrappedParams.slug?.[1];
+  const subSubRoute = unwrappedParams.slug?.[2];
 
   const componentName = subSubRoute || subRoute || route;
 

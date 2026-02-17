@@ -500,6 +500,8 @@ const ColumnFilterDropdown: React.FC<{
 export interface SelectableButton {
     name: string;
     type?: string;
+    multiple?: boolean;
+    apiKeys?: string; // comma separated keys to include in X_Data; if blank, send all keys
     API: {
         J_Ui: {
             ActionName: string;
@@ -507,6 +509,26 @@ export interface SelectableButton {
             RequestFrom: string;
             [key: string]: any;
         };
+        [key: string]: any;
+    };
+    SelectAllApi?: {
+        J_Ui: {
+            ActionName: string;
+            Option: string;
+            RequestFrom: string;
+            [key: string]: any;
+        };
+        X_Filters?: Record<string, any>;
+        [key: string]: any;
+    };
+    ValidationAPI?: {
+        J_Ui: {
+            ActionName: string;
+            Option: string;
+            RequestFrom: string;
+            [key: string]: any;
+        };
+        X_Filters?: Record<string, any>;
         [key: string]: any;
     };
 }

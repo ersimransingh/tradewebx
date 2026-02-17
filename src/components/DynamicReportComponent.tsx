@@ -287,6 +287,12 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
     const [entryFormData, setEntryFormData] = useState<any>(null);
     const [entryAction, setEntryAction] = useState<'edit' | 'delete' | 'view' | null>(null);
     const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
+    const [validationPrompt, setValidationPrompt] = useState<{
+        open: boolean;
+        message: string;
+        button: any | null;
+        selectedRows: any[];
+    }>({ open: false, message: "", button: null, selectedRows: [] });
 
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
     const [pdfParams, setPdfParams] = useState<
@@ -940,17 +946,143 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
         setSelectedRows(cleaned);
     }
 
-    // Handle Selectable_Buttons click - calls API with selected rows as X_Data
-    const handleSelectableButtonClick = async (button: any, selectedRows: any[]) => {
+    const handleSelectableButtonClick = async (button: any, selectedRows: any[], options: { skipValidation?: boolean } = {}) => {
         try {
             setIsLoading(true);
+
+            const skipValidation = options.skipValidation === true;
 
             const userId = getLocalStorage('userId');
             const userType = getLocalStorage('userType');
             const pageName = pageData?.[0]?.wPage || "";
 
+            // Detect "select all" usage to switch to SelectAllApi if provided
+            const isSelectAll = Boolean(
+                button?.SelectAllApi &&
+                filteredApiData?.length > 0 &&
+                selectedRows?.length === filteredApiData.length
+            );
+
+            const apiConfig = isSelectAll && button.SelectAllApi ? button.SelectAllApi : button.API;
+
+            // Run validation API first (if provided and not explicitly skipped)
+            if (!skipValidation && button.ValidationAPI) {
+                const validationResponse = await (async () => {
+                    const validationConfig = button.ValidationAPI;
+                    const validationApi = isSelectAll && button.SelectAllApi ? button.SelectAllApi : validationConfig;
+
+                    // Build J_Ui
+                    const vJuConfig = validationApi?.J_Ui || {};
+                    const vJu = Object.entries(vJuConfig)
+                        .map(([key, value]) => {
+                            if (key === 'ActionName' && !value) {
+                                return `"${key}":"${pageName}"`;
+                            }
+                            return `"${key}":"${value}"`;
+                        })
+                        .join(',');
+
+                    // Build X_Filter with optional validation X_Filters
+                    let vFilterXml = '';
+                    if (clientCode) {
+                        vFilterXml += `<ClientCode>${clientCode}</ClientCode>`;
+                    }
+                    Object.entries(filters).forEach(([key, value]) => {
+                        if (value === undefined || value === null || value === '') {
+                            return;
+                        }
+                        try {
+                            if (value instanceof Date || moment.isMoment(value)) {
+                                const formattedDate = moment(value).format('YYYYMMDD');
+                                vFilterXml += `<${key}>${formattedDate}</${key}>`;
+                            } else {
+                                vFilterXml += `<${key}>${value}</${key}>`;
+                            }
+                        } catch (error) {
+                            console.warn(`Error processing filter ${key}:`, error);
+                        }
+                    });
+                    if (currentLevel > 0 && Object.keys(primaryKeyFilters).length > 0) {
+                        Object.entries(primaryKeyFilters).forEach(([key, value]) => {
+                            vFilterXml += `<${key}>${value}</${key}>`;
+                        });
+                    }
+                    if (validationApi?.X_Filters) {
+                        Object.entries(validationApi.X_Filters).forEach(([key, value]) => {
+                            const safeVal = value ?? '';
+                            vFilterXml += `<${key}>${safeVal}</${key}>`;
+                        });
+                    }
+
+                    // Decide X_Data for validation
+                    let vXData = '';
+                    const shouldSkipXData = isSelectAll && button.SelectAllApi;
+                    if (!shouldSkipXData) {
+                        const apiKeysRaw = button.apiKeys || button.API?.apiKeys;
+                        const keysToInclude =
+                            apiKeysRaw && apiKeysRaw.trim().length > 0
+                                ? apiKeysRaw.split(',').map((k: string) => k.trim()).filter(Boolean)
+                                : null;
+                        let vItems = '';
+                        selectedRows.forEach((row) => {
+                            let itemXml = '<item>';
+                            const entries = keysToInclude
+                                ? keysToInclude.map((k: string) => [k, row?.[k]]) as [string, any][]
+                                : Object.entries(row).filter(([key]) => !key.startsWith('_'));
+                            entries.forEach(([key, value]) => {
+                                if (key === undefined || key === null) return;
+                                const safeVal = value ?? '';
+                                const escapedValue = String(safeVal)
+                                    .replace(/&/g, '&amp;')
+                                    .replace(/</g, '&lt;')
+                                    .replace(/>/g, '&gt;')
+                                    .replace(/"/g, '&quot;')
+                                    .replace(/'/g, '&apos;');
+                                itemXml += `<${key}>${escapedValue}</${key}>`;
+                            });
+                            itemXml += '</item>';
+                            vItems += itemXml;
+                        });
+                        vXData = `<items>${vItems}</items>`;
+                    }
+
+                    const vXml = `<dsXml>
+                        <J_Ui>${vJu}</J_Ui>
+                        <Sql></Sql>
+                        <X_Filter>${vFilterXml}</X_Filter>
+                        <X_Filter_Multiple></X_Filter_Multiple>
+                        <X_Data>${vXData}</X_Data>
+                        <J_Api>"UserId":"${userId}","UserType":"${userType}"</J_Api>
+                    </dsXml>`;
+
+                    return apiService.postWithAuth(BASE_URL + PATH_URL, vXml);
+                })();
+
+                const vRs0 = validationResponse?.data?.data?.rs0;
+                const vItem = Array.isArray(vRs0) ? vRs0?.[0] : vRs0;
+                const vFlag = vItem?.Flag || vItem?.flag || validationResponse?.data?.Flag;
+                const rawMsg = vItem?.Message || vItem?.MessageText || validationResponse?.data?.message || 'Do you want to proceed?';
+                const vMessage = rawMsg
+                    ? String(rawMsg).replace(/<[^>]+>/g, '').trim() || 'Do you want to proceed?'
+                    : 'Do you want to proceed?';
+
+                // If flag is not S, ask user before proceeding
+                if (vFlag && String(vFlag).toUpperCase() !== 'S') {
+                    setValidationPrompt({
+                        open: true,
+                        message: vMessage,
+                        button,
+                        selectedRows
+                    });
+                    setIsLoading(false);
+                    return;
+                }
+
+                // Flag is S - continue to main API without re-validating
+            }
+
             // Build J_Ui from button API config
-            const jUiConfig = button.API?.J_Ui || {};
+            const jUiConfig = apiConfig?.J_Ui || {};
             const jUi = Object.entries(jUiConfig)
                 .map(([key, value]) => {
                     if (key === 'ActionName' && !value) {
@@ -995,27 +1127,50 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                 });
             }
 
+            // If SelectAllApi provides explicit X_Filters, append them
+            if (isSelectAll && button.SelectAllApi?.X_Filters) {
+                Object.entries(button.SelectAllApi.X_Filters).forEach(([key, value]) => {
+                    const safeVal = value ?? '';
+                    filterXml += `<${key}>${safeVal}</${key}>`;
+                });
+            }
+
             // Build X_Data from selected rows
-            let xDataItems = '';
-            selectedRows.forEach((row, index) => {
-                let itemXml = '<item>';
-                Object.entries(row).forEach(([key, value]) => {
-                    if (value !== undefined && value !== null && !key.startsWith('_')) {
-                        // Escape XML special characters
-                        const escapedValue = String(value)
+            let X_Data = '';
+
+            if (!(isSelectAll && button.SelectAllApi)) {
+                // Determine which keys to include
+                const apiKeysRaw = button.apiKeys || button.API?.apiKeys;
+                const keysToInclude =
+                    apiKeysRaw && apiKeysRaw.trim().length > 0
+                        ? apiKeysRaw.split(',').map((k: string) => k.trim()).filter(Boolean)
+                        : null; // null => include all non-internal keys
+
+                let xDataItems = '';
+                selectedRows.forEach((row) => {
+                    let itemXml = '<item>';
+                    const entries = keysToInclude
+                        ? keysToInclude.map((k: string) => [k, row?.[k]]) as [string, any][]
+                        : Object.entries(row).filter(([key]) => !key.startsWith('_'));
+
+                    entries.forEach(([key, value]) => {
+                        // Allow empty values but still send the tag if key is defined
+                        if (key === undefined || key === null) return;
+                        const safeVal = value ?? '';
+                        const escapedValue = String(safeVal)
                             .replace(/&/g, '&amp;')
                             .replace(/</g, '&lt;')
                             .replace(/>/g, '&gt;')
                             .replace(/"/g, '&quot;')
                             .replace(/'/g, '&apos;');
                         itemXml += `<${key}>${escapedValue}</${key}>`;
-                    }
+                    });
+                    itemXml += '</item>';
+                    xDataItems += itemXml;
                 });
-                itemXml += '</item>';
-                xDataItems += itemXml;
-            });
 
-            const X_Data = `<items>${xDataItems}</items>`;
+                X_Data = `<items>${xDataItems}</items>`;
+            }
 
             const xmlData = `<dsXml>
                 <J_Ui>${jUi}</J_Ui>
@@ -2457,6 +2612,20 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                     setIsConfirmModalOpen(false);
                 }}
                 onCancel={() => setIsConfirmModalOpen(false)}
+            />
+
+            <CaseConfirmationModal
+                isOpen={validationPrompt.open}
+                type="M"
+                message={validationPrompt.message || "Do you want to proceed?"}
+                onConfirm={() => {
+                    const { button, selectedRows } = validationPrompt;
+                    setValidationPrompt({ open: false, message: "", button: null, selectedRows: [] });
+                    if (button && selectedRows) {
+                        handleSelectableButtonClick(button, selectedRows, { skipValidation: true });
+                    }
+                }}
+                onCancel={() => setValidationPrompt({ open: false, message: "", button: null, selectedRows: [] })}
             />
 
             <ErrorModal
