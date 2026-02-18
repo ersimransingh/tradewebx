@@ -105,7 +105,18 @@ const DigitalEmailLog: React.FC<DigitalLogEmailProps> = ({ data, settings, filte
             }
         }
 
-        if (!selectedAction) {
+        // Action default to row value if not selected
+        const rowAction = row.Action || row.action;
+        let finalAction = selectedAction;
+
+        if (!finalAction && rowAction) {
+             finalAction = actionOptions.find(opt => 
+                opt.label.toLowerCase() === String(rowAction).toLowerCase() || 
+                opt.value === String(rowAction)
+            );
+        }
+
+        if (!finalAction) {
             toast.warn("Please select an action first (Pause/Start)");
             return;
         }
@@ -120,7 +131,7 @@ const DigitalEmailLog: React.FC<DigitalLogEmailProps> = ({ data, settings, filte
                 <Sql/>
                 <X_Filter>
                     <ToDate>${toDate}</ToDate>
-                    <Action>${selectedAction.value}</Action>
+                    <Action>${finalAction.value}</Action>
                     <Priority>${finalPriority}</Priority>
                     <DocumentType>${documentType}</DocumentType>
                 </X_Filter>
