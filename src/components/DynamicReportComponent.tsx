@@ -29,6 +29,7 @@ import MultiEntryDataTables from './MultiEntryDataTables';
 import { recursiveSearch, generatePdf, generateExcel, generateCsv } from '@/utils/multiEntryUtils';
 import MultiFileUploadQueue from './upload/MultiFileUploadQueue';
 import TradeSplit from '@/apppages/TradeSplit';
+import DigitalEmailLog from '@/apppages/digitalEmailLog';
 
 // const { companyLogo, companyName } = useAppSelector((state) => state.common);
 
@@ -3023,7 +3024,15 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                     } | Response Time: {(apiResponseTime / 1000).toFixed(2)}s
                                 </div>
                             </div>
-                            {componentType === "tradesplit" ?
+                            {componentName?.toLocaleLowerCase() === "digitalemaillog" ? (
+                                <DigitalEmailLog
+                                    data={filteredApiData}
+                                    settings={safePageData.getCurrentLevel(currentLevel)?.settings}
+                                    filters={filters}
+                                    isAutoWidth={isAutoWidth}
+                                    handleRefresh={() => fetchData(filters, false)}
+                                />
+                            ) : componentType === "tradesplit" ?
                                 (<TradeSplit
                                     data={filteredApiData}
                                     settings={safePageData.getCurrentLevel(currentLevel)?.settings}
