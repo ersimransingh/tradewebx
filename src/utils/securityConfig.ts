@@ -126,7 +126,7 @@ export function getSecurityHeaders(nonce?: string): Record<string, string> {
     const forceProdCsp = process.env.NEXT_FORCE_PROD_CSP === 'true';
     const isProd = process.env.NODE_ENV === 'production' || forceProdCsp;
 
-    // Environment-aware CSP with nonce support
+    // Nonce-based CSP for scripts; never allow unsafe script execution.
     const scriptParts = [
         "script-src",
         "'self'",
@@ -138,16 +138,30 @@ export function getSecurityHeaders(nonce?: string): Record<string, string> {
         // Allow inline scripts with a nonce and use strict-dynamic so
         // scripts loaded by nonce-authorised scripts (e.g. Next.js chunks) are also trusted.
         scriptParts.push(`'nonce-${nonce}'`, "'strict-dynamic'");
-    } else if (!isProd) {
-        scriptParts.push("'unsafe-inline'", "'unsafe-eval'");
     }
 
     const scriptDirectives = scriptParts.join(' ');
+    const styleParts = [
+        "style-src",
+        "'self'",
+        "https://fonts.googleapis.com",
+        "https://cdn.jsdelivr.net",
+    ];
+
+    if (nonce) {
+        // Allow framework-generated inline style blocks with a nonce.
+        styleParts.push(`'nonce-${nonce}'`);
+    }
+
+    const styleDirectives = styleParts.join(' ');
 
     const cspPolicy = [
         "default-src 'self'",
         scriptDirectives,
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
+        styleDirectives,
+        // Keep React style attributes working across the app without allowing inline script execution.
+        "style-src-attr 'unsafe-inline'",
+        "script-src-attr 'none'",
         isProd
             ? "img-src 'self' data: https: blob:"
             : "img-src 'self' data: http: https: blob:",
