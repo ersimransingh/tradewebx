@@ -9,6 +9,7 @@ import moment from 'moment';
 import apiService from '@/utils/apiService';
 import { BASE_URL, PATH_URL } from '@/utils/constants';
 import { getLocalStorage } from '@/utils/helper';
+import { sanitizePayload } from '@/utils/helper';
 
 interface JobEditModalProps {
     isOpen: boolean;
@@ -46,27 +47,34 @@ const JobEditModal: React.FC<JobEditModalProps> = ({ isOpen, onClose, jobData, o
     const [emailParamCode, setEmailParamCode] = useState<any>(null);
     const [emailParamOptions, setEmailParamOptions] = useState<any[]>([]);
 
+    const [emailSubject, setEmailSubject] = useState<string>('');
+    const [emailBody, setEmailBody] = useState<string>('');
+    const [isLoading, setIsLoading] = useState(false);
+
     useEffect(() => {
         if (isOpen && jobData) {
             setOccurrence(occurrenceOptions.find(opt => opt.value === jobData.Occurrence) || null);
             setIntervalMinutes(jobData.IntervalMinutes || '');
             setJobDescription(jobData.JobDescription || '');
-            
+
             // Parse Times - assuming HH:mm:ss format or similar
             const parseTime = (timeStr: string) => {
                 if (!timeStr) return null;
                 const date = moment(timeStr, ["HH:mm:ss", "HH:mm"]).toDate();
-                 // If invalid date (e.g. empty), return null
-                 return isNaN(date.getTime()) ? null : date;
+                // If invalid date (e.g. empty), return null
+                return isNaN(date.getTime()) ? null : date;
             };
 
             setStartTime(parseTime(jobData.StartTime));
             setEndTime(parseTime(jobData.EndTime));
-            
+
             setIsActive(isActiveOptions.find(opt => opt.value === (jobData.IsActive || 'Yes')) || isActiveOptions[0]);
-            
+
             setAlertEmailID(jobData.AlertEmailID || '');
-         }
+
+            setEmailSubject(jobData.EmailSubject || '');
+            setEmailBody(jobData.EmailBody || jobData.EmailBoady || '');
+        }
     }, [isOpen, jobData]);
 
     useEffect(() => {
@@ -82,17 +90,19 @@ const JobEditModal: React.FC<JobEditModalProps> = ({ isOpen, onClose, jobData, o
                     </dsXml>`;
                     const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
                     if (response.data && response.data.success) {
-                         const data = response.data.data.rs0 || [];
-                         const options = data.map((item: any) => ({
-                             value: item.Value, 
-                             label: item.DisplayName 
-                         }));
-                         setEmailParamOptions(options);
+                        const data = response.data.data.rs0 || [];
+                        const options = data.map((item: any) => ({
+                            value: item.Value,
+                            label: item.DisplayName
+                        }));
+                        setEmailParamOptions(options);
 
-                         if (jobData?.EmailParamCode) {
-                             const found = options.find((opt: any) => opt.value === jobData.EmailParamCode);
-                             setEmailParamCode(found || null);
-                         }
+                        if (jobData?.EmailParamCode) {
+                            const found = options.find((opt: any) => opt.value === jobData.EmailParamCode);
+                            setEmailParamCode(found || null);
+                        } else {
+                            setEmailParamCode(null);
+                        }
                     }
                 } catch (e) {
                     console.error("Error fetching email param options", e);
@@ -100,32 +110,43 @@ const JobEditModal: React.FC<JobEditModalProps> = ({ isOpen, onClose, jobData, o
             };
             fetchOptions();
         }
-    }, [isOpen]); // We depend on isOpen. jobData is used inside but we can just let it re-run if isOpen changes.
+    }, [isOpen, jobData]); // Added jobData dependency to ensure reset works if jobData changes while open (unlikely but safe)
 
-    const handleSave = () => {
+    const handleSave = async () => {
         // Validation
         if (occurrence?.value === 'Interval') {
-             const minutes = parseInt(intervalMinutes);
-             if (isNaN(minutes) || minutes < 1 || minutes > 60) {
-                 toast.error("Interval Minutes must be between 1 and 60.");
-                 return;
-             }
+            const minutes = parseInt(intervalMinutes);
+            if (isNaN(minutes) || minutes < 1 || minutes > 60) {
+                toast.error("Interval Minutes must be between 1 and 60.");
+                return;
+            }
         }
 
-        const payload = {
-            ...jobData,
-            Occurrence: occurrence?.value,
-            IntervalMinutes: intervalMinutes,
-            JobDescription: jobDescription,
-            StartTime: startTime ? moment(startTime).format("HH:mm:ss") : '',
-            EndTime: endTime ? moment(endTime).format("HH:mm:ss") : '',
-            IsActive: isActive?.value,
-            AlertEmailID: alertEmailID,
-            EmailParamCode: emailParamCode?.value
-        };
+        setIsLoading(true);
+        try {
+            // Remove EmailBoady (typo) from jobData to prevent sending it back
+            const { EmailBoady, ...cleanJobData } = jobData || {};
+            
+            const payload = {
+                ...cleanJobData,
+                Occurrence: occurrence?.value,
+                IntervalMinutes: intervalMinutes,
+                JobDescription: jobDescription,
+                StartTime: startTime ? moment(startTime).format("HH:mm:ss") : '',
+                EndTime: endTime ? moment(endTime).format("HH:mm:ss") : '',
+                IsActive: isActive?.value,
+                AlertEmailID: alertEmailID,
+                EmailParamCode: emailParamCode?.value,
+                EmailSubject: sanitizePayload(emailSubject),
+                EmailBody: sanitizePayload(emailBody)
+            };
 
-        onSave(payload);
-        onClose();
+            await onSave(payload);
+        } catch (error) {
+            console.error("Error saving job", error);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -147,8 +168,8 @@ const JobEditModal: React.FC<JobEditModalProps> = ({ isOpen, onClose, jobData, o
                 </button>
             </div>
 
-            <div id={descriptionId} className="space-y-4">
-                 <div>
+            <div id={descriptionId} className="space-y-4 max-h-[70vh] overflow-y-auto px-1">
+                <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Job Description</label>
                     <textarea
                         value={jobDescription}
@@ -164,15 +185,15 @@ const JobEditModal: React.FC<JobEditModalProps> = ({ isOpen, onClose, jobData, o
                         value={occurrence}
                         onChange={setOccurrence}
                         className="text-sm"
-                        menuPortalTarget={document.body} 
-                         styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
+                        menuPortalTarget={document.body}
+                        styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
                     />
                 </div>
 
                 {occurrence?.value === 'Interval' && (
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Interval Minutes (1-60)</label>
-                         <input
+                        <input
                             type="number"
                             min="1"
                             max="60"
@@ -185,8 +206,8 @@ const JobEditModal: React.FC<JobEditModalProps> = ({ isOpen, onClose, jobData, o
 
                 <div className="grid grid-cols-2 gap-4">
                     <div>
-                         <label className="block text-sm font-medium text-gray-700 mb-1">Alert Email ID</label>
-                         <input
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Alert Email ID</label>
+                        <input
                             type="text"
                             value={alertEmailID}
                             onChange={(e) => setAlertEmailID(e.target.value)}
@@ -207,6 +228,25 @@ const JobEditModal: React.FC<JobEditModalProps> = ({ isOpen, onClose, jobData, o
                     </div>
                 </div>
 
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email Subject</label>
+                    <input
+                        type="text"
+                        value={emailSubject}
+                        onChange={(e) => setEmailSubject(e.target.value)}
+                        className="w-full p-2 border border-gray-300 rounded text-sm"
+                    />
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email Body</label>
+                    <textarea
+                        value={emailBody}
+                        onChange={(e) => setEmailBody(e.target.value)}
+                        className="w-full p-2 border border-gray-300 rounded text-sm min-h-[80px]"
+                    />
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
@@ -221,7 +261,7 @@ const JobEditModal: React.FC<JobEditModalProps> = ({ isOpen, onClose, jobData, o
                             className="w-full p-2 border border-gray-300 rounded text-sm"
                         />
                     </div>
-                     <div>
+                    <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
                         <DatePicker
                             selected={endTime}
@@ -231,19 +271,19 @@ const JobEditModal: React.FC<JobEditModalProps> = ({ isOpen, onClose, jobData, o
                             timeIntervals={15}
                             timeCaption="Time"
                             dateFormat="HH:mm"
-                             className="w-full p-2 border border-gray-300 rounded text-sm"
+                            className="w-full p-2 border border-gray-300 rounded text-sm"
                         />
                     </div>
                 </div>
 
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Is Active</label>
-                     <Select
+                    <Select
                         options={isActiveOptions}
                         value={isActive}
                         onChange={setIsActive}
                         className="text-sm"
-                         menuPortalTarget={document.body}
+                        menuPortalTarget={document.body}
                         styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
                     />
                 </div>
@@ -252,14 +292,16 @@ const JobEditModal: React.FC<JobEditModalProps> = ({ isOpen, onClose, jobData, o
                     <button
                         onClick={onClose}
                         className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm font-medium"
+                        disabled={isLoading}
                     >
                         Cancel
                     </button>
                     <button
                         onClick={handleSave}
-                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium"
+                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium flex items-center gap-2"
+                        disabled={isLoading}
                     >
-                        Save
+                        {isLoading ? 'Saving...' : 'Save'}
                     </button>
                 </div>
             </div>

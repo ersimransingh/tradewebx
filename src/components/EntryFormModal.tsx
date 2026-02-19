@@ -1733,13 +1733,6 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
         }
     }
 
-    const specialCharValueReplacer = (value: any) => {
-        if (typeof value === 'string') {
-            return value.replace(/</g, '~').replace(/>/g, '!');
-        }
-        return value;
-    };
-
     const submitFormData = async () => {
         setFormSubmitConfirmation(false);
         const masterValues = structuredClone(masterFormValues);
@@ -1809,7 +1802,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
         const itemsXml = finalItems.map(item => {
             const itemTags = Object.entries(item)
                 .map(([key, value]) => {
-                    const val = (value === undefined || value === null) ? "" : specialCharValueReplacer(value);
+                    const val = (value === undefined || value === null) ? "" : sanitizePayload(value);
                     return `<${key}>${val}</${key}>`;
                 })
                 .join('');
@@ -1818,7 +1811,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
 
         const masterXml = Object.entries(masterValues)
             .map(([key, value]) => {
-                const val = (value === undefined || value === null) ? "" : specialCharValueReplacer(value);
+                const val = (value === undefined || value === null) ? "" : sanitizePayload(value);
                 return `<${key}>${val}</${key}>`;
             })
             .join('');
