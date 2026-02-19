@@ -292,11 +292,11 @@ const DigitalEmailLog: React.FC<DigitalLogEmailProps> = ({ data, settings, filte
         };
 
         return [
-            ...dynamicColumns,
-            priorityCol,
             actionCol,
+            priorityCol,
             updateCol,
-            logCol
+            logCol,
+            ...dynamicColumns
         ];
 
     }, [dynamicColumns, selectedActions, selectedPriorities, colors]);
