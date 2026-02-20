@@ -144,14 +144,15 @@ export function getSecurityHeaders(nonce?: string): Record<string, string> {
     const styleParts = [
         "style-src",
         "'self'",
+        "'unsafe-inline'",
         "https://fonts.googleapis.com",
         "https://cdn.jsdelivr.net",
     ];
 
-    if (nonce) {
-        // Allow framework-generated inline style blocks with a nonce.
-        styleParts.push(`'nonce-${nonce}'`);
-    }
+    // if (nonce) {
+    //     // Allow framework-generated inline style blocks with a nonce.
+    //     styleParts.push(`'nonce-${nonce}'`);
+    // }
 
     const styleDirectives = styleParts.join(' ');
 
