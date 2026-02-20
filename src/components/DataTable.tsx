@@ -2214,7 +2214,7 @@ export const exportTableToExcel = async (
     const blob = new Blob([buffer], {
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     });
-    saveAs(blob, `${fileTitle.replace(/[^a-zA-Z0-9]/g, "__")}__${username}.xlsx`);
+    saveAs(blob, `${fileTitle.replace(/[^a-zA-Z0-9]+/g, "_")}_${username}.xlsx`);
 };
 
 export const exportTableToCsv = (
@@ -2324,7 +2324,7 @@ export const exportTableToCsv = (
 
     // **10. Construct the filename dynamically**
     const username = getLocalStorage('userId') || 'User';
-    const filename = `${fileTitle.replace(/[^a-zA-Z0-9]/g, "__")}__${username}.csv`;
+    const filename = `${fileTitle.replace(/[^a-zA-Z0-9]+/g, "_")}_${username}.csv`;
 
     // **11. Download CSV file**
     downloadFile(
@@ -2576,7 +2576,7 @@ export const exportTableToPdf = async (
 
 
     if (mode === 'download') {
-        pdfMake.createPdf(docDefinition).download(`${fileTitle.replace(/[^a-zA-Z0-9]/g, "__")}__${username}.pdf`);
+        pdfMake.createPdf(docDefinition).download(`${fileTitle.replace(/[^a-zA-Z0-9]+/g, "_")}_${username}.pdf`);
 
     } else if (mode === 'email') {
         const showTypes = pageData[0]?.levels[0]?.settings?.showTypstFlag || false;
