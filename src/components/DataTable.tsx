@@ -2040,6 +2040,8 @@ export const exportTableToExcel = async (
     textColumns: string[] = []
 ) => {
     if (!apiData || apiData.length === 0) return;
+    
+    const username = getLocalStorage('userId') || 'User';
 
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Report');
@@ -2212,7 +2214,7 @@ export const exportTableToExcel = async (
     const blob = new Blob([buffer], {
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     });
-    saveAs(blob, `${fileTitle.replace(/[^a-zA-Z0-9]/g, "_")}.xlsx`);
+    saveAs(blob, `${fileTitle.replace(/[^a-zA-Z0-9]/g, "__")}__${username}.xlsx`);
 };
 
 export const exportTableToCsv = (
@@ -2321,7 +2323,8 @@ export const exportTableToCsv = (
     ].join('\n');
 
     // **10. Construct the filename dynamically**
-    const filename = `${fileTitle.replace(/[^a-zA-Z0-9]/g, "_")}.csv`;
+    const username = getLocalStorage('userId') || 'User';
+    const filename = `${fileTitle.replace(/[^a-zA-Z0-9]/g, "__")}__${username}.csv`;
 
     // **11. Download CSV file**
     downloadFile(
@@ -2366,6 +2369,8 @@ export const exportTableToPdf = async (
 
 
     if (!allData || allData.length === 0) return;
+    
+    const username = getLocalStorage('userId') || 'User';
 
     // if (mode === 'email') {
     //     const confirmSend = window.confirm('Do you want to send mail?');
@@ -2571,7 +2576,7 @@ export const exportTableToPdf = async (
 
 
     if (mode === 'download') {
-        pdfMake.createPdf(docDefinition).download(`${fileTitle}.pdf`);
+        pdfMake.createPdf(docDefinition).download(`${fileTitle.replace(/[^a-zA-Z0-9]/g, "__")}__${username}.pdf`);
 
     } else if (mode === 'email') {
         const showTypes = pageData[0]?.levels[0]?.settings?.showTypstFlag || false;
