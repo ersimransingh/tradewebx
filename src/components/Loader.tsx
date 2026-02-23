@@ -130,7 +130,9 @@ export default function Loader() {
 
     const pathStyle = {
         stroke: stroke,
-        strokeDashoffset: offset
+        strokeDashoffset: offset,
+        strokeDasharray: '60, 310',
+        willChange: 'stroke, stroke-dashoffset'
     };
 
     return (
@@ -153,19 +155,12 @@ export default function Loader() {
                 />
                 <path
                     style={pathStyle}
-                    className="progressPath"
                     fill="none"
                     strokeWidth="3"
                     strokeLinecap="round"
                     d="M 85 85 C -5 16 -39 127 78 30 C 126 -9 57 -16 85 85 C 94 123 124 111 85 85 Z"
                 />
             </svg>
-            <style jsx>{`
-        .progressPath {
-          stroke-dasharray: 60, 310;
-          will-change: stroke, stroke-dashoffset;
-        }
-      `}</style>
         </div>
     );
 }
