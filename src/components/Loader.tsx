@@ -70,7 +70,6 @@ function lerpColorTable(
 export default function Loader() {
     const [stroke, setStroke] = useState('#ededed');
     const [offset, setOffset] = useState(445);
-    const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
     const animStartRef = useRef<number>(0);
     const animIdRef = useRef<number | null>(null);
 
@@ -125,26 +124,9 @@ export default function Loader() {
     };
 
     useEffect(() => {
-        if (typeof window === 'undefined') return;
-        const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-        const handleChange = () => setPrefersReducedMotion(mediaQuery.matches);
-
-        handleChange();
-        mediaQuery.addEventListener('change', handleChange);
-
-        return () => {
-            mediaQuery.removeEventListener('change', handleChange);
-        };
-    }, []);
-
-    useEffect(() => {
-        if (prefersReducedMotion) {
-            stop();
-            return;
-        }
         start();
         return () => stop();
-    }, [prefersReducedMotion]);
+    }, []);
 
     const pathStyle = {
         stroke: stroke,
@@ -169,16 +151,14 @@ export default function Loader() {
                     strokeWidth="3"
                     d="M 85 85 C -5 16 -39 127 78 30 C 126 -9 57 -16 85 85 C 94 123 124 111 85 85 Z"
                 />
-                {!prefersReducedMotion && (
-                    <path
-                        style={pathStyle}
-                        className="progressPath"
-                        fill="none"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        d="M 85 85 C -5 16 -39 127 78 30 C 126 -9 57 -16 85 85 C 94 123 124 111 85 85 Z"
-                    />
-                )}
+                <path
+                    style={pathStyle}
+                    className="progressPath"
+                    fill="none"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    d="M 85 85 C -5 16 -39 127 78 30 C 126 -9 57 -16 85 85 C 94 123 124 111 85 85 Z"
+                />
             </svg>
             <style jsx>{`
         .progressPath {
