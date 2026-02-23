@@ -102,23 +102,16 @@ export default function Loader() {
         });
 
         setStroke(colorValue);
-
-        if (window.requestAnimationFrame) {
-            animIdRef.current = window.requestAnimationFrame(animate);
-        }
-        return animIdRef.current;
     };
 
     const start = () => {
         animStartRef.current = Date.now();
-        animIdRef.current = animate();
+        animIdRef.current = window.setInterval(animate, 16) as unknown as number;
     };
 
     const stop = () => {
         if (animIdRef.current) {
-            if (window.cancelAnimationFrame) {
-                window.cancelAnimationFrame(animIdRef.current);
-            }
+            window.clearInterval(animIdRef.current);
             animIdRef.current = null;
         }
     };
@@ -131,8 +124,7 @@ export default function Loader() {
     const pathStyle = {
         stroke: stroke,
         strokeDashoffset: offset,
-        strokeDasharray: '60, 310',
-        willChange: 'stroke, stroke-dashoffset'
+        strokeDasharray: '60, 310'
     };
 
     return (
