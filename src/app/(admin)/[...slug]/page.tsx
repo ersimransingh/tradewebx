@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { use } from "react";
 import Dashboard from "@/apppages/Dashboard";
 import LogoutPage from "../(auth)/logout/page";
 import DynamicReportComponent from "@/components/DynamicReportComponent";
@@ -39,14 +39,14 @@ const staticRoutes: Record<string, React.ReactNode> = {
   jobschedule: <JobSchedule />,
 };
 
-export default function DynamicPage({ params }: { params: any | Promise<any> }) {
+type RouteParams = { slug?: string[] };
+
+export default function DynamicPage({ params }: { params: RouteParams | Promise<RouteParams> }) {
   const menuItems = useAppSelector(selectAllMenuItems);
   const menuStatus = useAppSelector(selectMenuStatus);
-  // Next passes params synchronously to client components; avoid conditional hook usage
-  const unwrappedParams = params as any;
-  const route = unwrappedParams.slug?.[0];
-  const subRoute = unwrappedParams.slug?.[1];
-  const subSubRoute = unwrappedParams.slug?.[2];
+  // Params are a Promise in Next 15 client components; unwrap once via React.use
+  const unwrappedParams = use(Promise.resolve(params));
+  const [route, subRoute, subSubRoute] = unwrappedParams.slug ?? [];
 
   const componentName = subSubRoute || subRoute || route;
 
