@@ -821,7 +821,7 @@ const FormCreator: React.FC<FormCreatorProps> = ({
                             if (field === fromKey || field === toKey) {
                                 // console.log('formattedValue_CHK2', formattedValue);
                             }
-                        } else if (fieldElement?.type === 'WDropDownBox' && fieldElement.isMultiple) {
+                        } else if ((fieldElement?.type === 'WDropDownBox' || fieldElement?.type === 'WSearchDropDownBox') && fieldElement.isMultiple) {
                             // For multiple select dropdowns, ensure we're working with an array
                             const values = Array.isArray(value) ? value : [value];
                             // Join with pipe and ensure no extra spaces
