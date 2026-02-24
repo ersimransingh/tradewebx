@@ -44,8 +44,11 @@ type RouteParams = { slug?: string[] };
 export default function DynamicPage({ params }: { params: RouteParams | Promise<RouteParams> }) {
   const menuItems = useAppSelector(selectAllMenuItems);
   const menuStatus = useAppSelector(selectMenuStatus);
-  // Params are a Promise in Next 15 client components; unwrap once via React.use
-  const unwrappedParams = use(Promise.resolve(params));
+  // Params may be a Promise in Next 15 client components; unwrap only when promise-like
+  const unwrappedParams =
+    typeof (params as any)?.then === "function"
+      ? use(params as Promise<RouteParams>)
+      : (params as RouteParams);
   const [route, subRoute, subSubRoute] = unwrappedParams.slug ?? [];
 
   const componentName = subSubRoute || subRoute || route;
