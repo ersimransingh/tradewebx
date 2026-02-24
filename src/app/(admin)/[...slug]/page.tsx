@@ -41,14 +41,10 @@ const staticRoutes: Record<string, React.ReactNode> = {
 
 type RouteParams = { slug?: string[] };
 
-export default function DynamicPage({ params }: { params: RouteParams | Promise<RouteParams> }) {
+export default function DynamicPage({ params }: { params: Promise<RouteParams> }) {
   const menuItems = useAppSelector(selectAllMenuItems);
   const menuStatus = useAppSelector(selectMenuStatus);
-  // Params may be a Promise in Next 15 client components; unwrap only when promise-like
-  const unwrappedParams =
-    typeof (params as any)?.then === "function"
-      ? use(params as Promise<RouteParams>)
-      : (params as RouteParams);
+  const unwrappedParams = use(params);
   const [route, subRoute, subSubRoute] = unwrappedParams.slug ?? [];
 
   const componentName = subSubRoute || subRoute || route;
