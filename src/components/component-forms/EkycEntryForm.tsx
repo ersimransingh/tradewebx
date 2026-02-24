@@ -16,7 +16,8 @@ import LoaderOverlay from "../Loaders/LoadingSpinner";
 import CustomDatePicker from "./formComponents/CustomDatePicker";
 import apiService from "@/utils/apiService";
 import RichTextEditor from "./formComponents/RichTextEditor";
-import { EyeCloseIcon, EyeIcon } from "@/icons";
+import EyeIcon from "@/components/icons/EyeIcon";
+import EyeCloseIcon from "@/components/icons/EyeCloseIcon";
 
 
 const DropdownField: React.FC<{

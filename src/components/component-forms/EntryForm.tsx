@@ -1,6 +1,7 @@
 import { useTheme } from "@/context/ThemeContext";
 import { EntryFormProps, FormField } from "@/types";
-import { EyeCloseIcon, EyeIcon } from "@/icons";
+import EyeIcon from "@/components/icons/EyeIcon";
+import EyeCloseIcon from "@/components/icons/EyeCloseIcon";
 import moment from "moment";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
