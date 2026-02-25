@@ -57,12 +57,17 @@ export default function ClientLayout({
         link.type = "image/x-icon";
         document.head.appendChild(link);
       }
-      link.href = appMetadata.companyLogo;
+
+      const logoUrl = appMetadata.companyLogo.startsWith('data:')
+        ? appMetadata.companyLogo
+        : `data:image/png;base64,${appMetadata.companyLogo}`;
+
+      link.href = logoUrl;
     }
   }, []);
 
   return (
-    <body className={`${outfit.variable} dark:bg-gray-900`}>
+    <body className={`${outfit.variable} dark: bg - gray - 900`}>
       <EmotionCacheProvider nonce={nonce}>
         <Provider store={store}>
           <ThemeProvider>
