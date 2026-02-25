@@ -15,7 +15,7 @@ export default async function RootLayout({
       <head>
         <meta property="csp-nonce" content={nonce} />
       </head>
-      <ClientLayout>{children}</ClientLayout>
+      <ClientLayout nonce={nonce}>{children}</ClientLayout>
     </html>
   );
 }

@@ -16,6 +16,7 @@ import AuthGuard from "@/components/auth/AuthGuard";
 import DevelopmentModeIndicator from "@/components/common/DevelopmentModeIndicator";
 import { getLocalStorage } from "@/utils/helper";
 import SkipLink from "@/components/a11y/SkipLink";
+import EmotionCacheProvider from "@/components/common/EmotionCacheProvider";
 
 const appMetadata = (() => {
   try {
@@ -32,8 +33,10 @@ const outfit = Outfit({
 
 export default function ClientLayout({
   children,
+  nonce,
 }: Readonly<{
   children: React.ReactNode;
+  nonce: string;
 }>) {
   const router = useRouter();
 
@@ -60,21 +63,23 @@ export default function ClientLayout({
 
   return (
     <body className={`${outfit.variable} dark:bg-gray-900`}>
-      <Provider store={store}>
-        <ThemeProvider>
-          <SidebarProvider>
-            <SkipLink targetId="main-content" />
-            <AuthGuard>
-              <main id="main-content" role="main" tabIndex={-1} className="min-h-screen">
-                {children}
-              </main>
-            </AuthGuard>
-            <DevelopmentModeIndicator />
-            <TableStyling />
-            <ToastContainer />
-          </SidebarProvider>
-        </ThemeProvider>
-      </Provider>
+      <EmotionCacheProvider nonce={nonce}>
+        <Provider store={store}>
+          <ThemeProvider>
+            <SidebarProvider>
+              <SkipLink targetId="main-content" />
+              <AuthGuard>
+                <main id="main-content" role="main" tabIndex={-1} className="min-h-screen">
+                  {children}
+                </main>
+              </AuthGuard>
+              <DevelopmentModeIndicator />
+              <TableStyling />
+              <ToastContainer />
+            </SidebarProvider>
+          </ThemeProvider>
+        </Provider>
+      </EmotionCacheProvider>
     </body>
   );
 }
