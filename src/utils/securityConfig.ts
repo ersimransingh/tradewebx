@@ -159,8 +159,7 @@ export function getSecurityHeaders(nonce?: string): Record<string, string> {
         "default-src 'self'",
         scriptDirectives,
         styleDirectives,
-        // Keep React style attributes working across the app without allowing inline script execution.
-        "style-src-attr 'unsafe-inline'",
+        // Keep script execution from attributes blocked
         "script-src-attr 'none'",
         isProd
             ? "img-src 'self' data: https: blob:"
