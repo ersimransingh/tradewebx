@@ -34,9 +34,11 @@ const AsyncSearchDropdown: React.FC<AsyncSearchDropdownProps> = ({
   isDisabled = false,
 }) => {
 
-  console.log("check the selected value",value)
   const [options, setOptions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  // Cache for selected items to preserve labels when they are not in the current search results
+  const [selectedItemsCache, setSelectedItemsCache] = useState<any[]>([]);
+  console.log("selectedItemsCache", selectedItemsCache);
 
   const minSearchLength = item.dynamicSearch?.minSearchLength || 3;
   const debounceMs = item.dynamicSearch?.debounceMs || 400;
@@ -129,15 +131,60 @@ const AsyncSearchDropdown: React.FC<AsyncSearchDropdownProps> = ({
    * ✅ Handle selection change
    */
   const handleChange = (selected: any) => {
-    const newValues = { ...formValues };
-    newValues[item.wKey as string] = selected?.value ?? undefined;
-    onChange(selected?.value);
-    handleFormChange(newValues);
+    if (selected) {
+      if (item.isMultiple) {
+        const selArray = Array.isArray(selected) ? selected : [selected];
+        const selectedValues = selArray.map((opt: any) => opt.value);
+        
+        // Update cache with these objects
+        setSelectedItemsCache(prev => {
+          const merged = [...prev];
+          selArray.forEach(newItem => {
+            if (!merged.find(m => String(m.value) === String(newItem.value))) {
+              merged.push(newItem);
+            }
+          });
+          return merged;
+        });
+
+        onChange(selectedValues);
+        const newValues = { ...formValues };
+        newValues[item.wKey as string] = selectedValues;
+        handleFormChange(newValues);
+      } else {
+        onChange(selected.value);
+        const newValues = { ...formValues };
+        newValues[item.wKey as string] = selected.value;
+        handleFormChange(newValues);
+      }
+    } else {
+      onChange(item.isMultiple ? [] : undefined);
+      const newValues = { ...formValues };
+      newValues[item.wKey as string] = item.isMultiple ? [] : undefined;
+      handleFormChange(newValues);
+    }
   };
 
-  const selectedOption = options.find(
-    (opt) => String(opt.value) === String(value)
-  );
+  const selectedOption = item.isMultiple
+    ? (() => {
+        if (!Array.isArray(value)) return [];
+        const stringValues = value.map(v => String(v));
+        
+        // Map current value IDs to full objects using both options and cache
+        return stringValues.map(valId => {
+          // First check current options
+          const foundInOptions = options.find(opt => String(opt.value) === valId);
+          if (foundInOptions) return foundInOptions;
+          
+          // Then check our cache
+          const foundInCache = selectedItemsCache.find(opt => String(opt.value) === valId);
+          if (foundInCache) return foundInCache;
+          
+          // Fallback if we have no label yet (should rarely happen if item was just selected)
+          return { label: valId, value: valId };
+        });
+      })()
+    : options.find((opt) => String(opt.value) === String(value));
 
   return (
     <div className={isHorizontal ? "mb-2" : "mb-4"}>
@@ -161,11 +208,14 @@ const AsyncSearchDropdown: React.FC<AsyncSearchDropdownProps> = ({
         aria-labelledby={`label-${item.name}`}
         aria-label={item.label || "Search dropdown"}
         key={item.wKey as string}
-        value={selectedOption || null}
+        value={selectedOption || (item.isMultiple ? [] : null)}
         options={options}
         isLoading={isLoading}
         isDisabled={isDisabled}
+        isMulti={item.isMultiple}
         isClearable={true}
+        closeMenuOnSelect={!item.isMultiple}
+        blurInputOnSelect={!item.isMultiple}
         placeholder={value || "Search..."}
         noOptionsMessage={() =>
           isLoading ? "Loading..." : "No results found"
@@ -187,6 +237,22 @@ const AsyncSearchDropdown: React.FC<AsyncSearchDropdownProps> = ({
               ? colors.primary
               : colors.textInputBackground,
             color: state.isFocused ? colors.buttonText : colors.textInputText,
+          }),
+          multiValue: (base) => ({
+            ...base,
+            backgroundColor: colors.primary,
+          }),
+          multiValueLabel: (base) => ({
+            ...base,
+            color: colors.buttonText,
+          }),
+          multiValueRemove: (base) => ({
+            ...base,
+            color: colors.buttonText,
+            ":hover": {
+              backgroundColor: colors.primary,
+              color: colors.buttonText,
+            },
           }),
         }}
       />
