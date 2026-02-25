@@ -2105,10 +2105,20 @@ export const exportTableToExcel = async (
     worksheet.getCell(`D${rowCursor}`).font = { bold: true };
     rowCursor++;
 
+    // reportHeader.split("\\n").forEach(line => {
+    //     worksheet.getCell(`D${rowCursor}`).value = line.trim();
+    //     rowCursor++;
+    // });
+    
     reportHeader.split("\\n").forEach(line => {
-        worksheet.getCell(`D${rowCursor}`).value = line.trim();
-        rowCursor++;
-    });
+    const text = line.trim();
+
+    // skip client name + code line
+    if (text.includes("(") && text.includes(")")) return;
+
+    worksheet.getCell(`D${rowCursor}`).value = text;
+    rowCursor++;
+});
 
     rowCursor++;
 
@@ -2183,9 +2193,11 @@ export const exportTableToExcel = async (
     filteredHeaders.forEach((header, colIdx) => {
         const normKey = header.replace(/\s+/g, '');
         const cell = totalRow.getCell(colIdx + 1);
+        const hasTotals = Object.values(totals).some(v => v !== null && v !== undefined);
 
         if (colIdx === 0) {
-            cell.value = 'Total';
+            // cell.value = 'Total';
+            cell.value = hasTotals ? 'Total' : '';
             cell.alignment = { horizontal: 'left' };
         } else if (totals.hasOwnProperty(normKey)) {
             const decimalPlaces = decimalColumnsMap[normKey] ?? 0;
