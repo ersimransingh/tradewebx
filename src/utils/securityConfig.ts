@@ -125,6 +125,8 @@ export function isHttpsRequired(hostname: string): boolean {
 export function getSecurityHeaders(nonce?: string): Record<string, string> {
     const forceProdCsp = process.env.NEXT_FORCE_PROD_CSP === 'true';
     const isProd = process.env.NODE_ENV === 'production' || forceProdCsp;
+    // When NEXT_DEVELOPMENT_MODE=true, allow HTTP even in production builds
+    const allowHttp = !isProd || isDevelopmentMode();
 
     // Nonce-based CSP for scripts; never allow unsafe script execution.
     const scriptParts = [
@@ -161,22 +163,22 @@ export function getSecurityHeaders(nonce?: string): Record<string, string> {
         styleDirectives,
         // Keep script execution from attributes blocked
         "script-src-attr 'none'",
-        isProd
-            ? "img-src 'self' data: https: blob:"
-            : "img-src 'self' data: http: https: blob:",
+        allowHttp
+            ? "img-src 'self' data: http: https: blob:"
+            : "img-src 'self' data: https: blob:",
         "font-src 'self' data: https://fonts.gstatic.com",
-        isProd
-            ? "connect-src 'self' https: wss:"
-            : "connect-src 'self' http: https: ws: wss: http://localhost:* ws://localhost:*",
-        isProd
-            ? "media-src 'self' https:"
-            : "media-src 'self' http: https:",
+        allowHttp
+            ? "connect-src 'self' http: https: ws: wss: http://localhost:* ws://localhost:*"
+            : "connect-src 'self' https: wss:",
+        allowHttp
+            ? "media-src 'self' http: https:"
+            : "media-src 'self' https:",
         "object-src 'none'",
         "worker-src 'self' blob:",
         "base-uri 'self'",
         "form-action 'self' https://*.nsdl.com https://*.cdslindia.com",
         "frame-ancestors 'none'",
-        isProd ? "upgrade-insecure-requests" : null,
+        allowHttp ? null : "upgrade-insecure-requests",
     ].filter(Boolean).join('; ');
 
     return {
