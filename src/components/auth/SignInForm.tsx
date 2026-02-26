@@ -39,7 +39,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import axios from 'axios';
 import { useDispatch, useSelector } from 'react-redux';
 import { setAuthData, setError as setAuthError, setLoading } from '@/redux/features/authSlice';
-import { BASE_URL, LOGIN_AS, PRODUCT, LOGIN_KEY, LOGIN_URL, BASE_PATH_FRONT_END, OTP_VERIFICATION_URL, VERSION, ACTION_NAME, ENABLE_CAPTCHA, ENABLE_FERNET, NEXT_PUBLIC_FULL_URL } from "@/utils/constants";
+import { BASE_URL, LOGIN_AS, PRODUCT, LOGIN_KEY, LOGIN_URL, BASE_PATH_FRONT_END, OTP_VERIFICATION_URL, VERSION, ACTION_NAME, ENABLE_CAPTCHA, ENABLE_FERNET, NEXT_PUBLIC_FULL_URL, LOGIN_OPTION } from "@/utils/constants";
 import Image from "next/image";
 import { RootState } from "@/redux/store";
 import { clearAuthStorage } from '@/utils/auth';
@@ -602,7 +602,7 @@ export default function SignInForm() {
     storeLocalStorage('last_login_attempt', Date.now().toString());
 
     const xmlData = `<dsXml>
-    <J_Ui>"ActionName":"${ACTION_NAME}","Option":"Login"</J_Ui>
+    <J_Ui>"ActionName":"${ACTION_NAME}","Option":"${LOGIN_OPTION}"</J_Ui>
     <Sql/>
     <X_Filter></X_Filter>
     <X_Data>
