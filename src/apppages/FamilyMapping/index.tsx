@@ -10,7 +10,7 @@ import CryptoJS from "crypto-js";
 import { useTheme } from "@/context/ThemeContext";
 import { getLocalStorage, decodeFernetToken } from "@/utils/helper";
 import { FamilyRow, LoginData } from "@/types/FamilyTypes";
-import { BASE_URL, OTP_VERIFICATION_URL, PRODUCT, ACTION_NAME, PATH_URL, ENABLE_FERNET } from "@/utils/constants";
+import { BASE_URL, OTP_VERIFICATION_URL, PRODUCT, ACTION_NAME, PATH_URL, ENABLE_FERNET, LOGIN_OPTION } from "@/utils/constants";
 import apiService from "@/utils/apiService";
 import { otpApi } from "@/utils/auth";
 import { storeTempOtpToken } from "@/utils/auth";
@@ -176,7 +176,7 @@ export default function Family() {
     setIsLoading(true);
     try {
       const xmlData = `<dsXml>
-        <J_Ui>"ActionName":"${ACTION_NAME}","Option":"Login"</J_Ui>
+        <J_Ui>"ActionName":"${ACTION_NAME}","Option":"${LOGIN_OPTION}"</J_Ui>
         <Sql/>
         <X_Data>
           <UserId>${loginData.userId}</UserId>

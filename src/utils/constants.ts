@@ -29,4 +29,4 @@ export const ENABLE_CAPTCHA = process.env.NEXT_PUBLIC_ENABLE_CAPTCHA !== 'false'
 export const ENABLE_FERNET = process.env.NEXT_PUBLIC_ENABLE_FERNET || true
 export const SECURE_STORAGE_KEY = 'secure_data' // Single key for all encrypted localStorage data
 export const SECURITY_LIBRARY: 'fernetsdk' | 'cryptojssdk' = 'fernetsdk' // Options: 'fernetsdk', 'cryptojssdk'
-export const LOGIN_OPTION = process.env.NEXT_LOGIN_OPTION || 'Login'
+export const LOGIN_OPTION = process.env.NEXT_PUBLIC_LOGIN_OPTION || 'Login'
