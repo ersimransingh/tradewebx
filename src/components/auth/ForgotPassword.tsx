@@ -39,7 +39,7 @@ import { useRouter } from "next/navigation";
 import axios from 'axios';
 import { useDispatch, useSelector } from 'react-redux';
 import { setError as setAuthError, setLoading } from '@/redux/features/authSlice';
-import { BASE_URL, LOGIN_URL, BASE_PATH_FRONT_END, OTP_VERIFICATION_URL, ACTION_NAME } from "@/utils/constants";
+import { BASE_URL, LOGIN_URL, BASE_PATH_FRONT_END, OTP_VERIFICATION_URL, ACTION_NAME, FORGOT_OPTION } from "@/utils/constants";
 import Image from "next/image";
 import { RootState, store } from "@/redux/store";
 import { toast } from "react-toastify";
@@ -69,7 +69,7 @@ export default function ForgotPasswordForm() {
         setError("");
 
         const xmlData = `<dsXml>
-            <J_Ui>"ActionName":"${ACTION_NAME}", "Option":"ForgotPassword","Level":1</J_Ui>
+            <J_Ui>"ActionName":"${ACTION_NAME}", "Option":"${FORGOT_OPTION}","Level":1</J_Ui>
             <Sql></Sql>
             <X_Filter></X_Filter>
             <X_Data><ClientCode>${clientCode}</ClientCode></X_Data>
