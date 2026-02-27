@@ -728,6 +728,8 @@ export default function SignInForm() {
         storeLocalStorage('clientName', clientName);
         storeLocalStorage('userType', userType);
         storeLocalStorage('loginType', data.data[0].LoginType);
+        // Keep raw login response user fields for OTP fallback resolution.
+        storeLocalStorage('login_user_data', JSON.stringify(data.data[0] || {}));
         storeLocalStorage('firstLogin', userFirstLogin);
         removeLocalStorage("ekyc_dynamicData");
         removeLocalStorage("ekyc_activeTab");

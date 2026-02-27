@@ -13,7 +13,19 @@ import { useTheme } from "@/context/ThemeContext";
 import Image from "next/image";
 import { RootState } from "@/redux/store";
 import { decodeFernetToken, getLocalStorage } from "@/utils/helper";
-import { storeLocalStorage } from "@/utils/helper";
+import { removeLocalStorage, storeLocalStorage } from "@/utils/helper";
+
+const getLoginUserDataFallback = (): Record<string, string> => {
+  const rawLoginUserData = getLocalStorage('login_user_data');
+  if (!rawLoginUserData) return {};
+
+  try {
+    return JSON.parse(rawLoginUserData);
+  } catch (err) {
+    console.warn('Unable to parse login_user_data for OTP fallback', err);
+    return {};
+  }
+};
 
 export default function OTPVerificationForm() {
   const router = useRouter();
@@ -87,18 +99,41 @@ export default function OTPVerificationForm() {
       const data = shouldDecode ? decodeFernetToken(response.data.data) : response.data;
 
       if (data.status && data.status_code === 200) {
+        const otpUserData = data?.data?.[0] || {};
+        const loginUserData = getLoginUserDataFallback();
+
         // Handle different field names based on UserType
-        const clientCode = data.data[0].ClientCode || data.data[0].UserCode || '';
-        const clientName = data.data[0].ClientName || data.data[0].UserName || '';
+        const clientCode =
+          otpUserData.ClientCode ||
+          otpUserData.UserCode ||
+          loginUserData.ClientCode ||
+          loginUserData.UserCode ||
+          getLocalStorage('clientCode') ||
+          '';
+        const clientName =
+          otpUserData.ClientName ||
+          otpUserData.UserName ||
+          loginUserData.ClientName ||
+          loginUserData.UserName ||
+          getLocalStorage('clientName') ||
+          '';
+        const resolvedUserType =
+          otpUserData.UserType ||
+          loginUserData.UserType ||
+          userType ||
+          '';
+        const resolvedRefreshToken =
+          data.refreshToken || getLocalStorage('refreshToken') || '';
 
         // Debug logging to help identify field mapping issues
-        console.log('OTP verification response data:', data.data[0]);
+        console.log('OTP verification response data:', otpUserData);
         console.log('Mapped clientCode:', clientCode);
         console.log('Mapped clientName:', clientName);
+        console.log('Mapped userType:', resolvedUserType);
 
         // Validate that we have the required data
-        if (!clientCode || !clientName) {
-          console.error('Missing required user data in OTP verification:', { clientCode, clientName });
+        if (!clientCode || !clientName || !resolvedUserType) {
+          console.error('Missing required user data in OTP verification:', { clientCode, clientName, resolvedUserType });
           setError('Invalid user data received from server');
           dispatch(setAuthError('Invalid user data received from server'));
           return;
@@ -107,19 +142,23 @@ export default function OTPVerificationForm() {
         // Store in Redux and localStorage
         dispatch(setFinalAuthData({
           token: data.token,
+          refreshToken: resolvedRefreshToken || undefined,
           tokenExpireTime: data.tokenExpireTime,
           clientCode: clientCode,
           clientName: clientName,
-          userType: data.data[0].UserType,
+          userType: resolvedUserType,
         }));
 
         // Update localStorage
         storeLocalStorage('clientCode', clientCode);
         storeLocalStorage('clientName', clientName);
-        storeLocalStorage('userType', data.data[0].UserType);
+        storeLocalStorage('userType', resolvedUserType);
         storeLocalStorage('auth_token', data.token);
-        storeLocalStorage('refreshToken', data.refreshToken);
+        if (resolvedRefreshToken) {
+          storeLocalStorage('refreshToken', resolvedRefreshToken);
+        }
         storeLocalStorage('tokenExpireTime', data.tokenExpireTime);
+        removeLocalStorage('login_user_data');
 
         // Clean up temporary token
         storeLocalStorage('temp_token', '');
