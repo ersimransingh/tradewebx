@@ -164,7 +164,8 @@ function Card({ cardData, onRefresh, selectedClient, auth }: any) {
                             </Link>
                         )}
                     </div>
-                    <div className="p-4 flex">
+                    {/* <div className="p-4 flex"> */}
+                    <div className="p-4 flex flex-col md:flex-row">
                         {/* <div className="w-1/2">
                             <ReactApexChart
                                 options={pieOptions}
@@ -174,7 +175,8 @@ function Card({ cardData, onRefresh, selectedClient, auth }: any) {
                             />
                         </div> */}
                     {/* start */}
-                    <div className="w-1/2">
+                    {/* <div className="w-full"> */}
+                    <div className="w-full md:w-1/2">
                     {/* Accessible wrapper for NVDA */}
                     <div
                         role="img"
@@ -225,7 +227,8 @@ function Card({ cardData, onRefresh, selectedClient, auth }: any) {
                     </div>
 
                         {/* end */}
-                        <div className="w-1/2 flex flex-col justify-center">
+                        {/* <div className="w-1/2 flex flex-col justify-center"> */}
+                        <div className="w-full md:w-1/2 flex flex-col justify-center">
                             {/* Custom legend */}
                             <div className="space-y-2">
                                 {pieItems.map((item: any, i: number) => (
