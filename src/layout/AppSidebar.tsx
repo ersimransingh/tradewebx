@@ -369,7 +369,7 @@ const AppSidebar: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => handleSubmenuToggle(currentPath)}
-                  className={`menu-item group cursor-pointer ${fontStyles.menuItem} ${!isExpanded && !isHovered ? "lg:justify-center" : "lg:justify-start"}`}
+                  className={`menu-item group cursor-pointer ${fontStyles.menuItem} ${!isExpanded && !isHovered ? "lg:justify-start" : "lg:justify-start"}`}
                   style={{
                     backgroundColor: isOpen ? colors.primary : "transparent",
                     color: isOpen ? colors.buttonText : colors.text,
