@@ -22,7 +22,10 @@ export const handleSendEmailByFormat = async (
   setIsLoading, filtersCheck, userId, pageData, selectedRows, userType, sendEmailMultiCheckbox, setSelectedRows, formatType
 ) => {
   
-  
+  const { ClientCode, FromDate, ToDate } = filtersCheck;
+  const FromDateFolder = moment(new Date(FromDate)).format("YYYYMMDD");
+  const ToDateFolder = moment(new Date(ToDate)).format("YYYYMMDD");  
+  const timestamp = moment().format("HHmmss");
 
   if (!Array.isArray(selectedRows) || selectedRows?.length === 0) {
     toast.warn("Please select at least one report to proceed");
@@ -31,8 +34,7 @@ export const handleSendEmailByFormat = async (
 
   setIsLoading(true);
   const filterXml = buildFilterXml(filtersCheck, userId);
-  const timestamp = moment().format("YYYYMMDD_HHmmss");
-  const mainFolderName = `IncomeTaxReports_${formatType}_${timestamp}`;
+  const mainFolderName = `IncomeTaxReports_${formatType}_${ClientCode}_${FromDateFolder}_${ToDateFolder}_${timestamp}`;
   
   const zip = new JSZip();
   // 🚫 NO SUBFOLDER - files go directly into main folder
