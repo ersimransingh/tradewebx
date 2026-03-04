@@ -164,6 +164,7 @@ export default function ChangePassword() {
                                 type={showPasswords.currentPassword ? "text" : "password"}
                                 id="currentPassword"
                                 name="currentPassword"
+                                dynamicSelectedThemeApply={true}
                                 value={formData.currentPassword}
                                 onChange={handleChange}
                                 required
@@ -187,6 +188,7 @@ export default function ChangePassword() {
                                 type={showPasswords.newPassword ? "text" : "password"}
                                 id="newPassword"
                                 name="newPassword"
+                                dynamicSelectedThemeApply={true}
                                 value={formData.newPassword}
                                 onChange={handleChange}
                                 required
@@ -210,6 +212,7 @@ export default function ChangePassword() {
                                 type={showPasswords.confirmPassword ? "text" : "password"}
                                 id="confirmPassword"
                                 name="confirmPassword"
+                                dynamicSelectedThemeApply={true}
                                 value={formData.confirmPassword}
                                 onChange={handleChange}
                                 required
