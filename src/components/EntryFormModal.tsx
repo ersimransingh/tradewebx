@@ -1468,9 +1468,9 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
             } else {
                 console.log('Calling fetchMasterEntryData for regular entry...');
                 fetchMasterEntryData();
-                if (!isThereChildEntry) {
-                     fetchChildEntryData();
-                }
+                // if (!isThereChildEntry) {
+                //      fetchChildEntryData();
+                // }
             }
         } else {
             console.log('Conditions not met:', { isOpen, isEdit, editDataExists: !!editData, editDataLength: Object.keys(editData || {}).length });

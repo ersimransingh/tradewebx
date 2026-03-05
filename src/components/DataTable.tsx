@@ -2145,13 +2145,18 @@ export const exportTableToExcel = async (
 
             const cell = currentRow.getCell(colIdx + 1);
 
+            // Add to totals regardless of decimal settings
+            if (totals.hasOwnProperty(normKey)) {
+                const parsedVal = parseFloat(String(value).replace(/,/g, ''));
+                if (!isNaN(parsedVal)) {
+                    totals[normKey] += parsedVal;
+                }
+            }
+
             // Decimal handling (keep number, apply numFmt)
             if (decimalColumnsMap[normKey] !== undefined && !isNaN(parseFloat(value))) {
                 const decimalPlaces = decimalColumnsMap[normKey];
                 const fixedNum = Number(parseFloat(value).toFixed(decimalPlaces));
-                if (totals.hasOwnProperty(normKey)) {
-                    totals[normKey] += fixedNum;
-                }
                 value = fixedNum;
                 cell.numFmt = `0.${'0'.repeat(decimalPlaces)}`;
             }
@@ -2200,10 +2205,14 @@ export const exportTableToExcel = async (
             cell.value = hasTotals ? 'Total' : '';
             cell.alignment = { horizontal: 'left' };
         } else if (totals.hasOwnProperty(normKey)) {
-            const decimalPlaces = decimalColumnsMap[normKey] ?? 0;
+            const decimalPlaces = decimalColumnsMap[normKey] ?? 2;
             const totalValue = Number(totals[normKey].toFixed(decimalPlaces));
             cell.value = totalValue;
-            cell.numFmt = `0.${'0'.repeat(decimalPlaces)}`;
+            if (decimalPlaces > 0) {
+                cell.numFmt = `0.${'0'.repeat(decimalPlaces)}`;
+            } else {
+                cell.numFmt = `0.00`;
+            }
             cell.alignment = { horizontal: 'right' };
         } else {
             cell.value = '';
@@ -2281,14 +2290,17 @@ export const exportTableToCsv = (
         filteredHeaders.map(header => {
             let value = row[header] ?? "";
 
-            // Apply decimal formatting if needed
-            if (decimalColumnsMap[header] && !isNaN(parseFloat(value))) {
-                value = parseFloat(value).toFixed(decimalColumnsMap[header]);
-
-                // Add to total if the column is in columnsToShowTotal
-                if (totals.hasOwnProperty(header)) {
-                    totals[header] += parseFloat(value);
+            // Add to total if the column is in columnsToShowTotal
+            if (totals.hasOwnProperty(header)) {
+                const parsedVal = parseFloat(String(value).replace(/,/g, ''));
+                if (!isNaN(parsedVal)) {
+                    totals[header] += parsedVal;
                 }
+            }
+
+            // Apply decimal formatting if needed
+            if (decimalColumnsMap[header] !== undefined && !isNaN(parseFloat(value))) {
+                value = parseFloat(value).toFixed(decimalColumnsMap[header]);
             }
 
             return `"${value}"`;
@@ -2299,7 +2311,8 @@ export const exportTableToCsv = (
     // **6. Format total row (only for selected columns)**
     const totalRow = filteredHeaders.map(header => {
         if (totals[header] !== undefined) {
-            return `"${totals[header].toFixed(decimalColumnsMap[header] || 0)}"`; // Apply decimals if specified
+            const decimalPlaces = decimalColumnsMap[header] !== undefined ? decimalColumnsMap[header] : 2;
+            return `"${totals[header].toFixed(decimalPlaces)}"`; // Apply decimals if specified or default to 2
         }
         return '""'; // Empty for non-numeric columns
     }).join(',');
@@ -2389,6 +2402,7 @@ export const exportTableToPdf = async (
     //     if (!confirmSend) return;
     // }
 
+    console.log("show settings",pageData[0]?.levels?.[0])
     const decimalSettings = pageData[0]?.levels?.[0]?.settings?.decimalColumns || [];
     const columnsToHide = pageData[0]?.levels?.[0]?.settings?.hideEntireColumn?.split(',') || [];
     const totalColumns = pageData[0]?.levels?.[0]?.summary?.columnsToShowTotal || [];
@@ -2443,18 +2457,27 @@ export const exportTableToPdf = async (
 
 
     const totals: Record<string, number> = {};
-    totalColumns.forEach(col => (totals[col.key] = 0));
+    totalColumns.forEach(col => {
+        const normKey = col.key.toString().replace(/\s+/g, '');
+        totals[normKey] = 0;
+    });
 
     const formatValue = (value: any, key: string) => {
+        const normKey = key.replace(/\s+/g, '');
+
+        if (totals.hasOwnProperty(normKey)) {
+            const num = parseFloat(String(value).replace(/,/g, ''));
+            totals[normKey] += isNaN(num) ? 0 : num;
+        }
+
         if (key.toLowerCase() === 'date') {
             const date = new Date(value);
             return isNaN(date.getTime()) ? value : date.toLocaleDateString('en-GB');
         }
 
-        if (decimalMap[key]) {
+        if (decimalMap[key] !== undefined) {
             const num = parseFloat(String(value).replace(/,/g, ''));
             const safeNum = isNaN(num) ? 0 : num;
-            if (totals.hasOwnProperty(key)) totals[key] += safeNum;
             return safeNum.toFixed(decimalMap[key]);
         }
 
@@ -2493,7 +2516,7 @@ export const exportTableToPdf = async (
         const normalizedKey = key.replace(/\s+/g, '');
         const isTotalCol = totalColumns.find(col => col.key.replace(/\s+/g, '') === normalizedKey);
         return {
-            text: isTotalCol ? totals[key].toFixed(decimalMap[key] || 2) : '',
+            text: isTotalCol ? totals[normalizedKey].toFixed(decimalMap[key] !== undefined ? decimalMap[key] : 2) : '',
             bold: true,
             alignment: normalizedRightAlignedKeys.includes(normalizedKey) ? 'right' : 'left',
         };
