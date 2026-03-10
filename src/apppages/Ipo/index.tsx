@@ -220,75 +220,77 @@ const Ipo = () => {
         Public Offerings
       </h2>
 
-      <table className="w-full border border-gray-300 text-sm">
-        <thead style={{ background: colors?.primary || '#f0f0f0' }} className="bg-gray-200">
-          <tr>
-            <th className="p-2 border">Company Name</th>
-            <th className="p-2 border">Category</th>
-            <th className="p-2 border">Start Date</th>
-            <th className="p-2 border">End Date</th>
-            <th className="p-2 border">Price Range</th>
-            <th className="p-2 border">Tick Size</th>
-            <th className="p-2 border">Minimum Order</th>
-            <th className="p-2 border">RHP</th>
-            <th className="p-2 border">Status</th>
-            <th className="p-2 border">Remark</th>
-          </tr>
-        </thead>
-        <tbody
-        style={{
-          backgroundColor: 'white',
-        }} >
-          {ipoData.map((item, idx) => (
-            <tr
-              key={idx}
-              className="text-center border cursor-pointer hover:bg-gray-100"
-              onClick={() => handleSelectIpo(item)}
-              
-            >
-              <td className="p-2 border">{item.IPO_Company_Name}</td>
-              <td className="p-2 border">{item.IPO_Category}</td>
-              <td className="p-2 border">{item.start_date?.trim()}</td>
-              <td className="p-2 border">{item.end_date?.trim()}</td>
-              <td className="p-2 border">{item.price_range}</td>
-              <td className="p-2 border">{item.tick_size}</td>
-              <td className="p-2 border">{item.min_order}</td>
-              <td className="p-2 border">{item.rhp || '-'}</td>
-              <td className="p-2 border text-blue-600 cursor-pointer hover:underline">
-                {item.ApplyFlag === 'Y' ? item.status :
-                  <div>
-                    <span onClick={() => checkStatusFs(item, clientCode, config)}>Check Status</span>
-                  </div>}
-              </td>
-              {/* <td className="p-2 border">{item.StatusFlag === 'Y' ? `
-              <div>
-              <strong>DPRemarks:-<strong>${item.DPRemarks}, BankRemarks:-${item.BankRemarks} 
-              <ul/>
-              </div>`:'Pending'}</td> */}
-              <td className="p-2 border text-left"   style={{
-                backgroundColor: 'white',
-              }}>
-                {item.StatusFlag === 'Y' ? (
-                  <div>
-                    <div>
-                      <strong>DP Remarks:</strong> {item.DPRemarks}
-                    </div>
-                    <div>
-                      <strong>Bank Remarks:</strong> {item.BankRemarks}
-                    </div>
-                    <div onClick={() => handleDelete(item, clientCode, config)} className='text-blue-600 cursor-pointer hover:underline'>
-                      {item.DeleteFlag === 'Y' ? 'Delete' : ''}
-                    </div>
-                  </div>
-                ) : (
-                  'Pending'
-                )}
-              </td>
-
+      <div className="w-full overflow-x-auto">
+        <table className="min-w-[1000px] w-full border border-gray-300 text-sm">
+          <thead style={{ background: colors?.primary || '#f0f0f0' }} className="bg-gray-200">
+            <tr>
+              <th className="p-2 border">Company Name</th>
+              <th className="p-2 border">Category</th>
+              <th className="p-2 border">Start Date</th>
+              <th className="p-2 border">End Date</th>
+              <th className="p-2 border">Price Range</th>
+              <th className="p-2 border">Tick Size</th>
+              <th className="p-2 border">Minimum Order</th>
+              <th className="p-2 border">RHP</th>
+              <th className="p-2 border">Status</th>
+              <th className="p-2 border">Remark</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody
+          style={{
+            backgroundColor: 'white',
+          }} >
+            {ipoData.map((item, idx) => (
+              <tr
+                key={idx}
+                className="text-center border cursor-pointer hover:bg-gray-100"
+                onClick={() => handleSelectIpo(item)}
+                
+              >
+                <td className="p-2 border">{item.IPO_Company_Name}</td>
+                <td className="p-2 border">{item.IPO_Category}</td>
+                <td className="p-2 border">{item.start_date?.trim()}</td>
+                <td className="p-2 border">{item.end_date?.trim()}</td>
+                <td className="p-2 border">{item.price_range}</td>
+                <td className="p-2 border">{item.tick_size}</td>
+                <td className="p-2 border">{item.min_order}</td>
+                <td className="p-2 border">{item.rhp || '-'}</td>
+                <td className="p-2 border text-blue-600 cursor-pointer hover:underline">
+                  {item.ApplyFlag === 'Y' ? item.status :
+                    <div>
+                      <span onClick={() => checkStatusFs(item, clientCode, config)}>Check Status</span>
+                    </div>}
+                </td>
+                {/* <td className="p-2 border">{item.StatusFlag === 'Y' ? `
+                <div>
+                <strong>DPRemarks:-<strong>${item.DPRemarks}, BankRemarks:-${item.BankRemarks} 
+                <ul/>
+                </div>`:'Pending'}</td> */}
+                <td className="p-2 border text-left"   style={{
+                  backgroundColor: 'white',
+                }}>
+                  {item.StatusFlag === 'Y' ? (
+                    <div>
+                      <div>
+                        <strong>DP Remarks:</strong> {item.DPRemarks}
+                      </div>
+                      <div>
+                        <strong>Bank Remarks:</strong> {item.BankRemarks}
+                      </div>
+                      <div onClick={() => handleDelete(item, clientCode, config)} className='text-blue-600 cursor-pointer hover:underline'>
+                        {item.DeleteFlag === 'Y' ? 'Delete' : ''}
+                      </div>
+                    </div>
+                  ) : (
+                    'Pending'
+                  )}
+                </td>
+
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       <div style={{ background: colors?.primary || '#f0f0f0' }} className="mt-4 bg-gray-100 border p-4">
         <p className="font-bold text-sm text-gray-800">
@@ -300,9 +302,10 @@ const Ipo = () => {
       </div>
 
       {selectedIpo && (
-        <div className="mt-2 border-2 border-gray-300 p-4 flex h-auto items-start" style={{ backgroundColor: 'white' }}>
+        // <div className="mt-2 border-2 border-gray-300 p-4 flex h-auto items-start">
+        <div className="mt-2 border-2 border-gray-300 p-4 flex flex-col lg:flex-row gap-4 items-start" style={{ backgroundColor: 'white' }}>
           {/* Left Panel */}
-          <div style={{ background: colors?.primary || '#f0f0f0' }} className="rounded-lg bg-[#A6C3E5] w-1/3">
+          <div style={{ background: colors?.primary || '#f0f0f0' }} className="rounded-lg bg-[#A6C3E5] w-full lg:w-1/3">
             {dynamicDetails.map((detail, index) => (
               <div key={index} className="m-1 p-1">
                 <label className="font-bold text-sm font-sans">{detail.label}</label>:{" "}
@@ -312,20 +315,23 @@ const Ipo = () => {
           </div>
 
           {/* Right Panel */}
-          <div className="secondForm ml-[10%] flex flex-col space-y-2">
-            <div className="w-[730px]">
+          {/* <div className="secondForm ml-[10%] flex flex-col space-y-2"> */}
+          <div className="secondForm flex flex-col space-y-3 w-full lg:w-2/3"> 
+            <div className="w-full md:w-[730px]">
               <input
                 value={ipoData1[0]?.individualInvestor || ""}
                 readOnly={true}
-                className="font-sans ml-[-1px] border border-gray-500 rounded h-[30px] w-[530px] p-2 m-2"
+                // className="font-sans ml-[-1px] border border-gray-500 rounded h-[30px] w-[530px] p-2 m-2"
+                 className="font-sans border border-gray-500 rounded h-[30px] w-full md:w-[530px] p-2 my-2"
                 placeholder="Individual Investor"
               />
             </div>
 
             {/* UPI and Type Section */}
-            <div className="flex space-x-2 items-center">
+            {/* <div className="flex space-x-2 items-center"> */}
+            <div className="flex flex-col sm:flex-row gap-2 sm:items-center w-full">
               <input
-                className="font-sans border border-gray-500 rounded px-2 py-1 h-[30px] my-2 w-[265px]"
+                className="font-sans border border-gray-500 rounded px-2 py-1 h-[30px] my-2 w-full md:w-[265px]"
                 type="text"
                 value={upiId}
                 onChange={handleUpiIdChange}
@@ -334,7 +340,7 @@ const Ipo = () => {
 
               <div className="relative">
                 <select
-                  className="font-sans border border-gray-500 rounded px-2 h-[30px] my-2 w-[265px] appearance-none"
+                  className="font-sans border border-gray-500 rounded px-2 h-[30px] my-2 w-full w-[265px] appearance-none"
                   value={selectedUpi}
                   onChange={handleUpiChange}
                 >
@@ -354,13 +360,14 @@ const Ipo = () => {
             </div>
 
             {/*Bid and cutoff section */}
-            <div className="flex items-center space-x-2">
+            {/* <div className="flex items-center space-x-2"> */}
+            <div className="flex flex-col md:flex-row md:items-center gap-2 w-full">
               {/* Decrement Button */}
               <button className="bg-gray-300 text-black px-3 py-2 rounded hover:bg-gray-400" onClick={() => handleDecrement('bid1', bid1, setBid1, ipoData1[0].minimumOrder)}>
                 -
               </button>
               <input
-                className="font-sans border border-gray-500 rounded px-2 py-1  w-[200px]"
+                className="font-sans border border-gray-500 rounded px-2 py-1  w-full md:w-[200px]"
                 type="number"
                 value={bid1}
                 onChange={(e) => handleBidChange(e, "bid1", setBid1)}
@@ -371,7 +378,8 @@ const Ipo = () => {
                 +
               </button>
 
-              <div className="ml-2 flex items-center space-x-2">
+              {/* <div className="ml-2 flex items-center space-x-2"> */}
+              <div className="flex flex-col md:flex-row md:items-center gap-2 w-full">
                 <input
                   type="checkbox"
                   checked={isChecked}
@@ -382,7 +390,7 @@ const Ipo = () => {
                 <input
                   placeholder="Cutoff Price"
                   value={cutOff || ""}
-                  className="font-sans border border-gray-500 rounded px-[2px] py-1 w-[200px]"
+                  className="font-sans border border-gray-500 rounded px-[2px] py-1 w-full w-[200px]"
                   onChange={(e) => handleTextBoxChange(e, 'bid1', setCutOff)}
                   onBlur={() => handleCutOffBlur('bid1', cutOff, setCutOff, ipoData1[0]?.priceRange)}
                   disabled={disableCutOff}
@@ -392,13 +400,14 @@ const Ipo = () => {
 
             </div>
 
-            <div className="flex items-center space-x-2">
+            {/* <div className="flex items-center space-x-2"> */}
+            <div className="flex flex-col md:flex-row md:items-center gap-2 w-full">
               {/* Decrement Button */}
               <button className="bg-gray-300 text-black px-3 py-2 rounded hover:bg-gray-400" onClick={() => handleDecrement('bid2', bid2, setBid2, ipoData1[0].minimumOrder)}>
                 -
               </button>
               <input
-                className="font-sans border border-gray-500 rounded px-2 py-1  w-[200px]"
+                className="font-sans border border-gray-500 rounded px-2 py-1  w-full md:w-[200px]"
                 type="number"
                 value={bid2}
                 onChange={(e) => handleBidChange(e, "bid2", setBid2)}
@@ -409,7 +418,8 @@ const Ipo = () => {
                 +
               </button>
 
-              <div className="ml-2 flex items-center space-x-2">
+              {/* <div className="ml-2 flex items-center space-x-2"> */}
+              <div className="flex flex-col md:flex-row md:items-center gap-2 w-full">
                 <input
                   type="checkbox"
                   checked={isChecked2}
@@ -420,7 +430,7 @@ const Ipo = () => {
                 <input
                   placeholder="Cutoff Price"
                   value={cutOff2 || ""}
-                  className="font-sans border border-gray-500 rounded px-[2px] py-1 w-[200px]"
+                  className="font-sans border border-gray-500 rounded px-[2px] py-1 w-full w-[200px]"
                   onChange={(e) => handleTextBoxChange(e, 'bid2', setCutOff2)}
                   onBlur={() => handleCutOffBlur('bid2', cutOff2, setCutOff2, ipoData1[0]?.priceRange)}
                   disabled={disableCutOff2}
@@ -430,13 +440,14 @@ const Ipo = () => {
 
             </div>
 
-            <div className="flex items-center space-x-2">
+            {/* <div className="flex items-center space-x-2"> */}
+            <div className="flex flex-col md:flex-row md:items-center gap-2 w-full">
               {/* Decrement Button */}
               <button className="bg-gray-300 text-black px-3 py-2 rounded hover:bg-gray-400" onClick={() => handleDecrement('bid3', bid3, setBid3, ipoData1[0].minimumOrder)}>
                 -
               </button>
               <input
-                className="font-sans border border-gray-500 rounded px-2 py-1  w-[200px]"
+                className="font-sans border border-gray-500 rounded px-2 py-1  w-full md:w-[200px]"
                 type="number"
                 value={bid3}
                 onChange={(e) => handleBidChange(e, "bid3", setBid3)}
@@ -447,7 +458,8 @@ const Ipo = () => {
                 +
               </button>
 
-              <div className="ml-2 flex items-center space-x-2">
+              {/* <div className="ml-2 flex items-center space-x-2"> */}
+              <div className="flex flex-col md:flex-row md:items-center gap-2 w-full">
                 <input
                   type="checkbox"
                   checked={isChecked3}
@@ -458,7 +470,7 @@ const Ipo = () => {
                 <input
                   placeholder="Cutoff Price"
                   value={cutOff3 || ""}
-                  className="font-sans border border-gray-500 rounded px-[2px] py-1 w-[200px]"
+                  className="font-sans border border-gray-500 rounded px-[2px] py-1 w-full w-[200px]"
                   onChange={(e) => handleTextBoxChange(e, 'bid3', setCutOff3)}
                   onBlur={() => handleCutOffBlur('bid3', cutOff3, setCutOff3, ipoData1[0]?.priceRange)}
                   disabled={disableCutOff3}
@@ -481,7 +493,7 @@ const Ipo = () => {
                 onChange={(e) => handleTermsChange(e, setTermsAccepted)}
                 className="w-4 h-4"
               />
-              <p className="py-1 w-[500px] text-sm text-gray-700">
+              <p className="py-1 w-full md:w-[500px] text-sm text-gray-700">
                 I hereby undertake that I have read the Red Herring Prospectus and I am an eligible UPI bidder as per the applicable provisions of the SEBI(Issue of Capital and Disclosure Requirement) Regulation, 2009.
               </p>
             </div>
