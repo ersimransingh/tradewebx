@@ -154,11 +154,14 @@ const CommonCustomDropdown: React.FC<CustomDropdownProps> = ({
         isDisabled={isDisabled}
         className="react-select-container"
         classNamePrefix="react-select"
+        menuPortalTarget={typeof document !== "undefined" ? document.body : null}
+        menuShouldBlockScroll={true}
+        menuPlacement="auto"
         styles={{
           ...customStyles,
           menuPortal: base => ({
             ...base,
-            zIndex: 99999 
+            zIndex: 9999999999
           })
         }}
         filterOption={() => true} // Custom filtering handled manually

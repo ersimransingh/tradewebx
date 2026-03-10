@@ -76,6 +76,10 @@ const AsyncSearchDropdown: React.FC<AsyncSearchDropdownProps> = ({
           backgroundColor: colors.cardBackground || "#fff",
           zIndex: 9999,
         }),
+        menuPortal: (base) => ({
+          ...base,
+          zIndex: 99999,
+        }),
         valueContainer: (base) => ({
           ...base,
           width: "100%",             
@@ -106,6 +110,9 @@ const AsyncSearchDropdown: React.FC<AsyncSearchDropdownProps> = ({
       isLoading={isDefaultLoading}
       className="react-select-container"
       classNamePrefix="react-select"
+      menuPortalTarget={typeof document !== "undefined" ? document.body : null}
+      menuShouldBlockScroll={true}
+      menuPlacement="auto"
     />
   );
 };

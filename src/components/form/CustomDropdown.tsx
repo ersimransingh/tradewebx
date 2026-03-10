@@ -157,6 +157,8 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
         className="react-select-container"
         classNamePrefix="react-select"
         menuPortalTarget={document.body}
+        menuShouldBlockScroll={true}
+        menuPlacement="auto"
         filterOption={() => true} // Bypass default filtering since we're handling it
         styles={{
           control: (base) => ({
@@ -166,9 +168,13 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
             boxShadow: isLoading ? `0 0 0 1px ${colors.primary}` : base.boxShadow,
             minWidth: isHorizontal ? '250px' : 'auto',
           }),
+          menu: (base) => ({
+            ...base,
+            zIndex: 9999999999,
+          }),
           menuPortal: base => ({
             ...base,
-            zIndex: 9999,
+            zIndex: 9999999999,
           }),
           singleValue: (base) => ({
             ...base,
@@ -192,6 +198,8 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
           menuList: (base) => ({
             ...base,
             maxHeight: '200px',
+            paddingBottom: '0px',
+            marginBottom: '4px'
           }),
           multiValue: (base) => ({
             ...base,

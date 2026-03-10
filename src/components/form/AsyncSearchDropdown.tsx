@@ -220,6 +220,11 @@ const AsyncSearchDropdown: React.FC<AsyncSearchDropdownProps> = ({
         noOptionsMessage={() =>
           isLoading ? "Loading..." : "No results found"
         }
+        className="react-select-container"
+        classNamePrefix="react-select"
+        menuPortalTarget={typeof document !== "undefined" ? document.body : null}
+        menuShouldBlockScroll={true}
+        menuPlacement="auto"
         onInputChange={(inputValue, { action }) => {
           if (action === "input-change") handleSearch(inputValue);
           return inputValue;
@@ -230,6 +235,14 @@ const AsyncSearchDropdown: React.FC<AsyncSearchDropdownProps> = ({
             ...base,
             borderColor: colors.textInputBorder,
             backgroundColor: colors.textInputBackground,
+          }),
+          menu: (base) => ({
+            ...base,
+            zIndex: 9999999999,
+          }),
+          menuPortal: base => ({
+            ...base,
+            zIndex: 99999,
           }),
           option: (base, state) => ({
             ...base,
