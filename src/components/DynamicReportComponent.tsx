@@ -1340,8 +1340,8 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
 
             // Add a new tab for detail view (using -1 as special level identifier)
             setLevelStack(prev => [...prev, -1]);
-            const nextLevel = currentLevel + 1;
-            setCurrentLevel(nextLevel);
+            // const nextLevel = currentLevel + 1;
+            // setCurrentLevel(nextLevel);
 
         } catch (error) {
             console.error('Error fetching detail column data:', error);
@@ -2791,12 +2791,12 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                     <DataTable
                         data={detailApiData}
                         settings={{
-                            ...safePageData.getCurrentLevel(currentLevel)?.settings,
+                            ...safePageData.getCurrentLevel(1)?.settings,
                             mobileColumns: rs1Settings?.mobileColumns?.[0] || [],
                             tabletColumns: rs1Settings?.tabletColumns?.[0] || [],
                             webColumns: rs1Settings?.webColumns?.[0] || [],
                         }}
-                        summary={safePageData.getCurrentLevel(currentLevel)?.summary}
+                        summary={safePageData.getCurrentLevel(1)?.summary}
                         tableRef={tableRef}
                         fullHeight={true}
                         buttonConfig={pageData?.[0]?.buttonConfig}
