@@ -302,7 +302,6 @@ const Ipo = () => {
       </div>
 
       {selectedIpo && (
-        // <div className="mt-2 border-2 border-gray-300 p-4 flex h-auto items-start">
         <div className="mt-2 border-2 border-gray-300 p-4 flex flex-col lg:flex-row gap-4 items-start" style={{ backgroundColor: 'white' }}>
           {/* Left Panel */}
           <div style={{ background: colors?.primary || '#f0f0f0' }} className="rounded-lg bg-[#A6C3E5] w-full lg:w-1/3">
@@ -315,13 +314,11 @@ const Ipo = () => {
           </div>
 
           {/* Right Panel */}
-          {/* <div className="secondForm ml-[10%] flex flex-col space-y-2"> */}
           <div className="secondForm flex flex-col space-y-3 w-full lg:w-2/3"> 
             <div className="w-full md:w-[730px]">
               <input
                 value={ipoData1[0]?.individualInvestor || ""}
                 readOnly={true}
-                // className="font-sans ml-[-1px] border border-gray-500 rounded h-[30px] w-[530px] p-2 m-2"
                  className="font-sans border border-gray-500 rounded h-[30px] w-full md:w-[530px] p-2 my-2"
                 placeholder="Individual Investor"
               />
@@ -340,7 +337,7 @@ const Ipo = () => {
 
               <div className="relative">
                 <select
-                  className="font-sans border border-gray-500 rounded px-2 h-[30px] my-2 w-full w-[265px] appearance-none"
+                  className="font-sans border border-gray-500 rounded px-2 h-[30px] my-2 w-full sm:w-[265px] appearance-none"
                   value={selectedUpi}
                   onChange={handleUpiChange}
                 >
@@ -390,7 +387,7 @@ const Ipo = () => {
                 <input
                   placeholder="Cutoff Price"
                   value={cutOff || ""}
-                  className="font-sans border border-gray-500 rounded px-[2px] py-1 w-full w-[200px]"
+                  className="font-sans border border-gray-500 rounded px-[2px] py-1 w-full md:w-[200px]"
                   onChange={(e) => handleTextBoxChange(e, 'bid1', setCutOff)}
                   onBlur={() => handleCutOffBlur('bid1', cutOff, setCutOff, ipoData1[0]?.priceRange)}
                   disabled={disableCutOff}
@@ -430,7 +427,7 @@ const Ipo = () => {
                 <input
                   placeholder="Cutoff Price"
                   value={cutOff2 || ""}
-                  className="font-sans border border-gray-500 rounded px-[2px] py-1 w-full w-[200px]"
+                  className="font-sans border border-gray-500 rounded px-[2px] py-1 w-full md:w-[200px]"
                   onChange={(e) => handleTextBoxChange(e, 'bid2', setCutOff2)}
                   onBlur={() => handleCutOffBlur('bid2', cutOff2, setCutOff2, ipoData1[0]?.priceRange)}
                   disabled={disableCutOff2}
@@ -470,7 +467,7 @@ const Ipo = () => {
                 <input
                   placeholder="Cutoff Price"
                   value={cutOff3 || ""}
-                  className="font-sans border border-gray-500 rounded px-[2px] py-1 w-full w-[200px]"
+                  className="font-sans border border-gray-500 rounded px-[2px] py-1 w-full md:w-[200px]"
                   onChange={(e) => handleTextBoxChange(e, 'bid3', setCutOff3)}
                   onBlur={() => handleCutOffBlur('bid3', cutOff3, setCutOff3, ipoData1[0]?.priceRange)}
                   disabled={disableCutOff3}
