@@ -44,12 +44,23 @@ export default function Family() {
   const [isConfirmOpen, setIsConfirmOpen] = useState<boolean>(false);
   const [confirmMessage, setConfirmMessage] = useState<string>("");
   const [selectedRow, setSelectedRow] = useState<FamilyRow | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 640); // mobile breakpoint
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   // --- Columns ---
   const columns: Column<FamilyRow>[] = [
     { key: "FamilyHead", name: "Family Head" },
     { key: "ClientCode", name: "Client Code" },
-    { key: "ClientName", name: "Client Name" },
+    ...(!isMobile ? [{ key: "ClientName", name: "Client Name" }] : []),
     {
       key: "remove",
       name: "",
@@ -405,7 +416,7 @@ export default function Family() {
 
       {/* --- Login & OTP Modal --- */}
       <Modal isOpen={isLoginModalOpen} onClose={closeLoginModal} isOutsideClickAllowed={false} className="max-w-[500px] p-6">
-        <h4 className="text-lg font-semibold mb-4">{otpRequired ? "Verify OTP" : "Add Family"}</h4>
+        <h4 className="text-lg font-semibold mb-4">{otpRequired ? "Verify OTP" : "Add Client"}</h4>
 
         {!otpRequired && (
           <>
