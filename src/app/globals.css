@@ -62,7 +62,7 @@ body {
 
 @theme {
   --font-*: initial;
-  --font-outfit: Outfit, sans-serif;
+  --font-outfit: var(--dynamic-font, Outfit, sans-serif);
 
   --breakpoint-*: initial;
   --breakpoint-2xsm: 375px;
