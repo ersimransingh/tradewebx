@@ -951,7 +951,8 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
         try {
             setIsLoading(true);
 
-            const skipValidation = options.skipValidation === true;
+            const isSeparateApiCall = button.seperateapicall === true || button.seperateapicall === "true";
+            const skipValidation = options.skipValidation === true || isSeparateApiCall;
 
             const userId = getLocalStorage('userId');
             const userType = getLocalStorage('userType');
@@ -1082,80 +1083,74 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                 // Flag is S - continue to main API without re-validating
             }
 
-            // Build J_Ui from button API config
-            const jUiConfig = apiConfig?.J_Ui || {};
-            const jUi = Object.entries(jUiConfig)
-                .map(([key, value]) => {
-                    if (key === 'ActionName' && !value) {
-                        return `"${key}":"${pageName}"`;
+            if (isSeparateApiCall) {
+                let successCount = 0;
+                let failureCount = 0;
+                let lastMessage = "";
+
+                for (const row of selectedRows) {
+                    // Build J_Ui from button API config
+                    const jUiConfig = apiConfig?.J_Ui || {};
+                    const jUi = Object.entries(jUiConfig)
+                        .map(([key, value]) => {
+                            if (key === 'ActionName' && !value) {
+                                return `"${key}":"${pageName}"`;
+                            }
+                            return `"${key}":"${value}"`;
+                        })
+                        .join(',');
+
+                    // Build J_Api
+                    const jApi = `"UserId":"${userId}","UserType":"${userType}"`;
+
+                    // Build X_Filter from current filters
+                    let filterXml = '';
+                    if (clientCode) {
+                        filterXml += `<ClientCode>${clientCode}</ClientCode>`;
                     }
-                    return `"${key}":"${value}"`;
-                })
-                .join(',');
+                    Object.entries(filters).forEach(([key, value]) => {
+                        if (value === undefined || value === null || value === '') {
+                            return;
+                        }
+                        try {
+                            if (value instanceof Date || moment.isMoment(value)) {
+                                const formattedDate = moment(value).format('YYYYMMDD');
+                                filterXml += `<${key}>${formattedDate}</${key}>`;
+                            } else {
+                                filterXml += `<${key}>${value}</${key}>`;
+                            }
+                        } catch (error) {
+                            console.warn(`Error processing filter ${key}:`, error);
+                        }
+                    });
 
-            // Build J_Api
-            const jApi = `"UserId":"${userId}","UserType":"${userType}"`;
-
-            // Build X_Filter from current filters
-            let filterXml = '';
-
-            // Include client code if present
-            if (clientCode) {
-                filterXml += `<ClientCode>${clientCode}</ClientCode>`;
-            }
-
-            // Process current filters
-            Object.entries(filters).forEach(([key, value]) => {
-                if (value === undefined || value === null || value === '') {
-                    return;
-                }
-                try {
-                    if (value instanceof Date || moment.isMoment(value)) {
-                        const formattedDate = moment(value).format('YYYYMMDD');
-                        filterXml += `<${key}>${formattedDate}</${key}>`;
-                    } else {
-                        filterXml += `<${key}>${value}</${key}>`;
+                    if (currentLevel > 0 && Object.keys(primaryKeyFilters).length > 0) {
+                        Object.entries(primaryKeyFilters).forEach(([key, value]) => {
+                            filterXml += `<${key}>${value}</${key}>`;
+                        });
                     }
-                } catch (error) {
-                    console.warn(`Error processing filter ${key}:`, error);
-                }
-            });
 
-            // Add primary key filters for levels > 0
-            if (currentLevel > 0 && Object.keys(primaryKeyFilters).length > 0) {
-                Object.entries(primaryKeyFilters).forEach(([key, value]) => {
-                    filterXml += `<${key}>${value}</${key}>`;
-                });
-            }
+                    if (isSelectAll && button.SelectAllApi?.X_Filters) {
+                        Object.entries(button.SelectAllApi.X_Filters).forEach(([key, value]) => {
+                            const safeVal = value ?? '';
+                            filterXml += `<${key}>${safeVal}</${key}>`;
+                        });
+                    }
 
-            // If SelectAllApi provides explicit X_Filters, append them
-            if (isSelectAll && button.SelectAllApi?.X_Filters) {
-                Object.entries(button.SelectAllApi.X_Filters).forEach(([key, value]) => {
-                    const safeVal = value ?? '';
-                    filterXml += `<${key}>${safeVal}</${key}>`;
-                });
-            }
+                    // Build X_Data from selected rows
+                    let X_Data = '';
+                    const apiKeysRaw = button.apiKeys || button.API?.apiKeys;
+                    const keysToInclude =
+                        apiKeysRaw && apiKeysRaw.trim().length > 0
+                            ? apiKeysRaw.split(',').map((k: string) => k.trim()).filter(Boolean)
+                            : null;
 
-            // Build X_Data from selected rows
-            let X_Data = '';
-
-            if (!(isSelectAll && button.SelectAllApi)) {
-                // Determine which keys to include
-                const apiKeysRaw = button.apiKeys || button.API?.apiKeys;
-                const keysToInclude =
-                    apiKeysRaw && apiKeysRaw.trim().length > 0
-                        ? apiKeysRaw.split(',').map((k: string) => k.trim()).filter(Boolean)
-                        : null; // null => include all non-internal keys
-
-                let xDataItems = '';
-                selectedRows.forEach((row) => {
                     let itemXml = '<item>';
                     const entries = keysToInclude
                         ? keysToInclude.map((k: string) => [k, row?.[k]]) as [string, any][]
                         : Object.entries(row).filter(([key]) => !key.startsWith('_'));
 
                     entries.forEach(([key, value]) => {
-                        // Allow empty values but still send the tag if key is defined
                         if (key === undefined || key === null) return;
                         const safeVal = value ?? '';
                         const escapedValue = String(safeVal)
@@ -1167,59 +1162,195 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                         itemXml += `<${key}>${escapedValue}</${key}>`;
                     });
                     itemXml += '</item>';
-                    xDataItems += itemXml;
-                });
+                    X_Data = `<items>${itemXml}</items>`;
 
-                X_Data = `<items>${xDataItems}</items>`;
-            }
+                    const xmlData = `<dsXml>
+                        <J_Ui>${jUi}</J_Ui>
+                        <Sql></Sql>
+                        <X_Filter>${filterXml}</X_Filter>
+                        <X_Filter_Multiple></X_Filter_Multiple>
+                        <X_Data>${X_Data}</X_Data>
+                        <J_Api>${jApi}</J_Api>
+                    </dsXml>`;
 
-            const xmlData = `<dsXml>
-                <J_Ui>${jUi}</J_Ui>
-                <Sql></Sql>
-                <X_Filter>${filterXml}</X_Filter>
-                <X_Filter_Multiple></X_Filter_Multiple>
-                <X_Data>${X_Data}</X_Data>
-                <J_Api>${jApi}</J_Api>
-            </dsXml>`;
+                    try {
+                        const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
+                        const rs0 = response?.data?.data?.rs0;
+                        let rowSuccess = false;
 
-            console.log('Selectable Button API Request:', xmlData);
+                        if (rs0?.length) {
+                            rs0.forEach((item: any) => {
+                                if (item.MessageType === 'SUCCESS') {
+                                    rowSuccess = true;
+                                }
+                                lastMessage = item.MessageText?.replace(/<br\s*\/?>/gi, '')?.trim();
+                            });
+                        } else if (response?.data?.success !== false) {
+                            rowSuccess = true;
+                        }
 
-            const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
-
-            const rs0 = response?.data?.data?.rs0;
-
-            // Handle download type buttons
-            if (button.type === 'download') {
-                const fileData = Array.isArray(rs0) ? rs0?.[0] : rs0;
-                const base64Content = fileData?.fileContents || fileData?.Base64PDF;
-                const fileName = fileData?.fileDownloadName || fileData?.PDFName;
-                const contentType = fileData?.contentType;
-                if (base64Content) {
-                    displayAndDownloadFile(base64Content, fileName, contentType);
-                } else {
-                    toast.error('No file content received from server');
-                }
-                return;
-            }
-
-            // Handle non-download type buttons - show toasts based on MessageType
-            if (rs0?.length) {
-                let hasSuccess = false;
-                rs0.forEach((item: any) => {
-                    const cleanMessage = item.MessageText ?.replace(/<br\s*\/?>/gi, '')?.trim();
-                    if (item.MessageType === 'SUCCESS' && item.MessageText?.trim()) {
-                        toast.success(cleanMessage);
-                        hasSuccess = true;
-                    } else if (item.MessageType === 'ERROR' && item.MessageText?.trim()) {
-                        toast.error(cleanMessage);
+                        if (rowSuccess) {
+                            successCount++;
+                        } else {
+                            failureCount++;
+                        }
+                    } catch (err) {
+                        failureCount++;
+                        console.error('Error in separate API call for row:', err);
                     }
-                });
-                if (hasSuccess) {
+                }
+
+                if (failureCount === 0) {
+                    toast.success(`Successfully processed ${successCount} record(s).`);
+                } else if (successCount === 0) {
+                    toast.error(`Failed to process ${failureCount} record(s). ${lastMessage || ""}`);
+                } else {
+                    toast.info(`Processed ${successCount} successful and ${failureCount} failed record(s).`);
+                }
+
+                if (successCount > 0) {
                     fetchData(filters, false);
                 }
-            } else if (response?.data?.success === false) {
-                const errorMessage = response?.data?.message || 'Operation failed';
-                toast.error(errorMessage);
+            } else {
+                // Build J_Ui from button API config
+                const jUiConfig = apiConfig?.J_Ui || {};
+                const jUi = Object.entries(jUiConfig)
+                    .map(([key, value]) => {
+                        if (key === 'ActionName' && !value) {
+                            return `"${key}":"${pageName}"`;
+                        }
+                        return `"${key}":"${value}"`;
+                    })
+                    .join(',');
+
+                // Build J_Api
+                const jApi = `"UserId":"${userId}","UserType":"${userType}"`;
+
+                // Build X_Filter from current filters
+                let filterXml = '';
+
+                // Include client code if present
+                if (clientCode) {
+                    filterXml += `<ClientCode>${clientCode}</ClientCode>`;
+                }
+
+                // Process current filters
+                Object.entries(filters).forEach(([key, value]) => {
+                    if (value === undefined || value === null || value === '') {
+                        return;
+                    }
+                    try {
+                        if (value instanceof Date || moment.isMoment(value)) {
+                            const formattedDate = moment(value).format('YYYYMMDD');
+                            filterXml += `<${key}>${formattedDate}</${key}>`;
+                        } else {
+                            filterXml += `<${key}>${value}</${key}>`;
+                        }
+                    } catch (error) {
+                        console.warn(`Error processing filter ${key}:`, error);
+                    }
+                });
+
+                // Add primary key filters for levels > 0
+                if (currentLevel > 0 && Object.keys(primaryKeyFilters).length > 0) {
+                    Object.entries(primaryKeyFilters).forEach(([key, value]) => {
+                        filterXml += `<${key}>${value}</${key}>`;
+                    });
+                }
+
+                // If SelectAllApi provides explicit X_Filters, append them
+                if (isSelectAll && button.SelectAllApi?.X_Filters) {
+                    Object.entries(button.SelectAllApi.X_Filters).forEach(([key, value]) => {
+                        const safeVal = value ?? '';
+                        filterXml += `<${key}>${safeVal}</${key}>`;
+                    });
+                }
+
+                // Build X_Data from selected rows
+                let X_Data = '';
+
+                if (!(isSelectAll && button.SelectAllApi)) {
+                    // Determine which keys to include
+                    const apiKeysRaw = button.apiKeys || button.API?.apiKeys;
+                    const keysToInclude =
+                        apiKeysRaw && apiKeysRaw.trim().length > 0
+                            ? apiKeysRaw.split(',').map((k: string) => k.trim()).filter(Boolean)
+                            : null; // null => include all non-internal keys
+
+                    let xDataItems = '';
+                    selectedRows.forEach((row) => {
+                        let itemXml = '<item>';
+                        const entries = keysToInclude
+                            ? keysToInclude.map((k: string) => [k, row?.[k]]) as [string, any][]
+                            : Object.entries(row).filter(([key]) => !key.startsWith('_'));
+
+                        entries.forEach(([key, value]) => {
+                            // Allow empty values but still send the tag if key is defined
+                            if (key === undefined || key === null) return;
+                            const safeVal = value ?? '';
+                            const escapedValue = String(safeVal)
+                                .replace(/&/g, '&amp;')
+                                .replace(/</g, '&lt;')
+                                .replace(/>/g, '&gt;')
+                                .replace(/"/g, '&quot;')
+                                .replace(/'/g, '&apos;');
+                            itemXml += `<${key}>${escapedValue}</${key}>`;
+                        });
+                        itemXml += '</item>';
+                        xDataItems += itemXml;
+                    });
+
+                    X_Data = `<items>${xDataItems}</items>`;
+                }
+
+                const xmlData = `<dsXml>
+                    <J_Ui>${jUi}</J_Ui>
+                    <Sql></Sql>
+                    <X_Filter>${filterXml}</X_Filter>
+                    <X_Filter_Multiple></X_Filter_Multiple>
+                    <X_Data>${X_Data}</X_Data>
+                    <J_Api>${jApi}</J_Api>
+                </dsXml>`;
+
+                console.log('Selectable Button API Request:', xmlData);
+
+                const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
+
+                const rs0 = response?.data?.data?.rs0;
+
+                // Handle download type buttons
+                if (button.type === 'download') {
+                    const fileData = Array.isArray(rs0) ? rs0?.[0] : rs0;
+                    const base64Content = fileData?.fileContents || fileData?.Base64PDF;
+                    const fileName = fileData?.fileDownloadName || fileData?.PDFName;
+                    const contentType = fileData?.contentType;
+                    if (base64Content) {
+                        displayAndDownloadFile(base64Content, fileName, contentType);
+                    } else {
+                        toast.error('No file content received from server');
+                    }
+                    return;
+                }
+
+                // Handle non-download type buttons - show toasts based on MessageType
+                if (rs0?.length) {
+                    let hasSuccess = false;
+                    rs0.forEach((item: any) => {
+                        const cleanMessage = item.MessageText?.replace(/<br\s*\/?>/gi, '')?.trim();
+                        if (item.MessageType === 'SUCCESS' && item.MessageText?.trim()) {
+                            toast.success(cleanMessage);
+                            hasSuccess = true;
+                        } else if (item.MessageType === 'ERROR' && item.MessageText?.trim()) {
+                            toast.error(cleanMessage);
+                        }
+                    });
+                    if (hasSuccess) {
+                        fetchData(filters, false);
+                    }
+                } else if (response?.data?.success === false) {
+                    const errorMessage = response?.data?.message || 'Operation failed';
+                    toast.error(errorMessage);
+                }
             }
 
         } catch (error) {
@@ -1340,8 +1471,8 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
 
             // Add a new tab for detail view (using -1 as special level identifier)
             setLevelStack(prev => [...prev, -1]);
-            // const nextLevel = currentLevel + 1;
-            // setCurrentLevel(nextLevel);
+            const nextLevel = currentLevel + 1;
+            setCurrentLevel(nextLevel);
 
         } catch (error) {
             console.error('Error fetching detail column data:', error);
@@ -1357,6 +1488,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
         setDetailColumnInfo(null);
         // Remove the detail level (-1) from stack
         setLevelStack(prev => prev.filter(level => level !== -1));
+        setCurrentLevel(prev => prev - 1);
     };
 
     // Handler for toggling file record enabled/disabled for auto-import
