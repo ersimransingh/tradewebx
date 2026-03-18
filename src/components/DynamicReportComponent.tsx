@@ -1340,8 +1340,8 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
 
             // Add a new tab for detail view (using -1 as special level identifier)
             setLevelStack(prev => [...prev, -1]);
-            // const nextLevel = currentLevel + 1;
-            // setCurrentLevel(nextLevel);
+            const nextLevel = currentLevel + 1;
+            setCurrentLevel(nextLevel);
 
         } catch (error) {
             console.error('Error fetching detail column data:', error);
@@ -1357,6 +1357,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
         setDetailColumnInfo(null);
         // Remove the detail level (-1) from stack
         setLevelStack(prev => prev.filter(level => level !== -1));
+        setCurrentLevel(prev => prev - 1);
     };
 
     // Handler for toggling file record enabled/disabled for auto-import
