@@ -147,7 +147,7 @@ const defaultFonts: FontSettings = {
   content: 'Arial'
 };
 
-export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const ThemeProvider: React.FC<{ children: React.ReactNode, nonce?: string }> = ({ children, nonce }) => {
   const [theme, setTheme] = useState<ThemeType>('light');
   const [themes, setThemes] = useState<Record<ThemeType, ThemeColors>>(initialThemes);
   const [fonts, setFonts] = useState<FontSettings>(defaultFonts);
@@ -162,6 +162,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     if (!fontStyleRef.current) {
       fontStyleRef.current = document.createElement('style');
+      if (nonce) fontStyleRef.current.nonce = nonce;
       document.head.appendChild(fontStyleRef.current);
     }
 
