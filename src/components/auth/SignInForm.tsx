@@ -38,7 +38,7 @@ import { useState, useEffect, useCallback, useRef, useId } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import axios from 'axios';
 import { useDispatch, useSelector } from 'react-redux';
-import { setAuthData, setError as setAuthError, setLoading } from '@/redux/features/authSlice';
+import { setAuthData, setFinalAuthData, setError as setAuthError, setLoading } from '@/redux/features/authSlice';
 import { BASE_URL, LOGIN_AS, PRODUCT, LOGIN_KEY, LOGIN_URL, BASE_PATH_FRONT_END, OTP_VERIFICATION_URL, VERSION, ACTION_NAME, ENABLE_CAPTCHA, ENABLE_FERNET, NEXT_PUBLIC_FULL_URL, LOGIN_OPTION } from "@/utils/constants";
 import Image from "next/image";
 import { RootState } from "@/redux/store";
@@ -394,6 +394,17 @@ export default function SignInForm() {
       }
       storeLocalStorage('tokenExpireTime', currentLoginData.tokenExpireTime);
       storeLocalStorage('temp_token', '');
+
+      // Dispatch final auth data to update Redux state (isAuthenticated = true)
+      dispatch(setFinalAuthData({
+        token: currentLoginData.token,
+        refreshToken: currentLoginData.refreshToken || undefined,
+        tokenExpireTime: currentLoginData.tokenExpireTime,
+        clientCode: getLocalStorage('clientCode') || '',
+        clientName: getLocalStorage('clientName') || '',
+        userType: currentLoginData.userType,
+        firstLogin: currentLoginData.firstLogin,
+      }));
       console.log('Redirecting to dashboard');
       const isFirstLogin = currentLoginData.firstLogin === 'Y';
       sessionStorage.setItem('just_logged_in', 'true');
