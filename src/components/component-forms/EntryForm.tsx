@@ -463,6 +463,29 @@ const EntryForm: React.FC<EntryFormProps> = ({
                 });
                 setFormData(updatedFormData);
                 break;
+            case 'V':
+                let updatedFormDataV = formData;
+                dynamicTags.forEach((tag) => {
+                    const tagName = tag.tagName;
+                    const tagValue = tag.textContent;
+                    const tagFlag = tagValue?.toLowerCase();
+                    const isHidden = tagFlag === 'false';
+
+                    if (isHidden) {
+                        setFormValues(prev => ({ ...prev, [tagName]: "" }));
+                        setFieldErrors(prev => ({ ...prev, [tagName]: '' }));
+                    }
+
+                    updatedFormDataV = updatedFormDataV.map(field => {
+                        if (field.wKey === tagName) {
+                            return { ...field, FieldVisibleTag: isHidden ? 'N' : 'Y' };
+                        }
+                        return field;
+                    });
+                });
+                setFormData(updatedFormDataV);
+                break;
+
             case 'X':
                   setValidationModal({
                     isOpen: true,
