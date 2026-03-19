@@ -9,16 +9,13 @@ export interface FontConfig {
 
 /**
  * Checks for the existence of a font file in the public/fonts directory
- * based on the NEXT_PUBLIC_FONT_NAME environment variable.
+ * @param fontName Optional font name to check. If not provided, uses NEXT_PUBLIC_FONT_NAME.
  */
-export function getDynamicFont(): FontConfig {
-  const fontName = process.env.NEXT_PUBLIC_FONT_NAME;
+export function getDynamicFont(fontName?: string): FontConfig {
+  const targetFontName = fontName || process.env.NEXT_PUBLIC_FONT_NAME;
   const defaultFont: FontConfig = { name: 'Outfit', url: '', found: false };
   
-  const logPath = path.join(process.cwd(), 'font-debug.log');
-  fs.appendFileSync(logPath, `Checking font: ${fontName}\n`);
-
-  if (!fontName) {
+  if (!targetFontName) {
     return defaultFont;
   }
 
@@ -34,23 +31,20 @@ export function getDynamicFont(): FontConfig {
     }
 
     for (const ext of extensions) {
-      const fileName = `${fontName}${ext}`;
+      const fileName = `${targetFontName}${ext}`;
       const filePath = path.join(fontsDir, fileName);
       
       if (fs.existsSync(filePath)) {
         const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
         const cleanBasePath = basePath.endsWith("/") ? basePath.slice(0, -1) : basePath;
-        const result = {
-          name: fontName,
+        return {
+          name: targetFontName,
           url: `${cleanBasePath}/fonts/${fileName}`,
           found: true
         };
-        fs.appendFileSync(logPath, `Found font: ${JSON.stringify(result)}\n`);
-        return result;
       }
     }
   } catch (error) {
-    fs.appendFileSync(path.join(process.cwd(), 'font-debug.log'), `Error: ${error.message}\n`);
     console.error('Error checking for dynamic font:', error);
   }
 

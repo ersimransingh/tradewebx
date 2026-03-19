@@ -154,6 +154,74 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isLoading, setIsLoading] = useState(true);
   const themeFetchInFlight = useRef(false);
   const [hasFetchedTheme, setHasFetchedTheme] = useState(false);
+  const fontStyleRef = useRef<HTMLStyleElement | null>(null);
+
+  // Function to apply font face dynamically
+  const applyFontFace = (fontName: string, fontUrl: string) => {
+    if (typeof window === 'undefined') return;
+
+    if (!fontStyleRef.current) {
+      fontStyleRef.current = document.createElement('style');
+      document.head.appendChild(fontStyleRef.current);
+    }
+
+    const getFontFormat = (url: string) => {
+      if (url.endsWith('.woff2')) return 'woff2';
+      if (url.endsWith('.woff')) return 'woff';
+      if (url.endsWith('.ttf')) return 'truetype';
+      if (url.endsWith('.otf')) return 'opentype';
+      return 'woff2'; // Default
+    };
+
+    fontStyleRef.current.textContent = `
+      @font-face {
+        font-family: '${fontName}';
+        src: url('${fontUrl}') format('${getFontFormat(fontUrl)}');
+        font-weight: normal;
+        font-style: normal;
+        font-display: swap;
+      }
+      :root {
+        --dynamic-font: ${fontName}, Arial, sans-serif;
+      }
+    `;
+  };
+
+  // Function to check and set font
+  const checkAndSetFont = async (fontSettings: FontSettings) => {
+    try {
+      // Check content font (prioritized)
+      const fontToCheck = fontSettings.content || fontSettings.sidebar;
+      if (!fontToCheck || fontToCheck === 'Arial') {
+        setFonts(fontSettings);
+        if (typeof window !== 'undefined') {
+          document.documentElement.style.setProperty('--dynamic-font', 'Arial, sans-serif');
+        }
+        return;
+      }
+
+      const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+      const cleanBasePath = basePath.endsWith("/") ? basePath.slice(0, -1) : basePath;
+      
+      const response = await fetch(`${cleanBasePath}/api/font-check?name=${encodeURIComponent(fontToCheck)}`);
+      const data = await response.json();
+
+      if (data.found) {
+        applyFontFace(data.name, data.url);
+        setFonts(fontSettings);
+      } else {
+        console.warn(`Font "${fontToCheck}" not found in public/fonts, falling back to Arial`);
+        const fallbackFonts = { ...fontSettings, content: 'Arial', sidebar: 'Arial' };
+        setFonts(fallbackFonts);
+        if (typeof window !== 'undefined') {
+          document.documentElement.style.setProperty('--dynamic-font', 'Arial, sans-serif');
+        }
+      }
+    } catch (error) {
+      console.error('Error checking font:', error);
+      setFonts(fontSettings);
+    }
+  };
   const { userId: UserId, userType: UserType, isAuthenticated } = useSelector((state: RootState) => state.auth)
   // Add fetchThemes function
   const fetchThemes = async () => {
@@ -202,7 +270,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           try {
             const parsedFontSettings = JSON.parse(response.data.data.rs1[0].LevelSetting1);
             if (parsedFontSettings.fontSettings) {
-              setFonts(parsedFontSettings.fontSettings);
+              await checkAndSetFont(parsedFontSettings.fontSettings);
               // Save to localStorage
               storeLocalStorage(FONTS_STORAGE_KEY, JSON.stringify(parsedFontSettings.fontSettings));
             }
@@ -262,7 +330,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
         const savedFonts = getLocalStorage(FONTS_STORAGE_KEY);
         if (savedFonts) {
-          setFonts(JSON.parse(savedFonts));
+          const parsedFonts = JSON.parse(savedFonts);
+          await checkAndSetFont(parsedFonts);
         }
 
       } catch (error) {
