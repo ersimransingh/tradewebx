@@ -19,6 +19,7 @@ import UserAccessMenu from "@/apppages/UserAccessMenu";
 import UploadFile from "@/apppages/UploadFile";
 import QueryFormPage from "@/apppages/QueryForm";
 import JobSchedule from "@/apppages/JobSchedule";
+import AccountOpeningSetting from "@/apppages/AccountOpeningSetting";
 // Define static route components
 const staticRoutes: Record<string, React.ReactNode> = {
   dashboard: <Dashboard />,
@@ -37,6 +38,7 @@ const staticRoutes: Record<string, React.ReactNode> = {
   uploadFile: <UploadFile />,
   queryform: <QueryFormPage />,
   jobschedule: <JobSchedule />,
+  accountopeningsetting: <AccountOpeningSetting />,
 };
 
 type RouteParams = { slug?: string[] };
