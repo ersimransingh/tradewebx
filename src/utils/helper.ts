@@ -6,6 +6,7 @@ import { log } from "node:console";
 import { Token, Secret } from 'fernet';
 import CryptoJS from 'crypto-js';
 import apiService from "./apiService";
+import moment from "moment";
 
 export const clearLocalStorage = () => {
     // Preserve essential app data
@@ -721,3 +722,30 @@ export const getReadableTextColor = (bgColor: string) => {
   // If color is light → return black text
   return brightness > 160 ? "#000000" : "#ffffff";
 };
+
+export function formatToYYYYMMDD(input : string) {
+  if (!input) return null;
+
+  const normalized = String(input)
+    .replace(/(\d)(AM|PM)/i, "$1 $2")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  // some common formats (non-strict)
+  const formats = [
+    "MMM DD YYYY hh:mm A",
+    "MMM D YYYY hh:mm A",
+    "YYYY-MM-DD",
+    "DD-MM-YYYY",
+    "MM/DD/YYYY",
+    "YYYY/MM/DD",
+  ];
+
+  let m = moment(normalized, formats);
+
+  // fallback (let moment auto-parse)
+  if (!m.isValid()) {
+    m = moment(normalized);
+  }
+  return m.isValid() ? m.format("YYYYMMDD") : null;
+}

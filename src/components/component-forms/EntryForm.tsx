@@ -15,6 +15,7 @@ import CustomDateTimePicker from "./formComponents/CustomDateTimePicker";
 import CustomDatePicker from "./formComponents/CustomDatePicker";
 import { convertXmlToModifiedFormData } from "./form-helper/utils";
 import RichTextEditor from "./formComponents/RichTextEditor";
+import { formatToYYYYMMDD } from "@/utils/helper";
 
 const DropdownField: React.FC<{
     field: FormField;
@@ -267,7 +268,7 @@ const EntryForm: React.FC<EntryFormProps> = ({
             if (formValues[field.wKey] === undefined) {
                 hasMissing = true;
                 if (field.type === 'WDateBox' && field.wValue) {
-                    missingKeys[field.wKey] = moment(field.wValue).format('YYYYMMDD');
+                    missingKeys[field.wKey] = formatToYYYYMMDD(field.wValue)
                 } else if (field.type === 'WDateTimePicker' && field.wValue) {
                     missingKeys[field.wKey] = moment(field.wValue).format('YYYYMMDD HH:mm:ss');
                 } else {

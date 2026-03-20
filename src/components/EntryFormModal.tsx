@@ -13,7 +13,7 @@ import { handleValidationForDisabledField } from './component-forms/form-helper'
 import apiService from '@/utils/apiService';
 import SaveConfirmationModal from './Modals/SaveConfirmationModal';
 import { extractTagsForTabsDisabling, generateUniqueId, getFieldValue, groupFormData, parseXMLStringToObject, validateForm, convertXmlToModifiedFormData } from './component-forms/form-helper/utils';
-import { formatTextSplitString, getLocalStorage, sanitizeValueSpecialChar, sanitizePayload } from '@/utils/helper';
+import { formatTextSplitString, getLocalStorage, sanitizeValueSpecialChar, sanitizePayload, formatToYYYYMMDD } from '@/utils/helper';
 import { useTheme } from '@/context/ThemeContext';
 import Button from './ui/button/Button';
 import { DataGrid } from 'react-data-grid';
@@ -224,7 +224,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                     // Initialize master form values with any preset values
                     masterFormData.forEach((field: FormField) => {
                         if (field.type === 'WDateBox' && field.wValue) {
-                            initialMasterValues[field.wKey] = moment(field.wValue).format('YYYYMMDD');
+                            initialMasterValues[field.wKey] = formatToYYYYMMDD(field.wValue)
                         }else if(field.type === 'WDateTimePicker') {
                             const dateTime = masterTableData[field.wKey] || moment().format('YYYYMMDD HH:mm:ss');
                             initialMasterValues[field.wKey] = dateTime;
@@ -317,7 +317,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                     // Initialize form values with any preset values
                     tab.Data.forEach((field: FormField) => {
                         if (field.type === 'WDateBox' && field.wValue) {
-                            initialTabFormValues[tabKey][field.wKey] = moment(field.wValue).format('YYYYMMDD');
+                            initialTabFormValues[tabKey][field.wKey] = formatToYYYYMMDD(field.wValue)
                         }else if (field.type === 'WDateTimePicker' && field.wValue) {
                             initialTabFormValues[tabKey][field.wKey] = moment(field.wValue).format('YYYYMMDD HH:mm:ss');
                         }else if (tab?.tableData?.length && tab.Settings.isTable === "false") {
@@ -1110,7 +1110,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
             const initialValues: Record<string, any> = {};
             formData.forEach((field: FormField) => {
                 if (field.type === 'WDateBox' && field.wValue) {
-                    initialValues[field.wKey] = moment(field.wValue).format('YYYYMMDD');
+                    initialValues[field.wKey] = formatToYYYYMMDD(field.wValue)
                 }
                 else if (editData) {
                     initialValues[field.wKey] = field.wValue;
@@ -1323,7 +1323,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                     initialValues['Id'] = editData['Id'];
                 }
                 else if (field.type === 'WDateBox' && field.wValue) {
-                    initialValues[field.wKey] = moment(field.wValue).format('YYYYMMDD');
+                    initialValues[field.wKey] = formatToYYYYMMDD(field.wValue)
                 }
                 else if (editData) {
                     initialValues[field.wKey] = editData[field.wKey] || field.wValue;
@@ -2445,7 +2445,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
             const initialValues: Record<string, any> = {};
             formData.forEach((field: any) => {
                 if (field.type === 'WDateBox' && field.wValue) {
-                    initialValues[field.wKey] = moment(field.wValue).format('YYYYMMDD');
+                    initialValues[field.wKey] = formatToYYYYMMDD(field.wValue)
                 } else {
                     initialValues[field.wKey] = guardianFormValues[field.wKey] || guardianDetails?.[field.wKey]  || "";
                 }
