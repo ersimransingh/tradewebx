@@ -46,31 +46,30 @@ const initialThemes: Record<ThemeType, ThemeColors> = {
     tabBackground: "#3F4758",
     tabText: "#ffffff",
   },
-  light: {
-    background: '#d2e7ff',
-    background2: '#f9fafb',
+  light:{
+    background: '#F5F7FA',
+    background2: '#E8ECEF',
     text: '#121212',
-    primary: '#fff6e9',
-    secondary: '#ffefd7',
-    color1: '#fffef9',
-    color2: '#e3f0ff',
-    color3: '#f0f0f0',
-    textInputBackground: "#fffef9",
-    textInputBorder: "#3178c6",
+    primary: '#5B627E',      
+    secondary: '#66A39B',    
+    color1: '#DFC4AD',       
+    color2: '#87AABD',       
+    color3: '#BED0C4',
+    textInputBackground: "#FFFFFF",
+    textInputBorder: "#CED5D4", 
     textInputText: "#121212",
-    buttonBackground: "#87bdfa",
-    buttonText: "#121212",
+    buttonBackground: "#66A39B",
+    buttonText: "#FFFFFF",
     errorText: "#EF4444",
-    biometricBox: "#d2e7ff",
+    biometricBox: "#E8ECEF",
     biometricText: "#121212",
-    cardBackground: "#ffffff",
-    oddCardBackground: "#fffef9",
-    evenCardBackground: "#e3f0ff",
-    filtersBackground: "#ffffff",
-    tabBackground: "#ffffff",
+    cardBackground: "#FFFFFF",
+    oddCardBackground: "#F5F7FA",
+    evenCardBackground: "#E8ECEF",
+    filtersBackground: "#FFFFFF",
+    tabBackground: "#FFFFFF",
     tabText: "#121212",
-
-  },
+},
   lightDark: {
     background: '#242424',
     background2: '#1e293b',
@@ -143,18 +142,103 @@ export const THEME_COLORS_STORAGE_KEY = 'app_theme_colors';
 const FONTS_STORAGE_KEY = 'app_fonts';
 
 // Default font settings
+const rawFontName = process.env.NEXT_PUBLIC_FONT_NAME || 'Arial';
+const sanitizedFontName = rawFontName.replace(/['"]+/g, '').trim();
+
 const defaultFonts: FontSettings = {
-  sidebar: 'Arial',
-  content: 'Arial'
+  sidebar: sanitizedFontName,
+  content: sanitizedFontName
 };
 
-export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const ThemeProvider: React.FC<{ children: React.ReactNode, nonce?: string }> = ({ children, nonce }) => {
   const [theme, setTheme] = useState<ThemeType>('light');
   const [themes, setThemes] = useState<Record<ThemeType, ThemeColors>>(initialThemes);
   const [fonts, setFonts] = useState<FontSettings>(defaultFonts);
   const [isLoading, setIsLoading] = useState(true);
   const themeFetchInFlight = useRef(false);
   const [hasFetchedTheme, setHasFetchedTheme] = useState(false);
+  const fontStyleRef = useRef<HTMLStyleElement | null>(null);
+
+  // Function to apply font face dynamically
+  const applyFontFace = (fontName: string, fontUrl: string) => {
+    if (typeof window === 'undefined') return;
+
+    if (!fontStyleRef.current) {
+      fontStyleRef.current = document.createElement('style');
+      fontStyleRef.current.id = 'dynamic-font-client';
+      if (nonce) fontStyleRef.current.nonce = nonce;
+      document.head.appendChild(fontStyleRef.current);
+    }
+
+    const getFontFormat = (url: string) => {
+      if (url.endsWith('.woff2')) return 'woff2';
+      if (url.endsWith('.woff')) return 'woff';
+      if (url.endsWith('.ttf')) return 'truetype';
+      if (url.endsWith('.otf')) return 'opentype';
+      return 'woff2'; // Default
+    };
+
+    fontStyleRef.current.textContent = `
+      @font-face {
+        font-family: '${fontName}';
+        src: url('${fontUrl}') format('${getFontFormat(fontUrl)}');
+        font-weight: normal;
+        font-style: normal;
+        font-display: swap;
+      }
+      :root {
+        --dynamic-font: ${fontName}, Arial, sans-serif;
+      }
+    `;
+  };
+
+  // Function to check and set font
+  const checkAndSetFont = async (fontSettings: FontSettings) => {
+    try {
+      // Check content font (prioritized)
+      const fontToCheck = fontSettings.content || fontSettings.sidebar;
+      const isArial = !fontToCheck || fontToCheck.toLowerCase() === 'arial';
+
+      if (isArial) {
+        setFonts(fontSettings);
+        if (typeof window !== 'undefined') {
+          // Clear any dynamic style tags
+          if (fontStyleRef.current) {
+            fontStyleRef.current.textContent = '';
+          }
+          // Reset the CSS variable on html element
+          document.documentElement.style.setProperty('--dynamic-font', 'Arial, sans-serif');
+          
+          // Also try to remove the SSR style tag just in case
+          const ssrStyle = document.getElementById('dynamic-font-ssg');
+          if (ssrStyle) {
+            ssrStyle.remove();
+          }
+        }
+        return;
+      }
+
+      const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+      const cleanBasePath = basePath.endsWith("/") ? basePath.slice(0, -1) : basePath;
+      
+      const response = await fetch(`${cleanBasePath}/api/font-check?name=${encodeURIComponent(fontToCheck)}`);
+      const data = await response.json();
+
+      if (data.found) {
+        applyFontFace(data.name, data.url);
+        setFonts(fontSettings);
+      } else {
+        const fallbackFonts = { ...fontSettings, content: 'Arial', sidebar: 'Arial' };
+        setFonts(fallbackFonts);
+        if (typeof window !== 'undefined') {
+          document.documentElement.style.setProperty('--dynamic-font', 'Arial, sans-serif');
+        }
+      }
+    } catch (error) {
+      console.error('Error checking font:', error);
+      setFonts(fontSettings);
+    }
+  };
   const { userId: UserId, userType: UserType, isAuthenticated } = useSelector((state: RootState) => state.auth)
   // Add fetchThemes function
   const fetchThemes = async () => {
@@ -200,17 +284,43 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const parsedThemeSettings = JSON.parse(response.data.data.rs0[0].LevelSetting);
 
         if (response.data?.data?.rs1?.[0]?.LevelSetting1) {
+          let levelSetting = response.data.data.rs1[0].LevelSetting1;
+          
           try {
-            const parsedFontSettings = JSON.parse(response.data.data.rs1[0].LevelSetting1);
+            // Auto-fix common truncation: check if braces are balanced
+            const openBraces = (levelSetting.match(/{/g) || []).length;
+            const closeBraces = (levelSetting.match(/}/g) || []).length;
+            if (openBraces > closeBraces) {
+              levelSetting += '}'.repeat(openBraces - closeBraces);
+            }
+            // for testing purpose to check custom fonts 
+            // const parsedFontSettings =  {
+            //   fontSettings: {
+            //     sidebar: "Selawik-Bold",
+            //     content: "Selawik-Bold"
+            //   }
+            // }
+             const parsedFontSettings = JSON.parse(levelSetting);
+            
             if (parsedFontSettings.fontSettings) {
-              setFonts(parsedFontSettings.fontSettings);
+              await checkAndSetFont(parsedFontSettings.fontSettings);
               // Save to localStorage
               storeLocalStorage(FONTS_STORAGE_KEY, JSON.stringify(parsedFontSettings.fontSettings));
             }
           } catch (error) {
-            console.error('Error parsing font settings:', error);
-            console.log('Invalid JSON:', response.data.data.rs1[0].LevelSetting1);
-            // Continue using default or previously saved font settings
+            console.error('Invalid JSON in LevelSetting1, attempting regex extraction:', error);
+            
+            // Generic extraction: look for "content":"..." or "sidebar":"..."
+            const contentMatch = levelSetting.match(/"content"\s*:\s*"([^"]+)"/i);
+            const sidebarMatch = levelSetting.match(/"sidebar"\s*:\s*"([^"]+)"/i);
+            const extractedFont = (contentMatch?.[1] || sidebarMatch?.[1]);
+
+            if (extractedFont) {
+              await checkAndSetFont({ 
+                sidebar: sidebarMatch?.[1] || extractedFont, 
+                content: contentMatch?.[1] || extractedFont 
+              });
+            }
           }
         }
 
@@ -247,6 +357,12 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   useEffect(() => {
     const loadTheme = async () => {
+      // Remove SSR injected style tag once client-side is ready
+      if (typeof window !== 'undefined') {
+        const ssrStyle = document.getElementById('dynamic-font-ssg');
+        if (ssrStyle) ssrStyle.remove();
+      }
+
       try {
         // First try to load from localStorage
         const savedThemeColors = getLocalStorage(THEME_COLORS_STORAGE_KEY);
@@ -263,7 +379,18 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
         const savedFonts = getLocalStorage(FONTS_STORAGE_KEY);
         if (savedFonts) {
-          setFonts(JSON.parse(savedFonts));
+          try {
+            const parsedFonts = JSON.parse(savedFonts);
+            await checkAndSetFont(parsedFonts);
+          } catch (e) {
+            console.error('Error parsing saved fonts:', e);
+            if (process.env.NEXT_PUBLIC_FONT_NAME) {
+              await checkAndSetFont(defaultFonts);
+            }
+          }
+        } else if (process.env.NEXT_PUBLIC_FONT_NAME) {
+          // If no saved fonts but env font exists, try to load it
+          await checkAndSetFont(defaultFonts);
         }
 
       } catch (error) {

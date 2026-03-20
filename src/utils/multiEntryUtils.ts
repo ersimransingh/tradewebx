@@ -141,7 +141,29 @@ const processNodeForPdf = (data: any[], level = 0): any => {
     };
 };
 
-export const generatePdf = async (data: any[], headerData: any, appMetadata: any) => {
+export const generatePdf = async (data: any[], headerData: any, appMetadata: any, fontName?: string) => {
+    // Resilience: Ensure pdfMake and standard fonts are available
+    if (!(pdfMake as any).vfs && (pdfFonts as any).vfs) {
+        (pdfMake as any).vfs = (pdfFonts as any).vfs;
+    }
+    
+    if (!(pdfMake as any).fonts) {
+        (pdfMake as any).fonts = {
+            Roboto: {
+                normal: 'Roboto-Regular.ttf',
+                bold: 'Roboto-Medium.ttf',
+                italics: 'Roboto-Italic.ttf',
+                bolditalics: 'Roboto-MediumItalic.ttf'
+            }
+        };
+    }
+
+    // Alias custom font to Roboto if not registered to prevent crash
+    const appliedFont = fontName || 'Roboto';
+    if (!(pdfMake as any).fonts[appliedFont]) {
+        (pdfMake as any).fonts[appliedFont] = (pdfMake as any).fonts.Roboto;
+    }
+
     console.log("headerData---->", headerData,appMetadata);
     let logoImage = '';
     if (appMetadata?.companyLogo) {
@@ -183,11 +205,13 @@ export const generatePdf = async (data: any[], headerData: any, appMetadata: any
             processNodeForPdf(data)
         ],
         styles: {
-            header: { fontSize: 16, bold: true },
-            subheader: { fontSize: 12, bold: true },
-            tableHeader: { bold: true, color: 'black' },
-            small: { fontSize: 8, italics: true }
-        }
+            header: { fontSize: 16, bold: true, font: fontName || undefined },
+            subheader: { fontSize: 12, bold: true, font: fontName || undefined },
+            tableHeader: { bold: true, color: 'black', font: fontName || undefined },
+            small: { fontSize: 8, italics: true, font: fontName || undefined },
+            defaultStyle: { font: fontName || undefined }
+        },
+        defaultStyle: { font: fontName || undefined }
     };
 
     pdfMake.createPdf(docDefinition).download("MultiLevelReport.pdf");
@@ -196,7 +220,7 @@ export const generatePdf = async (data: any[], headerData: any, appMetadata: any
 
 // --- Excel Generation ---
 
-const processNodeForExcel = (worksheet: ExcelJS.Worksheet, data: any[], level: number, startRow: number): number => {
+const processNodeForExcel = (worksheet: ExcelJS.Worksheet, data: any[], level: number, startRow: number, fontName?: string): number => {
     if (!data || data.length === 0) return startRow;
 
     let currentRow = startRow;
@@ -209,7 +233,7 @@ const processNodeForExcel = (worksheet: ExcelJS.Worksheet, data: any[], level: n
     primitiveKeys.forEach((key, colIndex) => {
         const cell = headerRow.getCell(level + 1 + colIndex); // Indent by level
         cell.value = key.replace(/([A-Z])/g, ' $1').trim();
-        cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, name: fontName || undefined };
         cell.fill = {
             type: 'pattern',
             pattern: 'solid',
@@ -225,6 +249,7 @@ const processNodeForExcel = (worksheet: ExcelJS.Worksheet, data: any[], level: n
         primitiveKeys.forEach((key, colIndex) => {
             const cell = dataRow.getCell(level + 1 + colIndex);
             cell.value = row[key];
+            cell.font = { name: fontName || undefined };
             cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
             
             // Basic type formatting
@@ -241,11 +266,11 @@ const processNodeForExcel = (worksheet: ExcelJS.Worksheet, data: any[], level: n
                 const titleRow = worksheet.getRow(currentRow);
                 const titleCell = titleRow.getCell(level + 2);
                 titleCell.value = `> ${arrayKey.replace(/([A-Z])/g, ' $1').trim()}`;
-                titleCell.font = { italic: true, bold: true };
+                titleCell.font = { italic: true, bold: true, name: fontName || undefined };
                 currentRow++;
 
                 // Recurse
-                currentRow = processNodeForExcel(worksheet, row[arrayKey], level + 1, currentRow);
+                currentRow = processNodeForExcel(worksheet, row[arrayKey], level + 1, currentRow, fontName);
                 currentRow++; // Spacing
             }
         });
@@ -254,7 +279,7 @@ const processNodeForExcel = (worksheet: ExcelJS.Worksheet, data: any[], level: n
     return currentRow;
 };
 
-export const generateExcel = async (data: any[], headerData: any, appMetadata: any) => {
+export const generateExcel = async (data: any[], headerData: any, appMetadata: any, fontName?: string) => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Report');
 
@@ -289,7 +314,7 @@ export const generateExcel = async (data: any[], headerData: any, appMetadata: a
     worksheet.getCell('C2').alignment = { horizontal: 'center' };
 
     const startRow = 5;
-    processNodeForExcel(worksheet, data, 0, startRow);
+    processNodeForExcel(worksheet, data, 0, startRow, fontName);
 
     const buffer = await workbook.xlsx.writeBuffer();
     saveAs(new Blob([buffer]), "MultiLevelReport.xlsx");

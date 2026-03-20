@@ -70,7 +70,7 @@ export default function ClientLayout({
     <body className={`${outfit.variable} dark: bg - gray - 900`}>
       <EmotionCacheProvider nonce={nonce}>
         <Provider store={store}>
-          <ThemeProvider>
+          <ThemeProvider nonce={nonce}>
             <SidebarProvider>
               <SkipLink targetId="main-content" />
               <AuthGuard>

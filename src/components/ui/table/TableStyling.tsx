@@ -21,9 +21,9 @@ function TableStyling({ onRowClick, screenSize = 'web' }: TableStylingProps) {
         --rdg-row-hover-background-color: ${colors.color1};
       }
       
-      .rdg-header-row {
+      .rdg-header-row .rdg-cell {
         background-color: ${colors.primary};
-        color: ${colors.buttonText};
+        color: ${colors.buttonText} !important;
         font-weight: 600;
       }
 
