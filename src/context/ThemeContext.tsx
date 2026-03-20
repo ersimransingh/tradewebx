@@ -142,9 +142,12 @@ export const THEME_COLORS_STORAGE_KEY = 'app_theme_colors';
 const FONTS_STORAGE_KEY = 'app_fonts';
 
 // Default font settings
+const rawFontName = process.env.NEXT_PUBLIC_FONT_NAME || 'Arial';
+const sanitizedFontName = rawFontName.replace(/['"]+/g, '').trim();
+
 const defaultFonts: FontSettings = {
-  sidebar: 'Arial',
-  content: 'Arial'
+  sidebar: sanitizedFontName,
+  content: sanitizedFontName
 };
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode, nonce?: string }> = ({ children, nonce }) => {
@@ -162,6 +165,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode, nonce?: string
 
     if (!fontStyleRef.current) {
       fontStyleRef.current = document.createElement('style');
+      fontStyleRef.current.id = 'dynamic-font-client';
       if (nonce) fontStyleRef.current.nonce = nonce;
       document.head.appendChild(fontStyleRef.current);
     }
@@ -193,10 +197,23 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode, nonce?: string
     try {
       // Check content font (prioritized)
       const fontToCheck = fontSettings.content || fontSettings.sidebar;
-      if (!fontToCheck || fontToCheck === 'Arial') {
+      const isArial = !fontToCheck || fontToCheck.toLowerCase() === 'arial';
+
+      if (isArial) {
         setFonts(fontSettings);
         if (typeof window !== 'undefined') {
+          // Clear any dynamic style tags
+          if (fontStyleRef.current) {
+            fontStyleRef.current.textContent = '';
+          }
+          // Reset the CSS variable on html element
           document.documentElement.style.setProperty('--dynamic-font', 'Arial, sans-serif');
+          
+          // Also try to remove the SSR style tag just in case
+          const ssrStyle = document.getElementById('dynamic-font-ssg');
+          if (ssrStyle) {
+            ssrStyle.remove();
+          }
         }
         return;
       }
@@ -211,7 +228,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode, nonce?: string
         applyFontFace(data.name, data.url);
         setFonts(fontSettings);
       } else {
-        console.warn(`Font "${fontToCheck}" not found in public/fonts, falling back to Arial`);
         const fallbackFonts = { ...fontSettings, content: 'Arial', sidebar: 'Arial' };
         setFonts(fallbackFonts);
         if (typeof window !== 'undefined') {
@@ -268,17 +284,43 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode, nonce?: string
         const parsedThemeSettings = JSON.parse(response.data.data.rs0[0].LevelSetting);
 
         if (response.data?.data?.rs1?.[0]?.LevelSetting1) {
+          let levelSetting = response.data.data.rs1[0].LevelSetting1;
+          
           try {
-            const parsedFontSettings = JSON.parse(response.data.data.rs1[0].LevelSetting1);
+            // Auto-fix common truncation: check if braces are balanced
+            const openBraces = (levelSetting.match(/{/g) || []).length;
+            const closeBraces = (levelSetting.match(/}/g) || []).length;
+            if (openBraces > closeBraces) {
+              levelSetting += '}'.repeat(openBraces - closeBraces);
+            }
+            // for testing purpose to check custom fonts 
+            // const parsedFontSettings =  {
+            //   fontSettings: {
+            //     sidebar: "Selawik-Bold",
+            //     content: "Selawik-Bold"
+            //   }
+            // }
+             const parsedFontSettings = JSON.parse(levelSetting);
+            
             if (parsedFontSettings.fontSettings) {
               await checkAndSetFont(parsedFontSettings.fontSettings);
               // Save to localStorage
               storeLocalStorage(FONTS_STORAGE_KEY, JSON.stringify(parsedFontSettings.fontSettings));
             }
           } catch (error) {
-            console.error('Error parsing font settings:', error);
-            console.log('Invalid JSON:', response.data.data.rs1[0].LevelSetting1);
-            // Continue using default or previously saved font settings
+            console.error('Invalid JSON in LevelSetting1, attempting regex extraction:', error);
+            
+            // Generic extraction: look for "content":"..." or "sidebar":"..."
+            const contentMatch = levelSetting.match(/"content"\s*:\s*"([^"]+)"/i);
+            const sidebarMatch = levelSetting.match(/"sidebar"\s*:\s*"([^"]+)"/i);
+            const extractedFont = (contentMatch?.[1] || sidebarMatch?.[1]);
+
+            if (extractedFont) {
+              await checkAndSetFont({ 
+                sidebar: sidebarMatch?.[1] || extractedFont, 
+                content: contentMatch?.[1] || extractedFont 
+              });
+            }
           }
         }
 
@@ -315,6 +357,12 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode, nonce?: string
 
   useEffect(() => {
     const loadTheme = async () => {
+      // Remove SSR injected style tag once client-side is ready
+      if (typeof window !== 'undefined') {
+        const ssrStyle = document.getElementById('dynamic-font-ssg');
+        if (ssrStyle) ssrStyle.remove();
+      }
+
       try {
         // First try to load from localStorage
         const savedThemeColors = getLocalStorage(THEME_COLORS_STORAGE_KEY);
@@ -331,8 +379,18 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode, nonce?: string
 
         const savedFonts = getLocalStorage(FONTS_STORAGE_KEY);
         if (savedFonts) {
-          const parsedFonts = JSON.parse(savedFonts);
-          await checkAndSetFont(parsedFonts);
+          try {
+            const parsedFonts = JSON.parse(savedFonts);
+            await checkAndSetFont(parsedFonts);
+          } catch (e) {
+            console.error('Error parsing saved fonts:', e);
+            if (process.env.NEXT_PUBLIC_FONT_NAME) {
+              await checkAndSetFont(defaultFonts);
+            }
+          }
+        } else if (process.env.NEXT_PUBLIC_FONT_NAME) {
+          // If no saved fonts but env font exists, try to load it
+          await checkAndSetFont(defaultFonts);
         }
 
       } catch (error) {

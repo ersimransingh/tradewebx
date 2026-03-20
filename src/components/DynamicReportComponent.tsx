@@ -297,7 +297,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
 
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
     const [pdfParams, setPdfParams] = useState<
-        [HTMLDivElement | null, any, any, any[], any, any, any, 'download' | 'email']
+        [HTMLDivElement | null, any, any, any[], any, any, any, 'download' | 'email', string | undefined]
     >();
     const [hasFetchAttempted, setHasFetchAttempted] = useState(false);
     const [pageLoaded, setPageLoaded] = useState(false);
@@ -2051,7 +2051,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                             {isMasterButtonEnabled('Excel') && (
                                                 <button
                                                     onClick={() => {
-                                                        exportTableToExcel(tableRef.current, jsonData, apiData, pageData, appMetadata, textColumns);
+                                                        exportTableToExcel(tableRef.current, jsonData, apiData, pageData, appMetadata, textColumns, fonts.content);
                                                         setIsMobileMenuOpen(false);
                                                     }}
                                                     className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
@@ -2065,7 +2065,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                             {!hasSelectableButtons && isMasterButtonEnabled('Email') && (
                                                 <button
                                                     onClick={() => {
-                                                        setPdfParams([tableRef.current, jsonData, appMetadata, apiData, pageData, filters, currentLevel, 'email']);
+                                                        setPdfParams([tableRef.current, jsonData, appMetadata, apiData, pageData, filters, currentLevel, 'email', fonts.content]);
                                                         setIsConfirmModalOpen(true);
                                                         setIsMobileMenuOpen(false);
                                                     }}
@@ -2113,7 +2113,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                                     {!hasSelectableButtons && !showTypeList && isMasterButtonEnabled('PDF') && (
                                                         <button
                                                             onClick={() => {
-                                                                exportTableToPdf(tableRef.current, jsonData, appMetadata, apiData, pageData, filters, currentLevel, 'download');
+                                                                exportTableToPdf(tableRef.current, jsonData, appMetadata, apiData, pageData, filters, currentLevel, 'download', fonts.content);
                                                                 setIsMobileMenuOpen(false);
                                                             }}
                                                             className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
@@ -2328,7 +2328,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                             <button
                                                 className="p-2 rounded hover:bg-gray-100 transition-colors"
                                                 onClick={() => {
-                                                    setPdfParams([tableRef.current, jsonData, appMetadata, apiData, pageData, filters, currentLevel, 'email']);
+                                                    setPdfParams([tableRef.current, jsonData, appMetadata, apiData, pageData, filters, currentLevel, 'email', fonts.content]);
                                                     setIsConfirmModalOpen(true);
                                                 }}
                                                 style={{ color: colors.text }}
@@ -2365,7 +2365,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                     <button
                                         className="p-2 rounded hover:bg-gray-100 transition-colors"
                                         onClick={() => {
-                                            setPdfParams([tableRef.current, jsonData, appMetadata, apiData, pageData, filters, currentLevel, 'email']);
+                                            setPdfParams([tableRef.current, jsonData, appMetadata, apiData, pageData, filters, currentLevel, 'email', fonts.content]);
                                             setIsConfirmModalOpen(true);
                                         }}
                                         style={{ color: colors.text }}
@@ -2427,13 +2427,13 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                                 className="p-2 rounded hover:bg-gray-100 transition-colors"
                                                 onClick={() => {
                                                     if (componentType === "multireport") {
-                                                        generateExcel(filteredApiData, jsonData, appMetadata);
+                                                        generateExcel(filteredApiData, jsonData, appMetadata, fonts.content);
                                                     } if (apiData?.length > 25000) {
                                                         toast.warning(`Excel export allowed up to 25,000 records. You have ${apiData?.length} records.`);
                                                         return; // stop here, don't export
                                                     }
                                                     else {
-                                                        exportTableToExcel(tableRef.current, jsonData, apiData, pageData, appMetadata, textColumns);
+                                                        exportTableToExcel(tableRef.current, jsonData, apiData, pageData, appMetadata, textColumns, fonts.content);
                                                     }
                                                 }}
                                                 style={{ color: colors.text }}
@@ -2453,15 +2453,14 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                             <button
                                                 onClick={() => {
                                                     if (componentType === "multireport") {
-                                                        generatePdf(filteredApiData, jsonData, appMetadata);
+                                                        generatePdf(filteredApiData, jsonData, appMetadata, fonts.content);
                                                         return;
                                                     }
                                                     if (apiData?.length > 8000) {
                                                         toast.warning(`PDF export allowed up to 8,000 records. You have ${apiData?.length} records.`);
                                                         return; // stop here
                                                     }
-                                                    exportTableToPdf(tableRef.current, jsonData, appMetadata, apiData, pageData, filters, currentLevel, 'download'
-                                                    );
+                                                    exportTableToPdf(tableRef.current, jsonData, appMetadata, apiData, pageData, filters, currentLevel, 'download', fonts.content);
                                                 }}
                                                 className="p-2 rounded transition-colors flex items-center hover:bg-gray-100"
                                                 style={{ color: colors.text }}

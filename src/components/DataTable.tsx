@@ -2037,7 +2037,8 @@ export const exportTableToExcel = async (
     apiData: any,
     pageData: any,
     appMetadata: any,
-    textColumns: string[] = []
+    textColumns: string[] = [],
+    fontName?: string
 ) => {
     if (!apiData || apiData.length === 0) return;
     
@@ -2102,7 +2103,7 @@ export const exportTableToExcel = async (
     let rowCursor = 1;
 
     worksheet.getCell(`D${rowCursor}`).value = companyName;
-    worksheet.getCell(`D${rowCursor}`).font = { bold: true };
+    worksheet.getCell(`D${rowCursor}`).font = { bold: true, name: fontName || undefined };
     rowCursor++;
 
     // reportHeader.split("\\n").forEach(line => {
@@ -2129,6 +2130,7 @@ export const exportTableToExcel = async (
         const normKey = header.replace(/\s+/g, '');
         const cell = headerRow.getCell(colIdx + 1);
         cell.value = header;
+        cell.font = { name: fontName || undefined, bold: true };
         cell.alignment = { horizontal: normalizedRightList.includes(normKey) ? 'right' : 'left' };
     });
     headerRow.commit();
@@ -2179,9 +2181,11 @@ export const exportTableToExcel = async (
                 cell.numFmt = '@';           // Number should behaves as text
             } else if (!isNaN(value) && value !== '' && typeof value !== 'object') {
                 cell.value = Number(value);
+                cell.font = { name: fontName || undefined };
                 cell.alignment = { horizontal: 'right' }; // default numeric right align
             } else {
                 cell.value = value;
+                cell.font = { name: fontName || undefined };
                 cell.alignment = {
                     horizontal: normalizedRightList.includes(normKey) ? 'right' : 'left'
                 };
@@ -2221,7 +2225,7 @@ export const exportTableToExcel = async (
             };
         }
 
-        cell.font = { bold: true };
+        cell.font = { bold: true, name: fontName || undefined };
         cell.fill = { // Light green background
             type: 'pattern',
             pattern: 'solid',
@@ -2390,7 +2394,29 @@ export const exportTableToPdf = async (
     filters: any,
     currentLevel: any,
     mode: 'download' | 'email',
+    fontName?: string
 ) => {
+    // Resilience: Ensure pdfMake and standard fonts are available
+    if (!(pdfMake as any).vfs && (pdfFonts as any).vfs) {
+        (pdfMake as any).vfs = (pdfFonts as any).vfs;
+    }
+    
+    if (!(pdfMake as any).fonts) {
+        (pdfMake as any).fonts = {
+            Roboto: {
+                normal: 'Roboto-Regular.ttf',
+                bold: 'Roboto-Medium.ttf',
+                italics: 'Roboto-Italic.ttf',
+                bolditalics: 'Roboto-MediumItalic.ttf'
+            }
+        };
+    }
+
+    // Alias custom font to Roboto if not registered to prevent crash
+    const appliedFont = fontName || 'Roboto';
+    if (!(pdfMake as any).fonts[appliedFont]) {
+        (pdfMake as any).fonts[appliedFont] = (pdfMake as any).fonts.Roboto;
+    }
 
 
     if (!allData || allData.length === 0) return;
@@ -2494,6 +2520,7 @@ export const exportTableToPdf = async (
                 text: key,
                 bold: true,
                 fillColor: '#eeeeee',
+                font: fontName || undefined,
                 alignment: normalizedRightAlignedKeys.includes(normalizedKey) ? 'right' : 'left',
             };
         })
@@ -2506,6 +2533,7 @@ export const exportTableToPdf = async (
             const normalizedKey = key.replace(/\s+/g, '');
             return {
                 text: formatValue(row[key], key),
+                font: fontName || undefined,
                 alignment: normalizedRightAlignedKeys.includes(normalizedKey) ? 'right' : 'left',
             };
         });
@@ -2518,6 +2546,7 @@ export const exportTableToPdf = async (
         return {
             text: isTotalCol ? totals[normalizedKey].toFixed(decimalMap[key] !== undefined ? decimalMap[key] : 2) : '',
             bold: true,
+            font: fontName || undefined,
             alignment: normalizedRightAlignedKeys.includes(normalizedKey) ? 'right' : 'left',
         };
     });
@@ -2551,15 +2580,16 @@ export const exportTableToPdf = async (
                         : {},
                     {
                         stack: [
-                            { text: jsonData?.CompanyName?.[0] || '', style: 'header' },
-                            { text: `${fileTitle} ${dateRange}`, style: 'subheader' },
+                            { text: jsonData?.CompanyName?.[0] || '', style: 'header', font: fontName || undefined },
+                            { text: `${fileTitle} ${dateRange}`, style: 'subheader', font: fontName || undefined },
                             {
                                 text: clientName
                                     ? clientCode
                                         ? `${clientName} (${clientCode})`
                                         : clientName
                                     : '',
-                                style: 'small'
+                                style: 'small',
+                                font: fontName || undefined
                             },
                         ],
                         alignment: 'center',
@@ -2590,11 +2620,12 @@ export const exportTableToPdf = async (
             },
         ],
         styles: {
-            header: { fontSize: 14, bold: true, alignment: 'center', margin: [0, 0, 0, 2] },
-            subheader: { fontSize: 10, alignment: 'center', margin: [0, 0, 0, 2] },
-            small: { fontSize: 9, alignment: 'center', margin: [0, 0, 0, 6] },
-            tableStyle: { fontSize: 8, margin: [0, 2, 0, 2] },
+            header: { fontSize: 14, bold: true, alignment: 'center', margin: [0, 0, 0, 2], font: fontName || undefined },
+            subheader: { fontSize: 10, alignment: 'center', margin: [0, 0, 0, 2], font: fontName || undefined },
+            small: { fontSize: 9, alignment: 'center', margin: [0, 0, 0, 6], font: fontName || undefined },
+            tableStyle: { fontSize: 8, margin: [0, 2, 0, 2], font: fontName || undefined },
         },
+        defaultStyle: { font: fontName || undefined },
         footer: function (currentPage: number, pageCount: number) {
             const now = new Date().toLocaleString('en-GB');
             return {
