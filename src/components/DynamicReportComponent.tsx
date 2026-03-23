@@ -1950,9 +1950,10 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                 {/* Retry Button */}
                 <button
                     onClick={() => window.location.reload()}
-                    className="px-4 py-2 rounded text-white font-medium"
+                    className="px-4 py-2 rounded font-medium"
                     style={{
-                        backgroundColor: colors.buttonBackground || '#3b82f6'
+                        backgroundColor: colors.buttonBackground || '#3b82f6',
+                        color: colors.buttonText || '#ffffff'
                     }}
                 >
                     Retry / Refresh Page
@@ -2345,8 +2346,12 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                             className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ease-in-out ${
                                                 selectedRows.length === 0
                                                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                                    : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95'
+                                                    : 'hover:opacity-90 active:scale-95'
                                             }`}
+                                            style={selectedRows.length !== 0 ? { 
+                                                backgroundColor: colors.buttonBackground, 
+                                                color: colors.buttonText 
+                                            } : {}}
                                         >
                                             {button.name}
                                         </button>
