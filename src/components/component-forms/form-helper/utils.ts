@@ -151,6 +151,7 @@ export const convertXmlToModifiedFormData = (
       {
         fieldsValueChange: Record<string, string | number>;
         fieldDisabled: string[];
+        fieldVisible: string[];
       }
     >;
   } = {
@@ -188,6 +189,22 @@ export const convertXmlToModifiedFormData = (
   }
 
   /* ------------------------------------------------
+   2.1 VisibleFields → map by tabName
+  ------------------------------------------------ */
+  const visibleFieldsMap: Record<string, string[]> = {};
+  const visibleFieldsNode = xmlDoc.querySelector('VisibleFields');
+
+  if (visibleFieldsNode) {
+    Array.from(visibleFieldsNode.children).forEach(tabNode => {
+      visibleFieldsMap[tabNode.tagName] =
+        tabNode.textContent
+          ?.split(',')
+          .map(field => field.trim())
+          .filter(Boolean) || [];
+    });
+  }
+
+  /* ------------------------------------------------
    3. FiledValueChanges → tabsDataChange
   ------------------------------------------------ */
   const filedValueChangesNode = xmlDoc.querySelector('FiledValueChanges');
@@ -214,7 +231,8 @@ export const convertXmlToModifiedFormData = (
 
       result.tabsDataChange[tabName] = {
         fieldsValueChange,
-        fieldDisabled: disabledFieldsMap[tabName] || []
+        fieldDisabled: disabledFieldsMap[tabName] || [],
+        fieldVisible: visibleFieldsMap[tabName] || []
       };
     });
   }
