@@ -474,7 +474,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
             }
 
             // Disable Fields
-            if (Array.isArray(fieldDisabled) && fieldDisabled.length > 0) {
+            if (Array.isArray(fieldDisabled) && fieldDisabled.length > 0 && action !== 'view') {
                 newMasterFormData = newMasterFormData.map(field => {
                     if (fieldDisabled.includes(field.wKey)) {
                         return { ...field, FieldEnabledTag: "N" };
@@ -531,7 +531,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                 }
 
                 // Disable Fields (Update Data definitions)
-                if (Array.isArray(fieldDisabled) && fieldDisabled.length > 0) {
+                if (Array.isArray(fieldDisabled) && fieldDisabled.length > 0 && action !== 'view') {
                     newTabsData[tabIndex] = {
                         ...newTabsData[tabIndex],
                         Data: newTabsData[tabIndex].Data.map((field: FormField) => {
@@ -1210,7 +1210,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
 
             // THEN: Process validations sequentially
             for (const field of formData) {
-                if (Object.keys(field?.ValidationAPI || {}).length > 0 && isEditData && !isViewMode) {
+                if (Object.keys(field?.ValidationAPI || {}).length > 0 && isEditData) {
                     await handleValidationForDisabledField(
                         field,
                         editData,
@@ -1220,7 +1220,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                 }
             }
 
-            if (isEditData && !isViewMode) {
+            if (isEditData) {
                 setMasterFormData(() => {
                     const newFormData = [...formData];
                     allUpdates.forEach(update => {
@@ -1231,16 +1231,18 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                                     ...newFormData[fieldIndex],
                                     FieldVisibleTag: update.isDisabled ? 'N' : 'Y'
                                 };
-                            } else if (update.flag !== "D") {
-                                newFormData[fieldIndex] = {
-                                    ...newFormData[fieldIndex],
-                                    FieldEnabledTag: update.isDisabled ? 'N' : newFormData[fieldIndex].FieldEnabledTag
-                                };
-                            } else {
-                                newFormData[fieldIndex] = {
-                                    ...newFormData[fieldIndex],
-                                    FieldEnabledTag: update.isDisabled ? 'N' : 'Y'
-                                };
+                            } else if (!isViewMode) {
+                                if (update.flag !== "D") {
+                                    newFormData[fieldIndex] = {
+                                        ...newFormData[fieldIndex],
+                                        FieldEnabledTag: update.isDisabled ? 'N' : newFormData[fieldIndex].FieldEnabledTag
+                                    };
+                                } else {
+                                    newFormData[fieldIndex] = {
+                                        ...newFormData[fieldIndex],
+                                        FieldEnabledTag: update.isDisabled ? 'N' : 'Y'
+                                    };
+                                }
                             }
                         }
                     });
@@ -1252,10 +1254,12 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                         if (update.fieldKey in newValues) {
                             if (update.flag === "V" && update.isDisabled) {
                                 newValues[update.fieldKey] = "";
-                            } else if (update.tagValue === "true" || update.tagValue === "false") {
-                                newValues[update.fieldKey] = newValues[update.fieldKey];
-                            } else {
-                                newValues[update.fieldKey] = update.tagValue || newValues[update.fieldKey];
+                            } else if (!isViewMode) {
+                                if (update.tagValue === "true" || update.tagValue === "false") {
+                                    newValues[update.fieldKey] = newValues[update.fieldKey];
+                                } else {
+                                    newValues[update.fieldKey] = update.tagValue || newValues[update.fieldKey];
+                                }
                             }
                         }
                     });
@@ -1432,7 +1436,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
 
             // THEN: Process validations sequentially
             for (const field of response.data?.data?.rs0 || []) {
-                if (Object.keys(field?.ValidationAPI|| {}).length > 0 && isEditData && !isViewMode) {
+                if (Object.keys(field?.ValidationAPI|| {}).length > 0 && isEditData) {
                     await handleValidationForDisabledField(
                         field,
                         editData,
@@ -1442,7 +1446,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                 }
             }
 
-            if (isEditData && !isViewMode) {
+            if (isEditData) {
                 // Apply all updates at once
                 setChildFormData(() => {
                     const newFormData = [...formData];
@@ -1455,16 +1459,18 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                                     ...newFormData[fieldIndex],
                                     FieldVisibleTag: update.isDisabled ? 'N' : 'Y'
                                 };
-                            } else if (update.flag !== "D") {
-                                newFormData[fieldIndex] = {
-                                    ...newFormData[fieldIndex],
-                                    FieldEnabledTag: update.isDisabled ? 'N' : newFormData[fieldIndex].FieldEnabledTag
-                                };
-                            } else {
-                                newFormData[fieldIndex] = {
-                                    ...newFormData[fieldIndex],
-                                    FieldEnabledTag: update.isDisabled ? 'N' : 'Y'
-                                };
+                            } else if (!isViewMode) {
+                                if (update.flag !== "D") {
+                                    newFormData[fieldIndex] = {
+                                        ...newFormData[fieldIndex],
+                                        FieldEnabledTag: update.isDisabled ? 'N' : newFormData[fieldIndex].FieldEnabledTag
+                                    };
+                                } else {
+                                    newFormData[fieldIndex] = {
+                                        ...newFormData[fieldIndex],
+                                        FieldEnabledTag: update.isDisabled ? 'N' : 'Y'
+                                    };
+                                }
                             }
                         }
                     });
@@ -1477,16 +1483,19 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                         if (update.fieldKey in newValues) {
                             if (update.flag === "V" && update.isDisabled) {
                                 newValues[update.fieldKey] = "";
-                            } else if (update.tagValue === "true" || update.tagValue === "false") {
-                                newValues[update.fieldKey] = newValues[update.fieldKey];
-                            } else {
-                                newValues[update.fieldKey] = update.tagValue || newValues[update.fieldKey];
+                            } else if (!isViewMode) {
+                                if (update.tagValue === "true" || update.tagValue === "false") {
+                                    newValues[update.fieldKey] = newValues[update.fieldKey];
+                                } else {
+                                    newValues[update.fieldKey] = update.tagValue || newValues[update.fieldKey];
+                                }
                             }
                         }
                     });
                     return newValues;
                 });
-            } else {
+            }
+ else {
                 setChildFormData(formData)
             }
 
@@ -2502,7 +2511,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
 
             // Process validations sequentially
             for (const field of formData) {
-                if (Object.keys(field?.ValidationAPI || {}).length > 0 && action !== "view" && action !== "delete" && !isViewMode) {
+                if (Object.keys(field?.ValidationAPI || {}).length > 0 && action !== "delete") {
                     await handleValidationForDisabledField(
                         field,
                         guardianDetails || nomineeDetails || {},
@@ -2516,23 +2525,26 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                 setGuardianFormData(() => {
                     const newFormData = [...formData];
                     allUpdates.forEach(update => {
-                        const fieldIndex = newFormData.findIndex(f => f.wKey === update.fieldKey);
+                        const fieldKey = update.fieldKey;
+                        const fieldIndex = newFormData.findIndex(f => f.wKey === fieldKey);
                         if (fieldIndex >= 0) {
                             if (update.flag === "V") {
                                 newFormData[fieldIndex] = {
                                     ...newFormData[fieldIndex],
                                     FieldVisibleTag: update.isDisabled ? 'N' : 'Y'
                                 };
-                            } else if (update.flag !== "D") {
-                                newFormData[fieldIndex] = {
-                                    ...newFormData[fieldIndex],
-                                    FieldEnabledTag: update.isDisabled ? 'N' : newFormData[fieldIndex].FieldEnabledTag
-                                };
-                            } else {
-                                newFormData[fieldIndex] = {
-                                    ...newFormData[fieldIndex],
-                                    FieldEnabledTag: update.isDisabled ? 'N' : 'Y'
-                                };
+                            } else if (!isViewMode) {
+                                if (update.flag !== "D") {
+                                    newFormData[fieldIndex] = {
+                                        ...newFormData[fieldIndex],
+                                        FieldEnabledTag: update.isDisabled ? 'N' : newFormData[fieldIndex].FieldEnabledTag
+                                    };
+                                } else {
+                                    newFormData[fieldIndex] = {
+                                        ...newFormData[fieldIndex],
+                                        FieldEnabledTag: update.isDisabled ? 'N' : 'Y'
+                                    };
+                                }
                             }
                         }
                     });
@@ -2545,10 +2557,12 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                         if (update.fieldKey in newValues) {
                             if (update.flag === "V" && update.isDisabled) {
                                 newValues[update.fieldKey] = "";
-                            } else if (update.tagValue === "true" || update.tagValue === "false") {
-                                newValues[update.fieldKey] = newValues[update.fieldKey];
-                            } else {
-                                newValues[update.fieldKey] = update.tagValue || newValues[update.fieldKey];
+                            } else if (!isViewMode) {
+                                if (update.tagValue === "true" || update.tagValue === "false") {
+                                    newValues[update.fieldKey] = newValues[update.fieldKey];
+                                } else {
+                                    newValues[update.fieldKey] = update.tagValue || newValues[update.fieldKey];
+                                }
                             }
                         }
                     });
