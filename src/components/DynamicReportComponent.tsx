@@ -2001,7 +2001,8 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
         >
             {/* Tabs and Action Buttons */}
             {safePageData.isValid && (
-                <div className="flex border-b border-gray-200">
+                <>
+                    <div className="flex border-b border-gray-200">
                     {/* Tabs - Always show tab name, even for single level */}
                     <div className="flex flex-1 gap-2">
                         {levelStack.map((level, index) => (
@@ -2125,6 +2126,35 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                         }}
                                     >
                                         <div className="py-1">
+                                            {/* Dynamic Selectable Buttons for Mobile Menu */}
+                                            {hasSelectableButtons && selectableButtonsSetting.buttons.map((button: any, index: number) => (
+                                                <button
+                                                    key={`mobile-menu-${button.name}-${index}`}
+                                                    onClick={() => {
+                                                        if (selectedRows.length === 0) {
+                                                            toast.warning("Please select at least one row");
+                                                            return;
+                                                        }
+                                                        const allowMultiple = button.multiple !== false;
+                                                        if (button.type === 'download' && !allowMultiple && selectedRows.length > 1) {
+                                                            toast.warning("Please select only one entry for download");
+                                                            return;
+                                                        }
+                                                        handleSelectableButtonClick(button, selectedRows);
+                                                        setIsMobileMenuOpen(false);
+                                                    }}
+                                                    className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2 border-b border-gray-50 last:border-0"
+                                                    style={{ 
+                                                        color: selectedRows.length === 0 ? '#9ca3af' : colors.text,
+                                                        backgroundColor: 'transparent'
+                                                    }}
+                                                    disabled={selectedRows.length === 0}
+                                                >
+                                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: selectedRows.length === 0 ? '#e5e7eb' : colors.buttonBackground }}></div>
+                                                    {button.name}
+                                                </button>
+                                            ))}
+
                                             {(componentType === 'entry' || componentType === "multientry") && isRowButtonEnabled('Add') && (
                                                 <button
                                                     onClick={() => {
@@ -2714,6 +2744,42 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                         </div>
                     </div>
                 </div>
+
+                {/* Mobile Selectable Buttons Bar */}
+                {hasSelectableButtons && (
+                    <div className="md:hidden overflow-x-auto whitespace-nowrap py-3 px-4 border-b border-gray-100 flex gap-2 no-scrollbar scroll-smooth">
+                        {selectableButtonsSetting.buttons.map((button: any, index: number) => (
+                            <button
+                                key={`mobile-bar-${button.name}-${index}`}
+                                onClick={() => {
+                                    if (selectedRows.length === 0) {
+                                        toast.warning("Please select at least one row");
+                                        return;
+                                    }
+                                    const allowMultiple = button.multiple !== false;
+                                    if (button.type === 'download' && !allowMultiple && selectedRows.length > 1) {
+                                        toast.warning("Please select only one entry for download");
+                                        return;
+                                    }
+                                    handleSelectableButtonClick(button, selectedRows);
+                                }}
+                                disabled={selectedRows.length === 0}
+                                className={`px-4 py-2 rounded-md text-xs font-semibold transition-all duration-200 ease-in-out inline-block whitespace-nowrap shadow-sm border ${
+                                    selectedRows.length === 0
+                                        ? 'bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed'
+                                        : 'hover:opacity-90 active:scale-95 border-transparent'
+                                }`}
+                                style={selectedRows.length !== 0 ? { 
+                                    backgroundColor: colors.buttonBackground, 
+                                    color: colors.buttonText 
+                                } : {}}
+                            >
+                                {button.name}
+                            </button>
+                        ))}
+                    </div>
+                )}
+                </>
             )}
 
 

@@ -6,17 +6,16 @@ import { FaPlus, FaSave, FaTrash } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import ConfirmationModal from './Modals/ConfirmationModal';
 import CaseConfirmationModal from './Modals/CaseConfirmationModal';
-import { MdArrowBack, MdOutlineClose } from "react-icons/md";
-import { EntryFormModalProps, FormField, ChildEntryModalProps, TabData, GroupedFormData, GuardianEntryModalProps } from '@/types';
+import { MdOutlineClose } from "react-icons/md";
+import { EntryFormModalProps, FormField,TabData } from '@/types';
 import EntryForm from './component-forms/EntryForm';
 import { handleValidationForDisabledField } from './component-forms/form-helper';
 import apiService from '@/utils/apiService';
 import SaveConfirmationModal from './Modals/SaveConfirmationModal';
-import { extractTagsForTabsDisabling, generateUniqueId, getFieldValue, groupFormData, parseXMLStringToObject, validateForm, convertXmlToModifiedFormData } from './component-forms/form-helper/utils';
-import { formatTextSplitString, getLocalStorage, sanitizeValueSpecialChar, sanitizePayload } from '@/utils/helper';
+import { extractTagsForTabsDisabling, getFieldValue,  parseXMLStringToObject, validateForm, convertXmlToModifiedFormData } from './component-forms/form-helper/utils';
+import {  getLocalStorage, sanitizeValueSpecialChar, sanitizePayload } from '@/utils/helper';
 import { useTheme } from '@/context/ThemeContext';
 import Button from './ui/button/Button';
-import { DataGrid } from 'react-data-grid';
 import { handleNextValidationFields, executeEditValidateApi } from './component-forms/form-helper/apiHelper';
 import AccessibleModalEntry from './a11y/AccessibleModalEntry';
 import ChildEntryModal from './EntryForm/ChildEntryModal';
@@ -455,7 +454,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
 
         if (tabsDataChange["Master"]) {
             const masterChange = tabsDataChange["Master"];
-            const { fieldsValueChange = {}, fieldDisabled = [] } = masterChange;
+            const { fieldsValueChange = {}, fieldDisabled = [], fieldVisible = [] } = masterChange;
 
             // Update Field Values
              if (fieldsValueChange && Object.keys(fieldsValueChange).length > 0) {
@@ -475,10 +474,21 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
             }
 
             // Disable Fields
-            if (Array.isArray(fieldDisabled) && fieldDisabled.length > 0) {
+            if (Array.isArray(fieldDisabled) && fieldDisabled.length > 0 && action !== 'view') {
                 newMasterFormData = newMasterFormData.map(field => {
                     if (fieldDisabled.includes(field.wKey)) {
                         return { ...field, FieldEnabledTag: "N" };
+                    }
+                    return field;
+                });
+            }
+
+            // Hide Fields
+            if (Array.isArray(fieldVisible) && fieldVisible.length > 0) {
+                newMasterFormData = newMasterFormData.map(field => {
+                    if (fieldVisible.includes(field.wKey)) {
+                        newMasterFormValues[field.wKey] = "";
+                        return { ...field, FieldVisibleTag: "N" };
                     }
                     return field;
                 });
@@ -499,7 +509,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
 
             if (tabIndex !== -1) {
                 const tabChange = tabsDataChange[tabChangeName];
-                const { fieldsValueChange = {}, fieldDisabled = [] } = tabChange;
+                const { fieldsValueChange = {}, fieldDisabled = [], fieldVisible = [] } = tabChange;
 
                 // Update Values
                 if (fieldsValueChange && Object.keys(fieldsValueChange).length > 0) {
@@ -521,12 +531,26 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                 }
 
                 // Disable Fields (Update Data definitions)
-                if (Array.isArray(fieldDisabled) && fieldDisabled.length > 0) {
+                if (Array.isArray(fieldDisabled) && fieldDisabled.length > 0 && action !== 'view') {
                     newTabsData[tabIndex] = {
                         ...newTabsData[tabIndex],
                         Data: newTabsData[tabIndex].Data.map((field: FormField) => {
                              if (fieldDisabled.includes(field.wKey)) {
                                  return { ...field, FieldEnabledTag: "N" };
+                             }
+                             return field;
+                        })
+                    };
+                }
+
+                // Hide Fields (Update Data definitions)
+                if (Array.isArray(fieldVisible) && fieldVisible.length > 0) {
+                    newTabsData[tabIndex] = {
+                        ...newTabsData[tabIndex],
+                        Data: newTabsData[tabIndex].Data.map((field: FormField) => {
+                             if (fieldVisible.includes(field.wKey)) {
+                                 newTabFormValues[tabKey][field.wKey] = "";
+                                 return { ...field, FieldVisibleTag: "N" };
                              }
                              return field;
                         })
@@ -1186,7 +1210,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
 
             // THEN: Process validations sequentially
             for (const field of formData) {
-                if (Object.keys(field?.ValidationAPI || {}).length > 0 && isEditData && !isViewMode) {
+                if (Object.keys(field?.ValidationAPI || {}).length > 0 && isEditData) {
                     await handleValidationForDisabledField(
                         field,
                         editData,
@@ -1196,22 +1220,29 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                 }
             }
 
-            if (isEditData && !isViewMode) {
+            if (isEditData) {
                 setMasterFormData(() => {
                     const newFormData = [...formData];
                     allUpdates.forEach(update => {
                         const fieldIndex = newFormData.findIndex(f => f.wKey === update.fieldKey);
                         if (fieldIndex >= 0) {
-                            if (update.flag !== "D") {
+                            if (update.flag === "V") {
                                 newFormData[fieldIndex] = {
                                     ...newFormData[fieldIndex],
-                                    FieldEnabledTag: update.isDisabled ? 'N' : newFormData[fieldIndex].FieldEnabledTag
+                                    FieldVisibleTag: update.isDisabled ? 'N' : 'Y'
                                 };
-                            } else {
-                                newFormData[fieldIndex] = {
-                                    ...newFormData[fieldIndex],
-                                    FieldEnabledTag: update.isDisabled ? 'N' : 'Y'
-                                };
+                            } else if (!isViewMode) {
+                                if (update.flag !== "D") {
+                                    newFormData[fieldIndex] = {
+                                        ...newFormData[fieldIndex],
+                                        FieldEnabledTag: update.isDisabled ? 'N' : newFormData[fieldIndex].FieldEnabledTag
+                                    };
+                                } else {
+                                    newFormData[fieldIndex] = {
+                                        ...newFormData[fieldIndex],
+                                        FieldEnabledTag: update.isDisabled ? 'N' : 'Y'
+                                    };
+                                }
                             }
                         }
                     });
@@ -1221,10 +1252,14 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                     const newValues = { ...prevValues };
                     allUpdates.forEach(update => {
                         if (update.fieldKey in newValues) {
-                            if (update.tagValue === "true" || update.tagValue === "false") {
-                                newValues[update.fieldKey] = newValues[update.fieldKey];
-                            } else {
-                                newValues[update.fieldKey] = update.tagValue || newValues[update.fieldKey];
+                            if (update.flag === "V" && update.isDisabled) {
+                                newValues[update.fieldKey] = "";
+                            } else if (!isViewMode) {
+                                if (update.tagValue === "true" || update.tagValue === "false") {
+                                    newValues[update.fieldKey] = newValues[update.fieldKey];
+                                } else {
+                                    newValues[update.fieldKey] = update.tagValue || newValues[update.fieldKey];
+                                }
                             }
                         }
                     });
@@ -1253,6 +1288,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
             const entry = pageData[0].Entry;
             const childEntry = entry.ChildEntry;
             const isEditData = Object.keys(editData || {}).length > 0;
+            const isViewMode = action === 'view';
 
             const sql = Object.keys(childEntry?.sql || {}).length ? childEntry.sql : "";
 
@@ -1400,7 +1436,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
 
             // THEN: Process validations sequentially
             for (const field of response.data?.data?.rs0 || []) {
-                if (Object.keys(field?.ValidationAPI|| {}).length > 0 && isEditData && !isViewMode) {
+                if (Object.keys(field?.ValidationAPI|| {}).length > 0 && isEditData) {
                     await handleValidationForDisabledField(
                         field,
                         editData,
@@ -1410,7 +1446,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                 }
             }
 
-            if (isEditData && !isViewMode) {
+            if (isEditData) {
                 // Apply all updates at once
                 setChildFormData(() => {
                     const newFormData = [...formData];
@@ -1418,16 +1454,23 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                     allUpdates.forEach(update => {
                         const fieldIndex = newFormData.findIndex(f => f.wKey === update.fieldKey);
                         if (fieldIndex >= 0) {
-                            if (update.flag !== "D") {
+                            if (update.flag === "V") {
                                 newFormData[fieldIndex] = {
                                     ...newFormData[fieldIndex],
-                                    FieldEnabledTag: update.isDisabled ? 'N' : newFormData[fieldIndex].FieldEnabledTag
+                                    FieldVisibleTag: update.isDisabled ? 'N' : 'Y'
                                 };
-                            } else {
-                                newFormData[fieldIndex] = {
-                                    ...newFormData[fieldIndex],
-                                    FieldEnabledTag: update.isDisabled ? 'N' : 'Y'
-                                };
+                            } else if (!isViewMode) {
+                                if (update.flag !== "D") {
+                                    newFormData[fieldIndex] = {
+                                        ...newFormData[fieldIndex],
+                                        FieldEnabledTag: update.isDisabled ? 'N' : newFormData[fieldIndex].FieldEnabledTag
+                                    };
+                                } else {
+                                    newFormData[fieldIndex] = {
+                                        ...newFormData[fieldIndex],
+                                        FieldEnabledTag: update.isDisabled ? 'N' : 'Y'
+                                    };
+                                }
                             }
                         }
                     });
@@ -1438,16 +1481,21 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
 
                     allUpdates.forEach(update => {
                         if (update.fieldKey in newValues) {
-                            if (update.tagValue === "true" || update.tagValue === "false") {
-                                newValues[update.fieldKey] = newValues[update.fieldKey];
-                            } else {
-                                newValues[update.fieldKey] = update.tagValue || newValues[update.fieldKey];
+                            if (update.flag === "V" && update.isDisabled) {
+                                newValues[update.fieldKey] = "";
+                            } else if (!isViewMode) {
+                                if (update.tagValue === "true" || update.tagValue === "false") {
+                                    newValues[update.fieldKey] = newValues[update.fieldKey];
+                                } else {
+                                    newValues[update.fieldKey] = update.tagValue || newValues[update.fieldKey];
+                                }
                             }
                         }
                     });
                     return newValues;
                 });
-            } else {
+            }
+ else {
                 setChildFormData(formData)
             }
 
@@ -2400,6 +2448,7 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
         const currentTab = tabsData[activeTabIndex];
         const guardianFormFetchAPI = currentTab?.Settings?.ChildEntryAPI;
         const currentTabKey = currentTab.TabName;
+        const isViewMode = action === 'view';
 
         const currentTabFormValues = tabFormValues[currentTabKey] || {};
         try {
@@ -2451,6 +2500,76 @@ const EntryFormModal: React.FC<EntryFormModalProps> = ({ isOpen, onClose, pageDa
                 }
             });
             setGuardianFormValues(initialValues);
+
+            // Collect all validation updates
+            const allUpdates: Array<{
+                fieldKey: string;
+                isDisabled: boolean;
+                tagValue: string;
+                flag?: string;
+            }> = [];
+
+            // Process validations sequentially
+            for (const field of formData) {
+                if (Object.keys(field?.ValidationAPI || {}).length > 0 && action !== "delete") {
+                    await handleValidationForDisabledField(
+                        field,
+                        guardianDetails || nomineeDetails || {},
+                        masterFormValues,
+                        (updates) => allUpdates.push(...updates),
+                    );
+                }
+            }
+
+            if (allUpdates.length > 0) {
+                setGuardianFormData(() => {
+                    const newFormData = [...formData];
+                    allUpdates.forEach(update => {
+                        const fieldKey = update.fieldKey;
+                        const fieldIndex = newFormData.findIndex(f => f.wKey === fieldKey);
+                        if (fieldIndex >= 0) {
+                            if (update.flag === "V") {
+                                newFormData[fieldIndex] = {
+                                    ...newFormData[fieldIndex],
+                                    FieldVisibleTag: update.isDisabled ? 'N' : 'Y'
+                                };
+                            } else if (!isViewMode) {
+                                if (update.flag !== "D") {
+                                    newFormData[fieldIndex] = {
+                                        ...newFormData[fieldIndex],
+                                        FieldEnabledTag: update.isDisabled ? 'N' : newFormData[fieldIndex].FieldEnabledTag
+                                    };
+                                } else {
+                                    newFormData[fieldIndex] = {
+                                        ...newFormData[fieldIndex],
+                                        FieldEnabledTag: update.isDisabled ? 'N' : 'Y'
+                                    };
+                                }
+                            }
+                        }
+                    });
+                    return newFormData;
+                });
+
+                setGuardianFormValues(prevValues => {
+                    const newValues = { ...prevValues };
+                    allUpdates.forEach(update => {
+                        if (update.fieldKey in newValues) {
+                            if (update.flag === "V" && update.isDisabled) {
+                                newValues[update.fieldKey] = "";
+                            } else if (!isViewMode) {
+                                if (update.tagValue === "true" || update.tagValue === "false") {
+                                    newValues[update.fieldKey] = newValues[update.fieldKey];
+                                } else {
+                                    newValues[update.fieldKey] = update.tagValue || newValues[update.fieldKey];
+                                }
+                            }
+                        }
+                    });
+                    return newValues;
+                });
+            }
+
             await Promise.all(
                 formData?.map(async (field: FormField) => {
                     if (field.type === 'WDropDownBox' && field.wQuery) {
