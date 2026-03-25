@@ -92,6 +92,10 @@ const AppSidebar: React.FC = () => {
   const shouldShowLabels = isExpanded || isHovered || isMobileOpen;
   const navigationLabel = companyName ? `${companyName} primary navigation` : "Primary navigation";
 
+  //State for managing logo size
+  const [logoSize, setLogoSize] = useState({ width: 0, height: 0 });
+  const [isWideLogo, setIsWideLogo] = useState(false);
+
   // State for managing open submenus
   const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState("");
@@ -472,6 +476,57 @@ const AppSidebar: React.FC = () => {
     </ul>
   );
 
+
+
+// If logo is already a base64 string (starts with 'data:'), use it directly
+// Otherwise, convert plain base64 into valid image format
+const logoSrc = companyInfo?.CompanyLogo?.startsWith("data:")
+  ? companyInfo.CompanyLogo
+  : `data:image/png;base64,${companyInfo?.CompanyLogo}`
+
+//  useEffect runs whenever logoSrc changes
+// Purpose: Dynamically calculate image dimensions based on actual image size
+useEffect(() => {
+  // If no logo is available, stop execution
+  if (!logoSrc) return;
+  
+  // Create a new Image object to get original dimensions
+  const img = new window.Image();
+  img.src = logoSrc;
+
+  // This event fires when image is fully loaded
+  img.onload = () => {
+    //  Calculate aspect ratio (width / height)
+    // Helps us maintain correct proportion for all logo shapes
+    const aspectRatio = img.width / img.height;
+
+    //  Set a fixed base height for consistency in UI
+    const baseHeight = 55;
+
+    //  Calculate width dynamically using aspect ratio
+    // So square, rectangle, wide logos scale properly
+    let calculatedWidth = baseHeight * aspectRatio;
+
+    //  Handle very wide logos (avoid UI breaking)
+    // Limit maximum width
+    if (calculatedWidth > 120) {
+      calculatedWidth = 120;
+    }
+    
+    // Detect wide logo (better than fixed width check)
+      const isWide = aspectRatio > 2;
+
+    //  Store calculated dimensions in state
+    // This will be used by next/image component
+    setLogoSize({
+      width: calculatedWidth,
+      height: baseHeight,
+    });
+    setIsWideLogo(isWide);
+  };
+}, [logoSrc]); // Dependency ensures recalculation when logo changes
+
+
   return (
     <aside
       id="app-sidebar"
@@ -499,7 +554,7 @@ const AppSidebar: React.FC = () => {
         className={`py-8 flex flex-col ${!isExpanded && !isHovered ? "lg:justify-center" : "justify-start"
           }`}
       >
-        <div>
+        {/* <div>
           {companyInfo?.CompanyLogo && (
             <Image
               src={companyInfo.CompanyLogo.startsWith('data:')
@@ -522,7 +577,42 @@ const AppSidebar: React.FC = () => {
               {companyName || "Home"}
             </h1>
           </Link>
-        </div>
+        </div> */}
+
+    {/*Flex is used to align logo and company name in one row */}
+    <div 
+     className={`flex transition-all duration-300 ${
+        isWideLogo ? "flex-col" : "items-center"
+      } gap-2`}>
+            {/*  Render logo only if available */}
+            {logoSrc && (
+              <Image
+                src={logoSrc}
+                alt="Company Logo"
+                // Dynamic width & height (calculated above)
+                width={logoSize.width}
+                height={logoSize.height}
+                //  Ensures image scales properly without distortion
+                className="object-contain"
+                //  Preloads image for better performance (important for logo)
+                priority
+              />
+            )}
+
+            {/*  Company Name */}
+            <Link
+              href="/"
+              aria-label={companyName ? `${companyName} home` : "Go to dashboard"}
+            >
+              <h1 className={`${fontStyles.title} ${shouldShowLabels ? "" : "sr-only"}`}
+                style={{color: colors.text}}
+              >
+                {/*  Fallback if company name not available */}
+                {companyName || "Home"}
+              </h1>
+            </Link>
+      </div>
+
       </div>
       <div className="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar">
         <nav
