@@ -1,8 +1,8 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import Select from 'react-select';
-import { useTheme } from '@/context/ThemeContext';
 import { FormElement } from '../FormCreator';
+import { useViewportAwareSelectMenu } from '@/hooks/useViewportAwareSelectMenu';
 
 interface CustomDropdownProps {
   item: FormElement;
@@ -34,6 +34,14 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
   // State for scroll-to-load functionality
   const [visibleOptions, setVisibleOptions] = useState(options.slice(0, 50));
   const [searchText, setSearchText] = useState('');
+  const {
+    controlRef,
+    handleControlFocus,
+    handleMenuClose,
+    handleMenuOpen,
+    maxMenuHeight,
+    menuPlacement,
+  } = useViewportAwareSelectMenu();
 
   useEffect(() => {
     if (options.length > 0) {
@@ -132,7 +140,11 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
   };
 
   return (
-    <div className={isHorizontal ? "mb-2" : "mb-4"}>
+    <div
+      ref={controlRef}
+      className={isHorizontal ? "mb-2" : "mb-4"}
+      onFocusCapture={handleControlFocus}
+    >
       <label id={`label-${item.name}`} className={`block text-sm mb-1 ${isHorizontal ? 'font-bold' : 'font-medium'}`} style={{ color: colors.text }}>
         {item.label}
         {isLoading && <span className="ml-2 inline-block animate-pulse">Loading...</span>}
@@ -156,9 +168,14 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
         placeholder={isLoading ? "Loading options..." : "Select..."}
         className="react-select-container"
         classNamePrefix="react-select"
-        menuPortalTarget={document.body}
+        menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
         menuShouldBlockScroll={true}
-        menuPlacement="auto"
+        menuPlacement={menuPlacement}
+        menuPosition="fixed"
+        menuShouldScrollIntoView={false}
+        maxMenuHeight={maxMenuHeight}
+        onMenuOpen={handleMenuOpen}
+        onMenuClose={handleMenuClose}
         filterOption={() => true} // Bypass default filtering since we're handling it
         styles={{
           control: (base) => ({
@@ -197,7 +214,7 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
           }),
           menuList: (base) => ({
             ...base,
-            maxHeight: '200px',
+            maxHeight: `${maxMenuHeight}px`,
             paddingBottom: '0px',
             marginBottom: '4px'
           }),
