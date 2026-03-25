@@ -190,7 +190,27 @@ const EkycEntryForm: React.FC<EntryFormProps> = ({
     const handleInputChange = (key: string, value: any) => {
         const formattedValue = value instanceof Date ? moment(value).format('YYYYMMDD') : value;
         setFormValues(prev => ({ ...prev, [key]: formattedValue }));
-        setFieldErrors(prev => ({ ...prev, [key]: '' })); // Clear validation error when field is filled
+
+        // Security: Email validation
+        const field = formData.find(f => f.wKey === key);
+        const isEmailField = field && ((field.wKey || "").toLowerCase().includes('email') || (field.label || "").toLowerCase().includes('email'));
+        
+        // Check if value looks like an email regardless of field name (as requested "sting contains email")
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const looksLikeEmail = typeof formattedValue === 'string' && formattedValue.includes('@');
+
+        if ((isEmailField || looksLikeEmail) && formattedValue) {
+            if (!emailRegex.test(formattedValue)) {
+                console.log(`Setting error for ${key}: Invalid email format`);
+                setFieldErrors(prev => ({ ...prev, [key]: "Invalid email format" }));
+            } else {
+                console.log(`Clearing error for ${key}: Valid email`);
+                setFieldErrors(prev => ({ ...prev, [key]: '' }));
+            }
+        } else {
+            setFieldErrors(prev => ({ ...prev, [key]: '' }));
+        }
+
         if (onDropdownChange) {
             onDropdownChange(key, formattedValue);
         }
@@ -665,6 +685,12 @@ const EkycEntryForm: React.FC<EntryFormProps> = ({
                                 if (field.FieldType === 'INT' && !/^[0-9]*$/.test(value)) {
                                     return;
                                 }
+                                const isEmailField = (field.wKey || "").toLowerCase().includes('email') || (field.label || "").toLowerCase().includes('email');
+                                // Security: Prevent common injection characters in fields during entry
+                                if (/[<>\\/*%$#@!]/.test(value) && !isEmailField) {
+                                    return; // Don't allow these characters
+                                }
+
                                 if (value.length <= parseInt(field.FieldSize, 10)) {
                                     handleInputChange(field.wKey, value);
                                 }

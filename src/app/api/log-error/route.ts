@@ -4,6 +4,12 @@ import path from 'path';
 
 export async function POST(request: NextRequest) {
     try {
+        // Basic authentication check
+        const authHeader = request.headers.get('Authorization');
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+        }
+
         const body = await request.json();
         const { url, method, requestData, error, timestamp, statusCode } = body;
         const serverTimestamp = new Date().toLocaleString('en-IN', {
