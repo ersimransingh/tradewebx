@@ -132,7 +132,7 @@ const CaptchaComponent = forwardRef<CaptchaComponentRef, CaptchaComponentProps>(
 
         return (
             <div className={`space-y-3 ${className}`} key={captchaId}>
-                <Label className="text-gray-700 dark:text-gray-300 font-medium">
+                <Label className="text-xs font-bold text-gray-700 dark:text-gray-300">
                     Security Verification
                 </Label>
 
@@ -230,6 +230,7 @@ const CaptchaComponent = forwardRef<CaptchaComponentRef, CaptchaComponentProps>(
                 <div>
                     <Input
                         type="text"
+                        size='sm'
                         value={userAnswer}
                         onChange={(e) => handleUserAnswerChange(e.target.value)}
                         placeholder="Enter your answer"

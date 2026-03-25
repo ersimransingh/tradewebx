@@ -20,6 +20,8 @@ interface InputProps {
   value?: string | number | readonly string[];
   autoComplete?: string;
   dynamicSelectedThemeApply?: boolean;
+  size?: "sm" | "md" | "lg";
+  inputBg?: string;
 }
 
 const Input: FC<InputProps> = ({
@@ -40,12 +42,27 @@ const Input: FC<InputProps> = ({
   hint,
   value,
   autoComplete,
-  dynamicSelectedThemeApply = false
+  dynamicSelectedThemeApply = false,
+  size = "md", //  added,
+  inputBg,
 }) => {
   const { colors } = useTheme();
 
+  let sizeClasses = "";
+
+switch (size) {
+  case "sm":
+    sizeClasses = "h-8 px-2 text-xs";
+    break;
+  case "lg":
+    sizeClasses = "h-12 px-5 text-base";
+    break;
+  default:
+    sizeClasses = "h-11 px-4 text-sm"; // default (md)
+}
+
   // Base classes
-  let inputClasses = `h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 ${className}`;
+  let inputClasses = `  w-full rounded-lg border appearance-none  ${sizeClasses} py-2.5 shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 ${className}`;
 
   // Apply dynamic theme colors if enabled
   const dynamicStyles = dynamicSelectedThemeApply ? {
@@ -63,7 +80,7 @@ const Input: FC<InputProps> = ({
     inputClasses += ` border-success-400 text-success-500 focus:ring-success-500/10 dark:border-success-500 dark:text-success-400`;
   } else if (!dynamicSelectedThemeApply) {
     // Default styling when dynamic theme is not applied
-    inputClasses += ` bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90`;
+    inputClasses += `  ${inputBg || "bg-transparent"} text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90`;
   }
   // No else needed here - dynamic theme uses inline styles
 

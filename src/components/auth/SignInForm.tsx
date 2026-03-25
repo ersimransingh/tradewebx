@@ -49,6 +49,7 @@ import { isAllowedHttpHost, SECURITY_CONFIG } from '@/utils/securityConfig';
 import CaptchaComponent, { CaptchaComponentRef } from './CaptchaComponent';
 import { decodeFernetToken, getLocalStorage, removeLocalStorage, storeLocalStorage } from "@/utils/helper";
 import AccessibleModal from "../a11y/AccessibleModal";
+import { FaLock, FaUser } from "react-icons/fa";
 
 // Password encryption key
 const passKey = "TradeWebX1234567";
@@ -827,171 +828,208 @@ export default function SignInForm() {
   const errorAlertId = useId();
 
   return (
-    // <div className="flex flex-col flex-1 lg:w-1/2 w-full bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-800">
-    <div className="flex flex-col lg:w-1/2 w-full min-h-screen  bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-800">
-      <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto ">
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
-          <div>
-            {companyInfo?.CompanyLogo && (
-              <div className="flex justify-center mb-5">
-                <Image
-                  src={companyInfo.CompanyLogo.startsWith('data:')
-                    ? companyInfo.CompanyLogo
-                    : `data:image/png;base64,${companyInfo.CompanyLogo}`}
-                  alt="Company Logo"
-                  width={64}
-                  height={64}
-                  className="h-20 w-auto object-contain drop-shadow-md"
-                  priority
-                />
-              </div>
-            )}
-            <h1 className="text-3xl font-bold text-black dark:text-white text-center mb-2">
-              {companyInfo?.CompanyName?.trim() || ""}
-            </h1>
-          </div>
+    
+    <div className="w-full bg-gradient-to-r from-[#b3d9f7] to-[#ffe0cc]  items-center justify-center">
+      {/* Center Container */}
+            <div className="flex  flex-col  bg-gradient-to-r from-[#b3d9f7] justify-center items-center w-full px-4 min-h-screen overflow-y-auto">
 
-          <div className="my-5 border-b border-gray-200 dark:border-gray-700"></div>
+                      {/* Logo + Company */}
+                  <div className="mt-4 ">
+                        {companyInfo?.CompanyLogo && (
+                          <div className="flex justify-center">
+                            <Image
+                              src={companyInfo.CompanyLogo.startsWith('data:')
+                                ? companyInfo.CompanyLogo
+                                : `data:image/png;base64,${companyInfo.CompanyLogo}`}
+                              alt="Company Logo"
+                              width={200}
+                              height={80}
+                              className="object-contain rounded-xl shadow-lg border border-gray-200"
+                              priority
+                            />
+                          </div>
+                        )}
+                        {/* <h1 className="text-sm font-semibold text-[rgb(0_50_125)] dark:text-white">
+                          {companyInfo?.CompanyName?.trim() || ""}
+                        </h1> */}
+                  </div>
 
-          <div className="mb-6">
-            <h1 className="text-2xl font-semibold text-gray-800 dark:text-white/90">
-              Welcome Back
-            </h1>
-            <p className="text-gray-500 dark:text-gray-400">Sign in to continue to your account</p>
-          </div>
+                      {/* Card */}
+                  <div className="w-full mt-5 max-w-sm bg-white dark:bg-gray-900 rounded-xl shadow-lg p-5 border border-gray-200 dark:border-gray-700">
+                        
+                        {/* Header */}
+                        <div className="mb-5">
+                          <h2 className="text-sm font-semibold text-gray-800 dark:text-white">
+                            Welcome Back
+                          </h2>
+                          <p className="text-xs text-gray-500">
+                            Access your secure financial dashboard
+                          </p>
+                        </div>
 
-          {error && (
-            <div
-              id={errorAlertId}
-              className="mb-5 p-4 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg flex items-center"
-              role="alert"
-              aria-live="assertive"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-              {error}
+                        {/* Error */}
+                      {error && (
+                      <div
+                        id={errorAlertId}
+                        className="mb-5 p-4 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg flex items-center"
+                        role="alert"
+                        aria-live="assertive"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        {error}
+                      </div>
+                      )}
+                        {/* Form */}
+                        <form onSubmit={handleLogin} className="space-y-3 ">
+                          
+                          {/* Username */}
+            
+                          <div  className="relative">
+                            <Label htmlFor={usernameFieldId} className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                              USERNAME
+                            </Label>
+                            <div >
+                                <span className="absolute left-3.5 top-1/2 -translate-y-0/14 text-[rgb(0_50_125)] z-10 pointer-events-non">
+                                  <FaUser size={14}  />
+                                </span>
+                            <Input
+                              id={usernameFieldId}
+                              name="username"
+                              type="text"
+                              inputBg="bg-gray-100"
+                              autoComplete="username"
+                              value={userId}
+                              onChange={(e) => setUserId(e.target.value)}
+                              placeholder="Enter your username"
+                              size="sm"
+                              className="pl-10 bg-gray-50 border border-gray-300 focus:ring-1 focus:ring-blue-500 font-bold text-[rgb(0_50_125)]"
+                            />
+                            </div>
+                          </div>
+
+                          {/* Password */}
+                          <div>
+                            <div className="flex justify-between items-center">
+                              <Label htmlFor={passwordFieldId} className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                                PASSWORD
+                              </Label>
+                              <Link href="/forgot-password" className="text-xs font-bold text-[rgb(0_50_125)] hover:underline">
+                                Forgot Password?
+                              </Link>
+                            </div>
+                            <div className="relative mt-1">
+                                <span className="absolute left-3.5 top-1/5 -translate-y-0/10 text-[rgb(0_50_125)] z-10 pointer-events-non">
+                                  <FaLock size={14} />
+                                </span> 
+                              <Input
+                                id={passwordFieldId}
+                                inputBg="bg-gray-100"
+                                name="password"
+                                type={showPassword ? "text" : "password"}
+                                autoComplete="current-password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="Enter your password"
+                                size="sm"
+                                className="pl-10 bg-gray-50 border border-gray-300 focus:ring-1 focus:ring-blue-500 font-bold text-[rgb(0_50_125)]"
+                                aria-label={showPassword ? "Hide password" : "Show password"}
+                                aria-pressed={showPassword}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+                                aria-label={showPassword ? "Hide password" : "Show password"}
+                                aria-pressed={showPassword}
+                              >
+                                {showPassword ? <EyeIcon /> : <EyeCloseIcon />}
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* CAPTCHA */}
+                          {ENABLE_CAPTCHA && (
+                              <div className="mt-2 scale-80 origin-left">
+                            <CaptchaComponent
+                              ref={captchaRef}
+                              onCaptchaChange={setIsCaptchaValid}
+                            />
+                            </div>
+                          )}
+
+                          {/* Button */}
+                      <Button
+                        type="submit"
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-medium transition-all duration-200 mt-2"
+                        disabled={isLoading || (ENABLE_CAPTCHA && !isCaptchaValid)}
+                      >
+                        {isLoading ? (
+                          <div className="flex items-center justify-center">
+                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Signing in...
+                          </div>
+                        ) : ENABLE_CAPTCHA && !isCaptchaValid ? 'Login to Dashboard →' : 'Sign in'}
+                      </Button>
+                </form>
+
+                        {/* Bottom */}
+                  </div>
+
+                  <div className="flex justify-between items-center p-4 gap-4">
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                          Version {VERSION}
+                        </div>
+                        <div className="flex items-center gap-2 bg-white/80 dark:bg-gray-800/80 px-3 py-1.5 rounded-full shadow-sm">
+                          <span className="text-gray-500 dark:text-gray-400" style={{ fontSize: '11px' }}>Powered By:</span>
+                          <a href="https://www.secmark.in" target="_blank" rel="noopener noreferrer" className="transition hover:opacity-80">
+                          <Image src={`${NEXT_PUBLIC_FULL_URL}/images/secmarklogo.png`} alt="Tradesoft" width={90} height={90} />
+                          </a>
+                        </div>
+                  </div>
+
+                      {/* Version Update Modal */}
+                      <VersionUpdateModal
+                        isOpen={showVersionModal}
+                        onClose={() => {
+                          setShowVersionModal(false);
+                          setIsUpdating(false); // Reset loading state when modal closes
+
+                          // Check if there are mandatory updates and user doesn't have update rights
+                          const hasMandatoryUpdates = versionUpdates.some(update => update.Status === 'M');
+                          // Use UserType from login response to determine user permissions
+                          // "user" = normal user (cannot update), anything else = admin (can update)
+                          const canUpdate = currentUserType.toLowerCase() !== "user";
+                          // Show update button only if ShowUpdate is 'Y' AND user can update
+                          const showUpdateButton = loginData?.showUpdate === 'Y' && canUpdate;
+
+                          if (hasMandatoryUpdates && !showUpdateButton) {
+                            // Force logout for users with mandatory updates who cannot update
+                            proceedAfterVersionCheck(loginData, true);
+                          } else {
+                            // Allow normal login flow for optional updates or admin users
+                            proceedAfterVersionCheck(loginData);
+                          }
+                        }}
+                        updates={versionUpdates}
+                        onConfirm={handleUpdateConfirm}
+                        userType={currentUserType}
+                        isUpdating={isUpdating}
+                        showUpdate={loginData?.showUpdate || 'N'}
+                      />
+
+                      {/* Message Modal */}
+                      <MessageModal
+                        isOpen={showMessageModal}
+                        onClose={handleMessageModalClose}
+                        message={messageContent}
+                      />
             </div>
-          )}
-
-          <form onSubmit={handleLogin} className="space-y-5">
-            <div>
-              <Label htmlFor={usernameFieldId} className="text-gray-700 dark:text-gray-300 font-medium">Username</Label>
-              <Input
-                id={usernameFieldId}
-                name="username"
-                type="text"
-                autoComplete="username"
-                value={userId}
-                onChange={(e) => setUserId(e.target.value)}
-                placeholder="Enter your username"
-                className="mt-1 transition-all duration-200 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-900"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor={passwordFieldId} className="text-gray-700 dark:text-gray-300 font-medium">Password</Label>
-              <div className="relative mt-1">
-                <Input
-                  id={passwordFieldId}
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  className="transition-all duration-200 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-900"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute z-30 -translate-y-1/2 right-4 top-1/2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                  aria-pressed={showPassword}
-                >
-                  {showPassword ? <EyeIcon /> : <EyeCloseIcon />}
-                </button>
-              </div>
-            </div>
-
-            {ENABLE_CAPTCHA && (
-              <CaptchaComponent
-                ref={captchaRef}
-                onCaptchaChange={setIsCaptchaValid}
-                className="mt-4"
-              />
-            )}
-
-            <Button
-              type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-medium transition-all duration-200 mt-2"
-              disabled={isLoading || (ENABLE_CAPTCHA && !isCaptchaValid)}
-            >
-              {isLoading ? (
-                <div className="flex items-center justify-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Signing in...
-                </div>
-              ) : ENABLE_CAPTCHA && !isCaptchaValid ? 'Complete verification to continue' : 'Sign in'}
-            </Button>
-          </form>
-          <div className="flex justify-center items-center mt-2">
-            <Link href="/forgot-password">Forgot Password?</Link>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex justify-between items-center p-4">
-        <div className="text-sm text-gray-500 dark:text-gray-400">
-          Version {VERSION}
-        </div>
-        <div className="flex items-center gap-2 bg-white/80 dark:bg-gray-800/80 px-3 py-1.5 rounded-full shadow-sm">
-          <span className="text-gray-500 dark:text-gray-400" style={{ fontSize: '11px' }}>Powered By:</span>
-          <a href="https://www.secmark.in" target="_blank" rel="noopener noreferrer" className="transition hover:opacity-80">
-            <Image src={`${NEXT_PUBLIC_FULL_URL}/images/secmarklogo.png`} alt="Tradesoft" width={90} height={90} />
-          </a>
-        </div>
-      </div>
-
-      {/* Version Update Modal */}
-      <VersionUpdateModal
-        isOpen={showVersionModal}
-        onClose={() => {
-          setShowVersionModal(false);
-          setIsUpdating(false); // Reset loading state when modal closes
-
-          // Check if there are mandatory updates and user doesn't have update rights
-          const hasMandatoryUpdates = versionUpdates.some(update => update.Status === 'M');
-          // Use UserType from login response to determine user permissions
-          // "user" = normal user (cannot update), anything else = admin (can update)
-          const canUpdate = currentUserType.toLowerCase() !== "user";
-          // Show update button only if ShowUpdate is 'Y' AND user can update
-          const showUpdateButton = loginData?.showUpdate === 'Y' && canUpdate;
-
-          if (hasMandatoryUpdates && !showUpdateButton) {
-            // Force logout for users with mandatory updates who cannot update
-            proceedAfterVersionCheck(loginData, true);
-          } else {
-            // Allow normal login flow for optional updates or admin users
-            proceedAfterVersionCheck(loginData);
-          }
-        }}
-        updates={versionUpdates}
-        onConfirm={handleUpdateConfirm}
-        userType={currentUserType}
-        isUpdating={isUpdating}
-        showUpdate={loginData?.showUpdate || 'N'}
-      />
-
-      {/* Message Modal */}
-      <MessageModal
-        isOpen={showMessageModal}
-        onClose={handleMessageModalClose}
-        message={messageContent}
-      />
     </div>
+
   );
 }
