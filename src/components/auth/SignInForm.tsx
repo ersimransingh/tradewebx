@@ -643,20 +643,48 @@ export default function SignInForm() {
 
       // Check both ENABLE_FERNET constant and encPayload from Redux state
       const shouldDecode = ENABLE_FERNET && encPayload;
-      const data = shouldDecode ? decodeFernetToken(response.data.data) : response.data;
+      let data;
+      
+      try {
+        data = shouldDecode ? decodeFernetToken(response.data.data) : response.data;
+      } catch (decodeError) {
+        console.error('Failed to decode response:', decodeError);
+        setError('Invalid response format from server');
+        dispatch(setAuthError('Invalid response format from server'));
+        return;
+      }
+
       console.log('Login Response:', data);
       console.log('Response status:', data.status);
-      console.log('Response token:', data.token);
-      console.log('Response refreshToken:', data.refreshToken);
-      const userFirstLogin = data.data[0].FirstLogin
-      setFirstLogin(userFirstLogin)
-      
+
+      // Validate response structure
+      if (typeof data.status === 'undefined') {
+        console.error('Invalid response structure - missing status field');
+        setError('Invalid response from server');
+        dispatch(setAuthError('Invalid response from server'));
+        return;
+      }
 
       if (data.status) {
+        // Only access data.data[0] if the response is successful and data array exists
+        const userFirstLogin = data.data && data.data.length > 0 ? data.data[0].FirstLogin : null;
+        setFirstLogin(userFirstLogin);
+
+        console.log('Response token:', data.token);
+        console.log('Response refreshToken:', data.refreshToken);
+        
         // Security: Validate response integrity
         if (!data.token) {
           setError('Invalid response from server');
           dispatch(setAuthError('Invalid response from server'));
+          return;
+        }
+
+        // Validate data array structure for successful responses
+        if (!data.data || !Array.isArray(data.data) || data.data.length === 0) {
+          console.error('Invalid response structure - missing or empty data array');
+          setError('Invalid user data received from server');
+          dispatch(setAuthError('Invalid user data received from server'));
           return;
         }
 
@@ -776,8 +804,12 @@ export default function SignInForm() {
           proceedAfterVersionCheck(currentLoginData);
         }
       } else {
-        dispatch(setAuthError(data.message || 'Login failed'));
-        setError(data.message || 'Login failed');
+        // Handle failed login response
+        const errorMessage = data.message || 'Login failed';
+        console.log('Login failed with message:', errorMessage);
+        
+        dispatch(setAuthError(errorMessage));
+        setError(errorMessage);
 
         // Refresh CAPTCHA on login failure
         console.log('Login failed, checking CAPTCHA refresh conditions:', {
