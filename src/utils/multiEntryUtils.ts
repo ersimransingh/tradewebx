@@ -35,6 +35,71 @@ export const convertBmpToPng = (bmpBase64: string): Promise<string> => {
     });
 };
 
+const ROBOTO_FONTS = {
+    Roboto: {
+        normal: 'Roboto-Regular.ttf',
+        bold: 'Roboto-Medium.ttf',
+        italics: 'Roboto-Italic.ttf',
+        bolditalics: 'Roboto-MediumItalic.ttf',
+    },
+};
+
+const buildPdfFontConfig = async (fontName?: string): Promise<{
+    effectiveFont: string;
+    customFonts: Record<string, any>;
+    customVfs: Record<string, any>;
+}> => {
+    const baseVfs: Record<string, any> = { ...(pdfFonts as any).vfs };
+    const baseFonts: Record<string, any> = { ...ROBOTO_FONTS };
+
+    if (!fontName || fontName === 'Roboto' || fontName === 'Arial') {
+        return { effectiveFont: 'Roboto', customFonts: baseFonts, customVfs: baseVfs };
+    }
+
+    try {
+        const basePath = (process.env.NEXT_PUBLIC_BASE_PATH || '').replace(/\/$/, '');
+        const res = await fetch(`${basePath}/api/font-check?name=${encodeURIComponent(fontName)}`);
+        if (!res.ok) throw new Error('font-check failed');
+        const fontConfig = await res.json();
+        if (!fontConfig.found || !fontConfig.url) throw new Error('font not found');
+
+        const ext = (fontConfig.url.split('.').pop() || '').toLowerCase();
+        if (ext === 'woff2') throw new Error('woff2 unsupported by pdfmake');
+
+        const fontRes = await fetch(fontConfig.url);
+        if (!fontRes.ok) throw new Error('font fetch failed');
+        const buffer = await fontRes.arrayBuffer();
+        const bytes = new Uint8Array(buffer);
+        let binary = '';
+        for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+        const base64 = btoa(binary);
+
+        const vfsKey = `${fontName}.${ext}`;
+        baseVfs[vfsKey] = base64;
+        baseFonts[fontName] = { normal: vfsKey, bold: vfsKey, italics: vfsKey, bolditalics: vfsKey };
+
+        return { effectiveFont: fontName, customFonts: baseFonts, customVfs: baseVfs };
+    } catch {
+        return { effectiveFont: 'Roboto', customFonts: baseFonts, customVfs: baseVfs };
+    }
+};
+
+// Calculates logo width/height for PDF preserving the original aspect ratio.
+// Base height is fixed at 40px; width is capped at 120px to avoid layout breaks.
+const getLogoDimensionsForPdf = (logoSrc: string): Promise<{ width: number; height: number }> => {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            const aspectRatio = img.width / img.height;
+            const baseHeight = 40;
+            const width = Math.min(Math.round(baseHeight * aspectRatio), 120);
+            resolve({ width, height: baseHeight });
+        };
+        img.onerror = () => resolve({ width: 60, height: 40 });
+        img.src = logoSrc;
+    });
+};
+
 // Helper: Recursive Search
 export const recursiveSearch = (data: any[], searchTerm: string): any[] => {
     if (!searchTerm) return data;
@@ -142,33 +207,15 @@ const processNodeForPdf = (data: any[], level = 0): any => {
 };
 
 export const generatePdf = async (data: any[], headerData: any, appMetadata: any, fontName?: string) => {
-    // Resilience: Ensure pdfMake and standard fonts are available
-    if (!(pdfMake as any).vfs && (pdfFonts as any).vfs) {
-        (pdfMake as any).vfs = (pdfFonts as any).vfs;
-    }
-    
-    if (!(pdfMake as any).fonts) {
-        (pdfMake as any).fonts = {
-            Roboto: {
-                normal: 'Roboto-Regular.ttf',
-                bold: 'Roboto-Medium.ttf',
-                italics: 'Roboto-Italic.ttf',
-                bolditalics: 'Roboto-MediumItalic.ttf'
-            }
-        };
-    }
-
-    // Alias custom font to Roboto if not registered to prevent crash
-    const appliedFont = fontName || 'Roboto';
-    if (!(pdfMake as any).fonts[appliedFont]) {
-        (pdfMake as any).fonts[appliedFont] = (pdfMake as any).fonts.Roboto;
-    }
+    const { effectiveFont, customFonts, customVfs } = await buildPdfFontConfig(fontName);
 
     console.log("headerData---->", headerData,appMetadata);
     let logoImage = '';
+    let logoDimensions = { width: 60, height: 40 };
     if (appMetadata?.companyLogo) {
         try {
             logoImage = await convertBmpToPng(appMetadata.companyLogo);
+            logoDimensions = await getLogoDimensionsForPdf(logoImage);
         } catch (err) {
             console.warn("Logo conversion failed:", err);
         }
@@ -186,8 +233,8 @@ export const generatePdf = async (data: any[], headerData: any, appMetadata: any
                 columns: [
                     logoImage ? {
                         image: logoImage,
-                        width: 60,
-                        height: 40
+                        width: logoDimensions.width,
+                        height: logoDimensions.height,
                     } : { text: '' },
                     {
                         stack: [
@@ -205,16 +252,16 @@ export const generatePdf = async (data: any[], headerData: any, appMetadata: any
             processNodeForPdf(data)
         ],
         styles: {
-            header: { fontSize: 16, bold: true, font: fontName || undefined },
-            subheader: { fontSize: 12, bold: true, font: fontName || undefined },
-            tableHeader: { bold: true, color: 'black', font: fontName || undefined },
-            small: { fontSize: 8, italics: true, font: fontName || undefined },
-            defaultStyle: { font: fontName || undefined }
+            header: { fontSize: 16, bold: true, font: effectiveFont },
+            subheader: { fontSize: 12, bold: true, font: effectiveFont },
+            tableHeader: { bold: true, color: 'black', font: effectiveFont },
+            small: { fontSize: 8, italics: true, font: effectiveFont },
+            defaultStyle: { font: effectiveFont }
         },
-        defaultStyle: { font: fontName || undefined }
+        defaultStyle: { font: effectiveFont }
     };
 
-    pdfMake.createPdf(docDefinition).download("MultiLevelReport.pdf");
+    pdfMake.createPdf(docDefinition, null, customFonts, customVfs).download("MultiLevelReport.pdf");
 };
 
 

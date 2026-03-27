@@ -50,7 +50,8 @@ export function getDynamicFont(fontName?: string): FontConfig {
       return defaultFont;
     }
 
-    const extensions = ['.woff2', '.woff', '.ttf', '.otf'];
+    // TTF/WOFF preferred first — pdfmake cannot read woff2 (Brotli-compressed)
+    const extensions = ['.ttf', '.otf', '.woff', '.woff2'];
     
     // Get all files in the fonts directory for case-insensitive matching
     const actualFiles = fs.readdirSync(fontsDir);
