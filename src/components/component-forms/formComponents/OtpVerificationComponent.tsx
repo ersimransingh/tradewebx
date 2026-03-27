@@ -378,8 +378,22 @@ const OtpVerificationModal: React.FC<OtpVerificationModalProps> = ({
                 className="w-full px-3 py-2 border rounded-md"
                 value={newValue}
                 onChange={(e) => {
-                  setNewValue(e.target.value);
+                  const value = e.target.value;
+                  // Sanitization: Block injection-prone characters except for email
+                  if (/[<>\\/*%$#@!]/.test(value) && type !== 'email') {
+                    return;
+                  }
+                  
+                  setNewValue(value);
                   setError(''); // Clear error when user types
+
+                  // Real-time Email Validation
+                  if (type === 'email' && value) {
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!emailRegex.test(value)) {
+                      setError("Invalid email format");
+                    }
+                  }
                 }}
                 placeholder={`Enter new ${type}`}
               />
@@ -398,7 +412,7 @@ const OtpVerificationModal: React.FC<OtpVerificationModalProps> = ({
               <button
                 onClick={handleSendOtp}
                 className="px-4 py-2 bg-blue-500 text-white rounded-md"
-                disabled={isLoading || !newValue}
+                disabled={isLoading || !newValue || !!error}
               >
                 {isLoading ? 'Sending OTPs...' : 'Send OTPs'}
               </button>
