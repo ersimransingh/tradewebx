@@ -4,6 +4,11 @@ import path from 'path';
 
 export async function POST(request: NextRequest) {
     try {
+        // Skip logging if disabled via env flag
+        if (process.env.NEXT_PUBLIC_IS_CLIENT_LOG_ALLOWED !== 'true') {
+            return NextResponse.json({ success: true, message: 'Logging is disabled' });
+        }
+
         const body = await request.json();
         const { url, method, requestData, error, timestamp, statusCode } = body;
         const serverTimestamp = new Date().toLocaleString('en-IN', {
