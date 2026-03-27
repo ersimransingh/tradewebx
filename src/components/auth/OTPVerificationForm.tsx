@@ -56,7 +56,7 @@ export default function OTPVerificationForm() {
       console.log('Detected back button navigation, clearing session and redirecting');
       removeLocalStorage('temp_token');
       removeLocalStorage('userId');
-      router.replace('/signin');
+      window.location.href = `${BASE_PATH_FRONT_END}/signin`;
       return;
     }
 
@@ -66,7 +66,7 @@ export default function OTPVerificationForm() {
         console.log('Detected BFcache restoration, clearing session and redirecting');
         removeLocalStorage('temp_token');
         removeLocalStorage('userId');
-        router.replace('/signin');
+        window.location.href = `${BASE_PATH_FRONT_END}/signin`;
       }
     };
 
