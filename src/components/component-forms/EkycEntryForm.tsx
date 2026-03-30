@@ -10,7 +10,7 @@ import { BASE_URL, PATH_URL } from '@/utils/constants';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import Image from 'next/image';
 import FileUploadWithCrop from './formComponents/FileUploadWithCrop';
-import { getLocalStorage, handleViewFile, removeLocalStorage, storeLocalStorage } from "@/utils/helper";
+import { getLocalStorage, handleViewFile, removeLocalStorage, storeLocalStorage, escapeXmlChars } from "@/utils/helper";
 import OtpVerificationModal from "./formComponents/OtpVerificationComponent";
 import LoaderOverlay from "../Loaders/LoadingSpinner";
 import CustomDatePicker from "./formComponents/CustomDatePicker";
@@ -196,7 +196,7 @@ const EkycEntryForm: React.FC<EntryFormProps> = ({
         const isEmailField = field && ((field.wKey || "").toLowerCase().includes('email') || (field.label || "").toLowerCase().includes('email'));
         
         // Check if value looks like an email regardless of field name (as requested "sting contains email")
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
         const looksLikeEmail = typeof formattedValue === 'string' && formattedValue.includes('@');
 
         if ((isEmailField || looksLikeEmail) && formattedValue) {
@@ -242,7 +242,7 @@ const EkycEntryForm: React.FC<EntryFormProps> = ({
                     shouldCallApi = false;
                     errors.push(key);
                 } else {
-                    xFilterMultiple += `<${key}>${fieldValue}</${key}>`;
+                    xFilterMultiple += `<${key}>${escapeXmlChars(String(fieldValue))}</${key}>`;
                 }
             });
         } else if (X_Filter) {
@@ -260,7 +260,7 @@ const EkycEntryForm: React.FC<EntryFormProps> = ({
                 shouldCallApi = false;
                 errors.push(X_Filter);
             } else {
-                xFilter = `<${X_Filter}>${fieldValue}</${X_Filter}>`;
+                xFilter = `<${X_Filter}>${escapeXmlChars(String(fieldValue))}</${X_Filter}>`;
             }
         }
 
@@ -323,7 +323,7 @@ const EkycEntryForm: React.FC<EntryFormProps> = ({
                     shouldCallApi = false;
                     errors.push(key);
                 } else {
-                    xFilterMultiple += `<${key}>${fieldValue}</${key}>`;
+                    xFilterMultiple += `<${key}>${escapeXmlChars(String(fieldValue))}</${key}>`;
                 }
             });
         } else if (X_Filter) {
@@ -341,7 +341,7 @@ const EkycEntryForm: React.FC<EntryFormProps> = ({
                 shouldCallApi = false;
                 errors.push(X_Filter);
             } else {
-                xFilter = `<${X_Filter}>${fieldValue}</${X_Filter}>`;
+                xFilter = `<${X_Filter}>${escapeXmlChars(String(fieldValue))}</${X_Filter}>`;
             }
         }
 
@@ -687,7 +687,7 @@ const EkycEntryForm: React.FC<EntryFormProps> = ({
                                 }
                                 const isEmailField = (field.wKey || "").toLowerCase().includes('email') || (field.label || "").toLowerCase().includes('email');
                                 // Security: Prevent common injection characters in fields during entry
-                                if (/[<>\\/*%$#@!]/.test(value) && !isEmailField) {
+                                if (/[<>\\/*%$#!,]/.test(value)) {
                                     return; // Don't allow these characters
                                 }
 

@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import axios from 'axios';
 import { BASE_URL, PATH_URL } from '@/utils/constants';
 import apiService from '@/utils/apiService';
+import { escapeXmlChars } from '@/utils/helper';
 
 interface OtpVerificationModalProps {
   isOpen: boolean;
@@ -95,7 +96,7 @@ const OtpVerificationModal: React.FC<OtpVerificationModalProps> = ({
           shouldCallApi = false;
           errors.push(key);
         } else {
-          xFilterMultiple += `<${key}>${fieldValue}</${key}>`;
+          xFilterMultiple += `<${key}>${escapeXmlChars(String(fieldValue))}</${key}>`;
         }
       });
 
@@ -179,7 +180,7 @@ const OtpVerificationModal: React.FC<OtpVerificationModalProps> = ({
           shouldCallApi = false;
           errors.push(key);
         } else {
-          xFilterMultiple += `<${key}>${fieldValue}</${key}>`;
+          xFilterMultiple += `<${key}>${escapeXmlChars(String(fieldValue))}</${key}>`;
         }
       });
 
@@ -267,7 +268,7 @@ const OtpVerificationModal: React.FC<OtpVerificationModalProps> = ({
           shouldCallApi = false;
           errors.push(key);
         } else {
-          xFilterMultiple += `<${key}>${fieldValue}</${key}>`;
+          xFilterMultiple += `<${key}>${escapeXmlChars(String(fieldValue))}</${key}>`;
         }
       });
 
@@ -379,8 +380,9 @@ const OtpVerificationModal: React.FC<OtpVerificationModalProps> = ({
                 value={newValue}
                 onChange={(e) => {
                   const value = e.target.value;
-                  // Sanitization: Block injection-prone characters except for email
-                  if (/[<>\\/*%$#@!]/.test(value) && type !== 'email') {
+                  // Sanitization: Block injection-prone characters (< > \ / * % $ # ! ,)
+                  // Commas are also blocked as seen in the user report "test,<<>>@gmail.com"
+                  if (/[<>\\/*%$#!,]/.test(value)) {
                     return;
                   }
                   
@@ -389,7 +391,8 @@ const OtpVerificationModal: React.FC<OtpVerificationModalProps> = ({
 
                   // Real-time Email Validation
                   if (type === 'email' && value) {
-                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    // Improved email regex
+                    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
                     if (!emailRegex.test(value)) {
                       setError("Invalid email format");
                     }
