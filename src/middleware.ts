@@ -53,17 +53,6 @@ export function middleware(request: NextRequest) {
         return new NextResponse('Access Denied', { status: 403 });
     }
 
-    // Security: Rate limiting for API endpoints
-    if (request.nextUrl.pathname.startsWith('/api/')) {
-        // Get IP from headers (X-Forwarded-For or X-Real-IP)
-        const forwardedFor = request.headers.get('x-forwarded-for');
-        const realIp = request.headers.get('x-real-ip');
-        const ip = forwardedFor?.split(',')[0] || realIp || 'unknown';
-
-        // This is a simplified rate limiting - in production, use Redis or similar
-        // For now, we'll just log suspicious activity
-        console.log('API request from IP:', ip, 'to:', request.nextUrl.pathname);
-    }
 
     // Check if we're on an auth page or root path
     const isAuthPage = request.nextUrl.pathname.startsWith('/signin') ||
