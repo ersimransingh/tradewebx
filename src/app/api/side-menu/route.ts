@@ -9,6 +9,12 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: true, message: 'Logging is disabled' });
         }
 
+        // Basic authentication check
+        const authHeader = request.headers.get('Authorization');
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+        }
+
         const body = await request.json();
         const { url, method, requestData, error, timestamp, statusCode } = body;
         const serverTimestamp = new Date().toLocaleString('en-IN', {
