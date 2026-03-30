@@ -10,6 +10,10 @@ const nextConfig: NextConfig = {
   output: 'standalone',
   poweredByHeader: false, // Disable X-Powered-By header
 
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
+  },
+
   // Image configuration for standalone builds with basePath
   images: {
     unoptimized: true, // Disable image optimization to serve images directly
