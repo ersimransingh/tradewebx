@@ -8,7 +8,17 @@ function isDevelopmentMode(): boolean {
     return process.env.NEXT_DEVELOPMENT_MODE === 'true';
 }
 
+const BLOCKED_METHODS = ['OPTIONS', 'TRACE', 'TRACK', 'DELETE', 'PUT', 'PATCH', 'HEAD'];
+
 export function middleware(request: NextRequest) {
+    // Block unwanted HTTP methods on page routes (not API routes)
+    if (
+        BLOCKED_METHODS.includes(request.method.toUpperCase()) &&
+        !request.nextUrl.pathname.startsWith('/api/')
+    ) {
+        return new NextResponse('Method Not Allowed', { status: 405 });
+    }
+
     // Per-request nonce for CSP
     const nonce = crypto.randomUUID();
     const securityHeaders = getSecurityHeaders(nonce);
