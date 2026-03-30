@@ -796,8 +796,9 @@ class ApiService {
     // Log failed API requests
     private async logError(url: string, method: string, data: any, error: any): Promise<void> {
         try {
-            // Skip logging if disabled via env flag
-            if (process.env.NEXT_PUBLIC_IS_CLIENT_LOG_ALLOWED !== 'true') return;
+            // Skip logging if disabled via env flag (must be available and explicitly 'true')
+            const isLogAllowed = !!process.env.NEXT_PUBLIC_IS_CLIENT_LOG_ALLOWED && process.env.NEXT_PUBLIC_IS_CLIENT_LOG_ALLOWED === 'true';
+            if (!isLogAllowed) return;
 
             // Avoid logging calls to the logger itself to prevent infinite loops
             const logUrl = `${BASE_PATH_FRONT_END}/api/log-error`;

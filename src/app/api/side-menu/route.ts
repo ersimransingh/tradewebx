@@ -4,8 +4,9 @@ import path from 'path';
 
 export async function POST(request: NextRequest) {
     try {
-        // Skip logging if disabled via env flag
-        if (process.env.NEXT_PUBLIC_IS_CLIENT_LOG_ALLOWED !== 'true') {
+        // Skip logging if disabled via env flag (must be available and explicitly 'true')
+        const isLogAllowed = !!process.env.NEXT_PUBLIC_IS_CLIENT_LOG_ALLOWED && process.env.NEXT_PUBLIC_IS_CLIENT_LOG_ALLOWED === 'true';
+        if (!isLogAllowed) {
             return NextResponse.json({ success: true, message: 'Logging is disabled' });
         }
 
