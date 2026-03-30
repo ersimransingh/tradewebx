@@ -1,9 +1,7 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Dialog } from '@headlessui/react';
 import FormCreator from './FormCreator';
-import Select from 'react-select';
-import { FaSort, FaSortAmountDown, FaSortAmountUp } from 'react-icons/fa';
 import { useTheme } from '@/context/ThemeContext';
 import { useSidebar } from '@/context/SidebarContext';
 
@@ -44,6 +42,9 @@ const FilterModal: React.FC<FilterModalProps> = ({
     const [resetKey, setResetKey] = useState<number>(Date.now());
     const { toggleMobileSidebar } = useSidebar();
     const [shouldAnnounce, setShouldAnnounce] = useState(false);
+    const [panelViewportHeight, setPanelViewportHeight] = useState<number | null>(null);
+    const [panelViewportOffsetTop, setPanelViewportOffsetTop] = useState(0);
+    const panelRef = useRef<HTMLDivElement>(null);
 
     // Reset local values when modal opens with new initial values
     useEffect(() => {
@@ -78,6 +79,66 @@ const FilterModal: React.FC<FilterModalProps> = ({
     setShouldAnnounce(false);
 
 }, [totalRecords]);
+
+    useEffect(() => {
+        if (!isOpen || typeof window === 'undefined') {
+            return;
+        }
+
+        const updateViewportMetrics = () => {
+            const visualViewport = window.visualViewport;
+            setPanelViewportHeight(Math.round(visualViewport?.height ?? window.innerHeight));
+            setPanelViewportOffsetTop(Math.round(visualViewport?.offsetTop ?? 0));
+        };
+
+        updateViewportMetrics();
+
+        const visualViewport = window.visualViewport;
+        visualViewport?.addEventListener('resize', updateViewportMetrics);
+        visualViewport?.addEventListener('scroll', updateViewportMetrics);
+        window.addEventListener('resize', updateViewportMetrics);
+        window.addEventListener('orientationchange', updateViewportMetrics);
+
+        return () => {
+            visualViewport?.removeEventListener('resize', updateViewportMetrics);
+            visualViewport?.removeEventListener('scroll', updateViewportMetrics);
+            window.removeEventListener('resize', updateViewportMetrics);
+            window.removeEventListener('orientationchange', updateViewportMetrics);
+        };
+    }, [isOpen]);
+
+    useEffect(() => {
+        if (!isOpen) {
+            return;
+        }
+
+        const panel = panelRef.current;
+
+        if (!panel) {
+            return;
+        }
+
+        const handleFocusIn = (event: FocusEvent) => {
+            const target = event.target;
+
+            if (!(target instanceof HTMLElement)) {
+                return;
+            }
+
+            window.setTimeout(() => {
+                target.scrollIntoView({
+                    block: 'center',
+                    inline: 'nearest',
+                });
+            }, 180);
+        };
+
+        panel.addEventListener('focusin', handleFocusIn);
+
+        return () => {
+            panel.removeEventListener('focusin', handleFocusIn);
+        };
+    }, [isOpen]);
 
     // Handle apply button click
     const handleApply = () => {
@@ -131,12 +192,24 @@ const FilterModal: React.FC<FilterModalProps> = ({
         >
             <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
 
-            <div className="fixed inset-0 flex justify-end">
+            <div
+                className="fixed inset-0 flex justify-end items-start"
+                style={{
+                    paddingTop: `${panelViewportOffsetTop}px`
+                }}
+            >
                 <Dialog.Panel
-                    className="h-full w-full max-w-md overflow-y-auto p-6 transition-transform duration-300 ease-in-out"
+                    ref={panelRef}
+                    className="w-full max-w-md overflow-y-auto p-6 transition-transform duration-300 ease-in-out"
                     style={{
                         backgroundColor: colors.filtersBackground,
-                        transform: isOpen ? 'translateX(0)' : 'translateX(100%)'
+                        transform: isOpen ? 'translateX(0)' : 'translateX(100%)',
+                        height: panelViewportHeight ? `${panelViewportHeight}px` : '100dvh',
+                        maxHeight: panelViewportHeight ? `${panelViewportHeight}px` : '100dvh',
+                        WebkitOverflowScrolling: 'touch',
+                        overscrollBehavior: 'contain',
+                        scrollPaddingBottom: '12rem',
+                        paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))'
                     }}
                 >
 

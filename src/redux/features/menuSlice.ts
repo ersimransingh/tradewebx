@@ -252,13 +252,16 @@ export const fetchMenuItems = createAsyncThunk(
                     timestamp: Date.now()
                 };
 
-                fetch(logUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(logData)
-                }).catch(err => {});
+                // Skip logging if disabled via env flag
+                if (process.env.NEXT_PUBLIC_IS_CLIENT_LOG_ALLOWED === 'true') {
+                    fetch(logUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(logData)
+                    }).catch(err => {});
+                }
             } catch (loggingError) {}
 
             // Try to load menu from sessionStorage as fallback

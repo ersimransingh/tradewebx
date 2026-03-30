@@ -4,6 +4,11 @@ import path from 'path';
 
 export async function POST(request: NextRequest) {
     try {
+        // Skip logging if disabled via env flag
+        if (process.env.NEXT_PUBLIC_IS_CLIENT_LOG_ALLOWED !== 'true') {
+            return NextResponse.json({ success: true, message: 'Logging is disabled' });
+        }
+
         // Basic authentication check
         const authHeader = request.headers.get('Authorization');
         if (!authHeader || !authHeader.startsWith('Bearer ')) {

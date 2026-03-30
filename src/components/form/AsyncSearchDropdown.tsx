@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import Select from "react-select";
 import debounce from "lodash.debounce";
 import { FormElement } from "../FormCreator";
+import { useViewportAwareSelectMenu } from "@/hooks/useViewportAwareSelectMenu";
 
 interface AsyncSearchDropdownProps {
   item: FormElement;
@@ -39,6 +40,14 @@ const AsyncSearchDropdown: React.FC<AsyncSearchDropdownProps> = ({
   // Cache for selected items to preserve labels when they are not in the current search results
   const [selectedItemsCache, setSelectedItemsCache] = useState<any[]>([]);
   console.log("selectedItemsCache", selectedItemsCache);
+  const {
+    controlRef,
+    handleControlFocus,
+    handleMenuClose,
+    handleMenuOpen,
+    maxMenuHeight,
+    menuPlacement,
+  } = useViewportAwareSelectMenu();
 
   const minSearchLength = item.dynamicSearch?.minSearchLength || 3;
   const debounceMs = item.dynamicSearch?.debounceMs || 400;
@@ -187,7 +196,11 @@ const AsyncSearchDropdown: React.FC<AsyncSearchDropdownProps> = ({
     : options.find((opt) => String(opt.value) === String(value));
 
   return (
-    <div className={isHorizontal ? "mb-2" : "mb-4"}>
+    <div
+      ref={controlRef}
+      className={isHorizontal ? "mb-2" : "mb-4"}
+      onFocusCapture={handleControlFocus}
+    >
       <label
         id={`label-${item.name}`}
         className={`block text-sm mb-1 ${
@@ -224,7 +237,12 @@ const AsyncSearchDropdown: React.FC<AsyncSearchDropdownProps> = ({
         classNamePrefix="react-select"
         menuPortalTarget={typeof document !== "undefined" ? document.body : null}
         menuShouldBlockScroll={true}
-        menuPlacement="auto"
+        menuPlacement={menuPlacement}
+        menuPosition="fixed"
+        menuShouldScrollIntoView={false}
+        maxMenuHeight={maxMenuHeight}
+        onMenuOpen={handleMenuOpen}
+        onMenuClose={handleMenuClose}
         onInputChange={(inputValue, { action }) => {
           if (action === "input-change") handleSearch(inputValue);
           return inputValue;

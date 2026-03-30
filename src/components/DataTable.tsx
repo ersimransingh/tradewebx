@@ -2384,6 +2384,73 @@ const convertBmpToPng = (bmpBase64: string): Promise<string> => {
     });
 };
 
+const ROBOTO_FONTS = {
+    Roboto: {
+        normal: 'Roboto-Regular.ttf',
+        bold: 'Roboto-Medium.ttf',
+        italics: 'Roboto-Italic.ttf',
+        bolditalics: 'Roboto-MediumItalic.ttf',
+    },
+};
+
+// Returns { effectiveFont, customFonts, customVfs } to pass directly to pdfMake.createPdf.
+// Never mutates global pdfMake state — avoids VFS freeze / worker serialisation issues.
+const buildPdfFontConfig = async (fontName?: string): Promise<{
+    effectiveFont: string;
+    customFonts: Record<string, any>;
+    customVfs: Record<string, any>;
+}> => {
+    const baseVfs: Record<string, any> = { ...(pdfFonts as any).vfs };
+    const baseFonts: Record<string, any> = { ...ROBOTO_FONTS };
+
+    if (!fontName || fontName === 'Roboto' || fontName === 'Arial') {
+        return { effectiveFont: 'Roboto', customFonts: baseFonts, customVfs: baseVfs };
+    }
+
+    try {
+        const basePath = (process.env.NEXT_PUBLIC_BASE_PATH || '').replace(/\/$/, '');
+        const res = await fetch(`${basePath}/api/font-check?name=${encodeURIComponent(fontName)}`);
+        if (!res.ok) throw new Error('font-check failed');
+        const fontConfig = await res.json();
+        if (!fontConfig.found || !fontConfig.url) throw new Error('font not found');
+
+        const ext = (fontConfig.url.split('.').pop() || '').toLowerCase();
+        if (ext === 'woff2') throw new Error('woff2 unsupported by pdfmake');
+
+        const fontRes = await fetch(fontConfig.url);
+        if (!fontRes.ok) throw new Error('font fetch failed');
+        const buffer = await fontRes.arrayBuffer();
+        const bytes = new Uint8Array(buffer);
+        let binary = '';
+        for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+        const base64 = btoa(binary);
+
+        const vfsKey = `${fontName}.${ext}`;
+        baseVfs[vfsKey] = base64;
+        baseFonts[fontName] = { normal: vfsKey, bold: vfsKey, italics: vfsKey, bolditalics: vfsKey };
+
+        return { effectiveFont: fontName, customFonts: baseFonts, customVfs: baseVfs };
+    } catch {
+        return { effectiveFont: 'Roboto', customFonts: baseFonts, customVfs: baseVfs };
+    }
+};
+
+// Calculates logo width/height for PDF preserving the original aspect ratio.
+// Base height is fixed at 40px; width is capped at 120px to avoid layout breaks.
+const getLogoDimensionsForPdf = (logoSrc: string): Promise<{ width: number; height: number }> => {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            const aspectRatio = img.width / img.height;
+            const baseHeight = 40;
+            const width = Math.min(Math.round(baseHeight * aspectRatio), 120);
+            resolve({ width, height: baseHeight });
+        };
+        img.onerror = () => resolve({ width: 60, height: 40 });
+        img.src = logoSrc;
+    });
+};
+
 
 export const exportTableToPdf = async (
     gridEl: HTMLDivElement | null,
@@ -2396,27 +2463,7 @@ export const exportTableToPdf = async (
     mode: 'download' | 'email',
     fontName?: string
 ) => {
-    // Resilience: Ensure pdfMake and standard fonts are available
-    if (!(pdfMake as any).vfs && (pdfFonts as any).vfs) {
-        (pdfMake as any).vfs = (pdfFonts as any).vfs;
-    }
-    
-    if (!(pdfMake as any).fonts) {
-        (pdfMake as any).fonts = {
-            Roboto: {
-                normal: 'Roboto-Regular.ttf',
-                bold: 'Roboto-Medium.ttf',
-                italics: 'Roboto-Italic.ttf',
-                bolditalics: 'Roboto-MediumItalic.ttf'
-            }
-        };
-    }
-
-    // Alias custom font to Roboto if not registered to prevent crash
-    const appliedFont = fontName || 'Roboto';
-    if (!(pdfMake as any).fonts[appliedFont]) {
-        (pdfMake as any).fonts[appliedFont] = (pdfMake as any).fonts.Roboto;
-    }
+    const { effectiveFont, customFonts, customVfs } = await buildPdfFontConfig(fontName);
 
 
     if (!allData || allData.length === 0) return;
@@ -2520,7 +2567,7 @@ export const exportTableToPdf = async (
                 text: key,
                 bold: true,
                 fillColor: '#eeeeee',
-                font: fontName || undefined,
+                font: effectiveFont,
                 alignment: normalizedRightAlignedKeys.includes(normalizedKey) ? 'right' : 'left',
             };
         })
@@ -2533,7 +2580,7 @@ export const exportTableToPdf = async (
             const normalizedKey = key.replace(/\s+/g, '');
             return {
                 text: formatValue(row[key], key),
-                font: fontName || undefined,
+                font: effectiveFont,
                 alignment: normalizedRightAlignedKeys.includes(normalizedKey) ? 'right' : 'left',
             };
         });
@@ -2546,7 +2593,7 @@ export const exportTableToPdf = async (
         return {
             text: isTotalCol ? totals[normalizedKey].toFixed(decimalMap[key] !== undefined ? decimalMap[key] : 2) : '',
             bold: true,
-            font: fontName || undefined,
+            font: effectiveFont,
             alignment: normalizedRightAlignedKeys.includes(normalizedKey) ? 'right' : 'left',
         };
     });
@@ -2558,9 +2605,11 @@ export const exportTableToPdf = async (
 
     // Convert BMP logo if available
     let logoImage = '';
+    let logoDimensions = { width: 60, height: 40 };
     if (appMetadata?.companyLogo) {
         try {
             logoImage = await convertBmpToPng(appMetadata.companyLogo);
+            logoDimensions = await getLogoDimensionsForPdf(logoImage);
         } catch (err) {
             console.warn('Logo conversion failed:', err);
         }
@@ -2573,15 +2622,15 @@ export const exportTableToPdf = async (
                     logoImage
                         ? {
                             image: logoImage,
-                            width: 60,
-                            height: 40,
+                            width: logoDimensions.width,
+                            height: logoDimensions.height,
                             margin: [0, 0, 10, 0],
                         }
                         : {},
                     {
                         stack: [
-                            { text: jsonData?.CompanyName?.[0] || '', style: 'header', font: fontName || undefined },
-                            { text: `${fileTitle} ${dateRange}`, style: 'subheader', font: fontName || undefined },
+                            { text: jsonData?.CompanyName?.[0] || '', style: 'header', font: effectiveFont },
+                            { text: `${fileTitle} ${dateRange}`, style: 'subheader', font: effectiveFont },
                             {
                                 text: clientName
                                     ? clientCode
@@ -2589,13 +2638,13 @@ export const exportTableToPdf = async (
                                         : clientName
                                     : '',
                                 style: 'small',
-                                font: fontName || undefined
+                                font: effectiveFont
                             },
                         ],
                         alignment: 'center',
                         width: '*',
                     },
-                    { text: '', width: 60 },
+                    { text: '', width: logoDimensions.width },
                 ]
             },
             // Add dynamic space between logo and table
@@ -2620,12 +2669,12 @@ export const exportTableToPdf = async (
             },
         ],
         styles: {
-            header: { fontSize: 14, bold: true, alignment: 'center', margin: [0, 0, 0, 2], font: fontName || undefined },
-            subheader: { fontSize: 10, alignment: 'center', margin: [0, 0, 0, 2], font: fontName || undefined },
-            small: { fontSize: 9, alignment: 'center', margin: [0, 0, 0, 6], font: fontName || undefined },
-            tableStyle: { fontSize: 8, margin: [0, 2, 0, 2], font: fontName || undefined },
+            header: { fontSize: 14, bold: true, alignment: 'center', margin: [0, 0, 0, 2], font: effectiveFont },
+            subheader: { fontSize: 10, alignment: 'center', margin: [0, 0, 0, 2], font: effectiveFont },
+            small: { fontSize: 9, alignment: 'center', margin: [0, 0, 0, 6], font: effectiveFont },
+            tableStyle: { fontSize: 8, margin: [0, 2, 0, 2], font: effectiveFont },
         },
-        defaultStyle: { font: fontName || undefined },
+        defaultStyle: { font: effectiveFont },
         footer: function (currentPage: number, pageCount: number) {
             const now = new Date().toLocaleString('en-GB');
             return {
@@ -2642,7 +2691,7 @@ export const exportTableToPdf = async (
 
 
     if (mode === 'download') {
-        pdfMake.createPdf(docDefinition).download(`${fileTitle.replace(/[^a-zA-Z0-9]+/g, "_")}_${username}.pdf`);
+        pdfMake.createPdf(docDefinition, null, customFonts, customVfs).download(`${fileTitle.replace(/[^a-zA-Z0-9]+/g, "_")}_${username}.pdf`);
 
     } else if (mode === 'email') {
         const showTypes = pageData[0]?.levels[0]?.settings?.showTypstFlag || false;
@@ -2709,7 +2758,7 @@ export const exportTableToPdf = async (
                 const { PDFName, Base64PDF } = rs0[0];
                 await sendEmail(Base64PDF, PDFName);
             } else {
-                pdfMake.createPdf(docDefinition).getBase64(async (base64Data: string) => {
+                pdfMake.createPdf(docDefinition, null, customFonts, customVfs).getBase64(async (base64Data: string) => {
                     try {
                         await sendEmail(base64Data, `${fileTitle}.PDF`);
                     } catch (err) {
