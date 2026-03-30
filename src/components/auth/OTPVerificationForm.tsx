@@ -34,12 +34,13 @@ export default function OTPVerificationForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const { companyInfo, status, encPayload } = useSelector((state: RootState) => state.common);
-  const {firstLogin} = useSelector((state:RootState) => state.auth)
+  const { firstLogin } = useSelector((state: RootState) => state.auth);
   const { colors } = useTheme();
 
 
-  // Check if temp_token exists on component mount
+  // Security: Prevent accessing OTP page via back button or history traversal
   useEffect(() => {
+    // 1. Check for missing authentication data
     const tempToken = getLocalStorage('temp_token');
     const userId = getLocalStorage('userId');
 
@@ -48,6 +49,31 @@ export default function OTPVerificationForm() {
       router.replace('/signin');
       return;
     }
+
+    // 2. Handle Back/Forward navigation (detect if we arrived here via back button)
+    const navEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
+    if (navEntries.length > 0 && navEntries[0].type === 'back_forward') {
+      console.log('Detected back button navigation, clearing session and redirecting');
+      removeLocalStorage('temp_token');
+      removeLocalStorage('userId');
+      window.location.href = `${BASE_PATH_FRONT_END}/signin`;
+      return;
+    }
+
+    // 3. Handle BFcache (Back-Forward cache) restoration
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        console.log('Detected BFcache restoration, clearing session and redirecting');
+        removeLocalStorage('temp_token');
+        removeLocalStorage('userId');
+        window.location.href = `${BASE_PATH_FRONT_END}/signin`;
+      }
+    };
+
+    window.addEventListener('pageshow', handlePageShow);
+    return () => {
+      window.removeEventListener('pageshow', handlePageShow);
+    };
   }, [router]);
 
   const handleOTPVerification = async (e: React.FormEvent) => {

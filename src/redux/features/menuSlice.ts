@@ -254,10 +254,12 @@ export const fetchMenuItems = createAsyncThunk(
 
                 // Skip logging if disabled via env flag
                 if (process.env.NEXT_PUBLIC_IS_CLIENT_LOG_ALLOWED === 'true') {
+                    const token = getLocalStorage('auth_token') || getLocalStorage('temp_token');
                     fetch(logUrl, {
                         method: 'POST',
                         headers: {
-                            'Content-Type': 'application/json'
+                            'Content-Type': 'application/json',
+                            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
                         },
                         body: JSON.stringify(logData)
                     }).catch(err => {});

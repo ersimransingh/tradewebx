@@ -752,6 +752,47 @@ class ApiService {
         this.showSessionExpiredPopup();
     }
 
+    // Mask sensitive data in objects or strings
+    private maskSensitiveData(data: any): any {
+        if (!data) return data;
+        
+        // If it's a string, try to mask if it looks like sensitive info (optional, focus on objects)
+        if (typeof data === 'string') {
+            // Regex for common sensitive patterns if needed
+            return data;
+        }
+
+        if (typeof data !== 'object') return data;
+
+        const masked = Array.isArray(data) ? [...data] : { ...data };
+        const sensitiveKeywords = [
+            'pan', 'aadhar', 'aadhaar', 'password', 'otp', 'mobile', 
+            'email', 'token', 'refreshtoken', 'secretkey', 'pin',
+            'pancard', 'aadharcard', 'phone', 'pass', 'account', 'bank'
+        ];
+
+        for (const key in masked) {
+            const lowerKey = key.toLowerCase();
+            // Check if the key contains any of our sensitive keywords
+            const isSensitive = sensitiveKeywords.some(kw => lowerKey.includes(kw));
+
+            if (isSensitive) {
+                const value = masked[key];
+                if (typeof value === 'string' && value.length > 4) {
+                    // Mask but keep first 2 and last 2 characters for context
+                    masked[key] = `${value.substring(0, 2)}****${value.substring(value.length - 2)}`;
+                } else {
+                    masked[key] = '****';
+                }
+            } else if (typeof masked[key] === 'object' && masked[key] !== null) {
+                masked[key] = this.maskSensitiveData(masked[key]);
+            }
+        }
+        return masked;
+
+        return masked;
+    }
+
     // Log failed API requests
     private async logError(url: string, method: string, data: any, error: any): Promise<void> {
         try {
@@ -762,20 +803,27 @@ class ApiService {
             const logUrl = `${BASE_PATH_FRONT_END}/api/log-error`;
             if (url.includes(logUrl)) return;
 
+            // Mask PII before logging
+            const maskedRequestData = this.maskSensitiveData(data);
+            const maskedError = this.maskSensitiveData(error);
+
             const logData = {
                 url,
                 method,
-                requestData: data,
+                requestData: maskedRequestData,
                 statusCode: error.response?.status || 'UNKNOWN',
-                error: error.response?.data || error.message || error,
+                error: maskedError,
                 timestamp: Date.now()
             };
+
+            const token = this.getAuthToken() || getLocalStorage('temp_token');
 
             // Use fetch to avoid circular dependency or interceptor issues with axios instance
             await fetch(logUrl, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
                 },
                 body: JSON.stringify(logData)
             });
