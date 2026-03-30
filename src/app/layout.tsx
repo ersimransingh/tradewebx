@@ -10,7 +10,7 @@ export default async function RootLayout({
 }>) {
   const headersList = await headers();
   const nonce = headersList.get("x-nonce") ?? "";
-  const fontConfig = getDynamicFont();
+  const fontConfig = await getDynamicFont();
 
   return (
     <html lang="en" suppressHydrationWarning>

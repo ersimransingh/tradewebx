@@ -2103,7 +2103,8 @@ export const exportTableToExcel = async (
     let rowCursor = 1;
 
     worksheet.getCell(`D${rowCursor}`).value = companyName;
-    worksheet.getCell(`D${rowCursor}`).font = { bold: true, name: fontName || undefined };
+    worksheet.getCell(`D${rowCursor}`).font = { bold: true, size: 16, name: fontName || undefined };
+    worksheet.getCell(`D${rowCursor}`).alignment = { horizontal: 'center' };
     rowCursor++;
 
     // reportHeader.split("\\n").forEach(line => {
@@ -2118,6 +2119,8 @@ export const exportTableToExcel = async (
     if (text.includes("(") && text.includes(")")) return;
 
     worksheet.getCell(`D${rowCursor}`).value = text;
+    worksheet.getCell(`D${rowCursor}`).font = { name: fontName || undefined, size: 10 };
+    worksheet.getCell(`D${rowCursor}`).alignment = { horizontal: 'center' };
     rowCursor++;
 });
 
@@ -2179,7 +2182,8 @@ export const exportTableToExcel = async (
             if (normalizedTextColumns.includes(normKey) && value !== null && value !== undefined) {
                 cell.value = String(value); // always store as string
                 cell.numFmt = '@';           // Number should behaves as text
-            } else if (!isNaN(value) && value !== '' && typeof value !== 'object') {
+                cell.font = { name: fontName || undefined };
+            } else if (!isNaN(Number(value)) && value !== '' && typeof value !== 'object') {
                 cell.value = Number(value);
                 cell.font = { name: fontName || undefined };
                 cell.alignment = { horizontal: 'right' }; // default numeric right align
@@ -2396,27 +2400,48 @@ export const exportTableToPdf = async (
     mode: 'download' | 'email',
     fontName?: string
 ) => {
-    // Resilience: Ensure pdfMake and standard fonts are available
-    if (!(pdfMake as any).vfs && (pdfFonts as any).vfs) {
-        (pdfMake as any).vfs = (pdfFonts as any).vfs;
-    }
-    
-    if (!(pdfMake as any).fonts) {
-        (pdfMake as any).fonts = {
-            Roboto: {
-                normal: 'Roboto-Regular.ttf',
-                bold: 'Roboto-Medium.ttf',
-                italics: 'Roboto-Italic.ttf',
-                bolditalics: 'Roboto-MediumItalic.ttf'
-            }
-        };
+    const appliedFont = fontName || 'Roboto';
+    const fontsConfig: any = {};
+
+    try {
+        const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+        const cleanBasePath = basePath.endsWith("/") ? basePath.slice(0, -1) : basePath;
+        
+        // Fetch the font info from our local API
+        const res = await fetch(`${cleanBasePath}/api/font-check?name=${encodeURIComponent(appliedFont)}&format=pdf`);
+        const fontData = await res.json();
+        
+        if (fontData.found && fontData.url) {
+            const origin = typeof window !== 'undefined' ? window.location.origin : '';
+            const fullUrl = origin ? new URL(fontData.url, origin).href : fontData.url;
+            
+            const fontDef = {
+                normal: fullUrl,
+                bold: fullUrl,
+                italics: fullUrl,
+                bolditalics: fullUrl
+            };
+
+            // Register the custom font
+            fontsConfig[appliedFont] = fontDef;
+            
+            // Map 'Roboto' to the same font to satisfy pdfmake's internal defaults
+            // and avoid external unpkg.com dependencies.
+            fontsConfig['Roboto'] = fontDef;
+        } else {
+            console.warn(`Font not found: ${appliedFont}. Note: pdfmake requires valid TTF/OTF. Falling back to default browser behavior.`);
+        }
+    } catch (e) {
+        console.error("Failed to fetch local font config for PDFMake", e);
     }
 
-    // Alias custom font to Roboto if not registered to prevent crash
-    const appliedFont = fontName || 'Roboto';
-    if (!(pdfMake as any).fonts[appliedFont]) {
-        (pdfMake as any).fonts[appliedFont] = (pdfMake as any).fonts.Roboto;
+    if (typeof (pdfMake as any).addFonts === 'function') {
+        (pdfMake as any).addFonts(fontsConfig);
+    } else {
+        if (!(pdfMake as any).fonts) (pdfMake as any).fonts = {};
+        Object.assign((pdfMake as any).fonts, fontsConfig);
     }
+
 
 
     if (!allData || allData.length === 0) return;

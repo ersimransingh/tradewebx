@@ -1,22 +1,9 @@
 
 import pdfMake from "pdfmake/build/pdfmake";
-import pdfFonts from "pdfmake/build/vfs_fonts";
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import dayjs from 'dayjs';
 
-// Initialize pdfMake vfs
-// @ts-ignore
-// @ts-ignore
-if (pdfMake.vfs === undefined && pdfFonts && (pdfFonts as any).pdfMake && (pdfFonts as any).pdfMake.vfs) {
-    // @ts-ignore
-    pdfMake.vfs = (pdfFonts as any).pdfMake.vfs;
-} else if (pdfMake.vfs === undefined && pdfFonts && (pdfFonts as any).vfs) {
-    // @ts-ignore
-    pdfMake.vfs = (pdfFonts as any).vfs;
-}
-
-// Helper: Convert BMP to PNG for PDF/Excel
 export const convertBmpToPng = (bmpBase64: string): Promise<string> => {
     return new Promise((resolve, reject) => {
         const image = new Image();
@@ -142,26 +129,46 @@ const processNodeForPdf = (data: any[], level = 0): any => {
 };
 
 export const generatePdf = async (data: any[], headerData: any, appMetadata: any, fontName?: string) => {
-    // Resilience: Ensure pdfMake and standard fonts are available
-    if (!(pdfMake as any).vfs && (pdfFonts as any).vfs) {
-        (pdfMake as any).vfs = (pdfFonts as any).vfs;
-    }
-    
-    if (!(pdfMake as any).fonts) {
-        (pdfMake as any).fonts = {
-            Roboto: {
-                normal: 'Roboto-Regular.ttf',
-                bold: 'Roboto-Medium.ttf',
-                italics: 'Roboto-Italic.ttf',
-                bolditalics: 'Roboto-MediumItalic.ttf'
-            }
-        };
+    const appliedFont = fontName || 'Roboto';
+    const fontsConfig: any = {};
+
+    try {
+        const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+        const cleanBasePath = basePath.endsWith("/") ? basePath.slice(0, -1) : basePath;
+        
+        // Fetch the font info from our local API
+        const res = await fetch(`${cleanBasePath}/api/font-check?name=${encodeURIComponent(appliedFont)}&format=pdf`);
+        const fontData = await res.json();
+        
+        if (fontData.found && fontData.url) {
+            const origin = typeof window !== 'undefined' ? window.location.origin : '';
+            const fullUrl = origin ? new URL(fontData.url, origin).href : fontData.url;
+            
+            const fontDef = {
+                normal: fullUrl,
+                bold: fullUrl,
+                italics: fullUrl,
+                bolditalics: fullUrl
+            };
+
+            // Register the custom font
+            fontsConfig[appliedFont] = fontDef;
+            
+            // Map 'Roboto' to the same font to satisfy pdfmake's internal defaults
+            // and avoid external unpkg.com dependencies.
+            fontsConfig['Roboto'] = fontDef;
+        } else {
+            console.warn(`Font not found: ${appliedFont}. Note: pdfmake requires valid TTF/OTF. Falling back to default browser behavior.`);
+        }
+    } catch (e) {
+        console.error("Failed to fetch local font config for PDFMake", e);
     }
 
-    // Alias custom font to Roboto if not registered to prevent crash
-    const appliedFont = fontName || 'Roboto';
-    if (!(pdfMake as any).fonts[appliedFont]) {
-        (pdfMake as any).fonts[appliedFont] = (pdfMake as any).fonts.Roboto;
+    if (typeof (pdfMake as any).addFonts === 'function') {
+        (pdfMake as any).addFonts(fontsConfig);
+    } else {
+        if (!(pdfMake as any).fonts) (pdfMake as any).fonts = {};
+        Object.assign((pdfMake as any).fonts, fontsConfig);
     }
 
     console.log("headerData---->", headerData,appMetadata);
@@ -310,7 +317,7 @@ export const generateExcel = async (data: any[], headerData: any, appMetadata: a
 
     worksheet.mergeCells('C2:I2');
     worksheet.getCell('C2').value = reportHeader;
-    worksheet.getCell('C2').font = { size: 12, bold: true };
+    worksheet.getCell('C2').font = { size: 12, bold: true, name: fontName || undefined };
     worksheet.getCell('C2').alignment = { horizontal: 'center' };
 
     const startRow = 5;
