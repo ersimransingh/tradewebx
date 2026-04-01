@@ -2137,7 +2137,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
     const showFilterHorizontally = safePageData.getSetting('filterType') === "onPage";
     const selectableButtonsSetting = safePageData.getCurrentLevel(currentLevel)?.settings?.Selectable_Buttons;
     const hasSelectableButtons = Boolean(
-        selectableButtonsSetting?.isCheckbox && (selectableButtonsSetting?.buttons?.length || 0) > 0
+        (selectableButtonsSetting?.isCheckbox || selectableButtonsSetting?.isRadio) && (selectableButtonsSetting?.buttons?.length || 0) > 0
     );
     const dynamicButtonsSetting = safePageData.getCurrentLevel(currentLevel)?.settings?.Dynamic_Buttons || [];
 

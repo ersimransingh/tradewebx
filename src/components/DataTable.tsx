@@ -535,6 +535,7 @@ export interface SelectableButton {
 
 interface SelectableButtonsSetting {
     isCheckbox: boolean;
+    isRadio?: boolean;
     buttons: SelectableButton[];
 }
 
@@ -759,6 +760,9 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, onRow
         }
     }, [settings?.multiCheckBox, data]);
 
+
+    const isRadioMode = settings?.isRadio || settings?.Selectable_Buttons?.isRadio;
+    const showMultiCheckBox = settings?.multiCheckBox || settings?.Selectable_Buttons?.isCheckbox || isRadioMode;
 
     // Filter functions
     const handleFilterChange = useCallback((columnKey: string, filter: ColumnFilter | null) => {
@@ -1152,13 +1156,20 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, onRow
         columnsToShow = columnsToShow.filter(key => !columnsToHide.includes(key));
 
         //this function is used for multiCheckBoxColumn in income report and Selectable_Buttons
-        const showMultiCheckBox = settings?.multiCheckBox || settings?.Selectable_Buttons?.isCheckbox;
         const multiCheckBoxColumn = showMultiCheckBox
             ? [{
                 key: "_multiSelect",
                 name: "",
                 width: 35,
                 renderHeaderCell: () => {
+                    if (isRadioMode) {
+                        return (
+                            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                                <span style={{ fontSize: '12px', color: '#666' }}>Select</span>
+                            </div>
+                        );
+                    }
+
                     const allIds = rows.map(r => r._id);
                     const allSelected = allIds.length > 0 && allIds.every(id => selectedRows.some(r => r._id === id));
 
@@ -1177,10 +1188,19 @@ const DataTable: React.FC<DataTableProps> = ({ data, settings, onRowClick, onRow
                 },
                 renderCell: ({ row }: any) => (
                     <input
-                        type="checkbox"
+                        type={isRadioMode ? "radio" : "checkbox"}
+                        name={isRadioMode ? "radioSelection" : undefined}
                         checked={selectedRows.some(r => r._id === row._id)}
                         aria-label={`Select row with ID ${row._id}`}
-                        onChange={(e) => toggleRowSelection(row, e.target.checked)}
+                        onChange={(e) => {
+                            if (isRadioMode) {
+                                const updated = e.target.checked ? [row] : [];
+                                setSelectedRows(updated);
+                                onRowSelect?.(updated);
+                            } else {
+                                toggleRowSelection(row, e.target.checked);
+                            }
+                        }}
                     />
                 )
             }]
