@@ -6,7 +6,7 @@ import axios from 'axios';
 import { BASE_URL, PATH_URL } from '@/utils/constants';
 import moment from 'moment';
 import FilterModal from './FilterModal';
-import { FaSync, FaFilter, FaDownload, FaFileCsv, FaFilePdf, FaPlus, FaEdit, FaFileExcel, FaEnvelope, FaSearch, FaTimes, FaEllipsisV, FaRegEnvelope, FaArrowsAltH, FaColumns, FaCalculator, FaSpinner } from 'react-icons/fa';
+import { FaSync, FaFilter, FaDownload, FaFileCsv, FaFilePdf, FaPlus, FaEdit, FaFileExcel, FaEnvelope, FaSearch, FaTimes, FaEllipsisV, FaRegEnvelope, FaArrowsAltH, FaColumns, FaCalculator, FaSpinner, FaInfoCircle } from 'react-icons/fa';
 import { useTheme } from '@/context/ThemeContext';
 import DataTable, { exportTableToCsv, exportTableToPdf, exportTableToExcel, downloadOption } from './DataTable';
 import { store } from "@/redux/store";
@@ -299,6 +299,11 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
     const [pdfParams, setPdfParams] = useState<
         [HTMLDivElement | null, any, any, any[], any, any, any, 'download' | 'email', string | undefined]
     >();
+
+    // States for Dynamic_Buttons popups
+    const [isDynamicPopupOpen, setIsDynamicPopupOpen] = useState(false);
+    const [pendingDynamicButton, setPendingDynamicButton] = useState<any>(null);
+    const [dynamicPopupMessage, setDynamicPopupMessage] = useState("");
     const [hasFetchAttempted, setHasFetchAttempted] = useState(false);
     const [pageLoaded, setPageLoaded] = useState(false);
     const [isPageLoaded, setIsPageLoaded] = useState(false);
@@ -1361,6 +1366,148 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
         }
     };
 
+    const resolveDynamicValue = (value: string, rowData: any, globalFilters: Record<string, any>) => {
+        if (typeof value !== 'string') return value;
+
+        // Pattern: ##type.Field## or ##Field##
+        const placeholderMatch = value.match(/##(.+?)##/);
+        if (!placeholderMatch) return value;
+
+        const fullKey = placeholderMatch[1];
+        let resolvedValue: any = '';
+
+        if (fullKey.startsWith('row.')) {
+            const key = fullKey.replace('row.', '');
+            resolvedValue = rowData?.[key] ?? '';
+        } else if (fullKey.startsWith('filter.')) {
+            const key = fullKey.replace('filter.', '');
+            const filterVal = globalFilters[key];
+            if (filterVal instanceof Date || moment.isMoment(filterVal)) {
+                resolvedValue = moment(filterVal).format('YYYYMMDD');
+            } else {
+                resolvedValue = filterVal ?? '';
+            }
+        } else {
+            // Fallback: check row then filter
+            resolvedValue = rowData?.[fullKey];
+            if (resolvedValue === undefined || resolvedValue === null) {
+                const filterVal = globalFilters[fullKey];
+                if (filterVal instanceof Date || moment.isMoment(filterVal)) {
+                    resolvedValue = moment(filterVal).format('YYYYMMDD');
+                } else {
+                    resolvedValue = filterVal ?? '';
+                }
+            }
+        }
+
+        return value.replace(placeholderMatch[0], String(resolvedValue));
+    };
+
+    const handleDynamicButtonClick = (button: any, selectedRows: any[]) => {
+        if (button.popupConfig?.showPopup) {
+            let message = button.popupConfig.message || "Do you want to proceed?";
+            // Resolve placeholders in message
+            const rowData = selectedRows.length > 0 ? selectedRows[0] : {};
+            
+            // Multi-placeholder replacement for the message
+            const placeholders = message.match(/##.+?##/g) || [];
+            if (placeholders) {
+                placeholders.forEach((ph: string) => {
+                    const resolved = resolveDynamicValue(ph, rowData, filters);
+                    message = message.replace(ph, resolved);
+                });
+            }
+
+            setDynamicPopupMessage(message);
+            setPendingDynamicButton({ button, selectedRows });
+            setIsDynamicPopupOpen(true);
+        } else {
+            executeDynamicButtonApi(button, selectedRows);
+        }
+    };
+
+    const executeDynamicButtonApi = async (button: any, selectedRows: any[]) => {
+        setIsLoading(true);
+        try {
+            const apiConfig = button.API;
+            const rowData = selectedRows.length > 0 ? selectedRows[0] : {};
+
+            // 1. J_Ui
+            const jUiConfig = apiConfig.J_Ui || {};
+            const jUi = Object.entries(jUiConfig)
+                .map(([key, value]) => `"${key}":"${value}"`)
+                .join(',');
+
+            // 2. X_Filter
+            let xFilterXml = '';
+            const xFilterConfig = apiConfig.X_Filter || {};
+            if (Object.keys(xFilterConfig).length > 0) {
+                Object.entries(xFilterConfig).forEach(([key, val]) => {
+                    const resolved = resolveDynamicValue(String(val), rowData, filters);
+                    xFilterXml += `<${key}>${resolved}</${key}>`;
+                });
+            }
+
+            // 3. X_Filter_Multiple
+            let xFilterMultipleXml = '';
+            const xFilterMultipleConfig = apiConfig.X_Filters_Multiple || {};
+            if (Object.keys(xFilterMultipleConfig).length > 0) {
+                Object.entries(xFilterMultipleConfig).forEach(([key, val]) => {
+                    const resolved = resolveDynamicValue(String(val), rowData, filters);
+                    xFilterMultipleXml += `<${key}>${resolved}</${key}>`;
+                });
+            }
+
+            const xmlData = `<dsXml>
+                <J_Ui>${jUi}</J_Ui>
+                <Sql></Sql>
+                <X_Filter>${xFilterXml}</X_Filter>
+                <X_Filter_Multiple>${xFilterMultipleXml}</X_Filter_Multiple>
+                <J_Api>"UserId":"${getLocalStorage('userId')}", "UserType":"${getLocalStorage('userType')}"</J_Api>
+            </dsXml>`;
+
+            console.log('Dynamic Button API Request:', xmlData);
+            const response = await apiService.postWithAuth(BASE_URL + PATH_URL, xmlData);
+
+            if (response?.data?.success || response?.data?.data?.rs0) {
+                const rs0 = response.data.data?.rs0;
+                if (Array.isArray(rs0) && rs0.length > 0) {
+                    let hasSuccess = false;
+                    rs0.forEach((item: any) => {
+                        const message = (item.Message || item.MessageText || '').replace(/<br\s*\/?>/gi, '')?.trim();
+                        const flag = String(item.Flag || item.flag || '').toUpperCase();
+
+                        if (flag === 'S' && message) {
+                            toast.success(message);
+                            hasSuccess = true;
+                        } else if (message) {
+                            // Any other flag (E, W, etc.) or no flag with message is treated as error/warning
+                            toast.error(message);
+                        }
+                    });
+                    if (hasSuccess && button.popupConfig?.refreshAfterSuccess !== false) {
+                        fetchData(filters, false);
+                    }
+                } else if (response.data.message) {
+                    toast.success(response.data.message);
+                    if (button.popupConfig?.refreshAfterSuccess !== false) {
+                        fetchData(filters, false);
+                    }
+                }
+            } else {
+                toast.error(response?.data?.message || "Operation failed");
+            }
+
+        } catch (error) {
+            console.error('Error in executeDynamicButtonApi:', error);
+            toast.error('An error occurred while processing your request');
+        } finally {
+            setIsLoading(false);
+            setIsDynamicPopupOpen(false);
+            setPendingDynamicButton(null);
+        }
+    };
+
     // Handle click on columns with DetailAPI configuration
     const handleDetailColumnClick = async (columnKey: string, rowData: any) => {
         console.log('Detail Column Click:', columnKey, rowData,currentLevel);
@@ -1992,6 +2139,7 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
     const hasSelectableButtons = Boolean(
         selectableButtonsSetting?.isCheckbox && (selectableButtonsSetting?.buttons?.length || 0) > 0
     );
+    const dynamicButtonsSetting = safePageData.getCurrentLevel(currentLevel)?.settings?.Dynamic_Buttons || [];
 
     return (
         <div className=""
@@ -2126,6 +2274,25 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                                         }}
                                     >
                                         <div className="py-1">
+                                            {/* Dynamic_Buttons for Mobile Menu */}
+                                            {dynamicButtonsSetting.length > 0 && dynamicButtonsSetting.map((button: any, index: number) => (
+                                                <button
+                                                    key={`mobile-dynamic-${button.name}-${index}`}
+                                                    onClick={() => {
+                                                        handleDynamicButtonClick(button, selectedRows);
+                                                        setIsMobileMenuOpen(false);
+                                                    }}
+                                                    className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2 border-b border-gray-50 last:border-0"
+                                                    style={{ 
+                                                        color: colors.text,
+                                                        backgroundColor: 'transparent'
+                                                    }}
+                                                >
+                                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: colors.buttonBackground }}></div>
+                                                    {button.name}
+                                                </button>
+                                            ))}
+
                                             {/* Dynamic Selectable Buttons for Mobile Menu */}
                                             {hasSelectableButtons && selectableButtonsSetting.buttons.map((button: any, index: number) => (
                                                 <button
@@ -2355,6 +2522,23 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
 
                         {/* Desktop View - Show all buttons */}
                         <div className="hidden md:flex gap-2">
+                            {dynamicButtonsSetting.length > 0 && (
+                                <div className="flex items-center gap-2">
+                                    {dynamicButtonsSetting.map((button: any, index: number) => (
+                                        <button
+                                            key={`dynamic-${button.name}-${index}`}
+                                            onClick={() => handleDynamicButtonClick(button, selectedRows)}
+                                            className="px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ease-in-out hover:opacity-90 active:scale-95"
+                                            style={{ 
+                                                backgroundColor: colors.buttonBackground, 
+                                                color: colors.buttonText 
+                                            }}
+                                        >
+                                            {button.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                             {hasSelectableButtons && (
                                 <div className="flex items-center gap-2">
                                     {selectableButtonsSetting.buttons.map((button: any, index: number) => (
@@ -3345,6 +3529,65 @@ const DynamicReportComponent: React.FC<DynamicReportComponentProps> = ({ compone
                 />
             )}
 
+            {/* Dynamic Button Confirmation Modal */}
+            {isDynamicPopupOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm">
+                    <div 
+                        className="w-full max-w-md rounded-xl shadow-2xl overflow-hidden transform transition-all animate-in fade-in zoom-in duration-300"
+                        style={{ backgroundColor: colors.cardBackground || '#ffffff' }}
+                    >
+                        <div className="p-6">
+                            <div className="flex items-center gap-4 mb-4">
+                                <div className="w-12 h-12 rounded-full flex items-center justify-center bg-blue-100 text-blue-600">
+                                    <FaInfoCircle size={24} />
+                                </div>
+                                <h3 className="text-xl font-bold" style={{ color: colors.text || '#1f2937' }}>
+                                    Confirm Action
+                                </h3>
+                            </div>
+                            
+                            <p className="text-sm leading-relaxed mb-8" style={{ color: colors.text || '#4b5563', opacity: 0.9 }}>
+                                {dynamicPopupMessage}
+                            </p>
+                            
+                            <div className="flex gap-3 justify-end">
+                                <button
+                                    onClick={() => {
+                                        setIsDynamicPopupOpen(false);
+                                        setPendingDynamicButton(null);
+                                    }}
+                                    className="px-4 py-2 text-sm font-medium rounded-lg transition-colors hover:bg-gray-100"
+                                    style={{ color: colors.text || '#4b5563', border: '1px solid #e5e7eb' }}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        if (pendingDynamicButton) {
+                                            executeDynamicButtonApi(pendingDynamicButton.button, pendingDynamicButton.selectedRows);
+                                        }
+                                    }}
+                                    disabled={isLoading}
+                                    className="px-6 py-2 text-sm font-semibold rounded-lg shadow-md transition-all hover:opacity-90 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                    style={{ 
+                                        backgroundColor: colors.buttonBackground || '#3b82f6', 
+                                        color: colors.buttonText || '#ffffff' 
+                                    }}
+                                >
+                                    {isLoading ? (
+                                        <>
+                                            <FaSpinner className="animate-spin" />
+                                            Processing...
+                                        </>
+                                    ) : (
+                                        'Confirm'
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
